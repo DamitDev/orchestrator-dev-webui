@@ -140,6 +140,25 @@ export const useTaskAction = () => {
   })
 }
 
+export const useGuideTask = () => {
+  const queryClient = useQueryClient()
+  
+  return useMutation({
+    mutationFn: ({ taskId, message }: { taskId: string; message: string }) => 
+      tasksApi.guide(taskId, message),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.tasks })
+      queryClient.invalidateQueries({ queryKey: queryKeys.task(variables.taskId) })
+      queryClient.invalidateQueries({ queryKey: queryKeys.taskConversation(variables.taskId) })
+      queryClient.invalidateQueries({ queryKey: queryKeys.config })
+      toast.success('Guidance message sent successfully!')
+    },
+    onError: (error: any) => {
+      toast.error(`Failed to send guidance: ${error.response?.data?.error || error.message}`)
+    },
+  })
+}
+
 // LLM Backend management mutations
 export const useAddLLMBackend = () => {
   const queryClient = useQueryClient()

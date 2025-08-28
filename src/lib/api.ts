@@ -48,6 +48,11 @@ export const tasksApi = {
   action: async (data: TaskActionRequest): Promise<void> => {
     await api.post('/task/action', data)
   },
+
+  guide: async (taskId: string, message: string): Promise<{ success: boolean; message: string }> => {
+    const response = await api.post('/task/guide', { task_id: taskId, message })
+    return response.data
+  },
 }
 
 // Configuration API

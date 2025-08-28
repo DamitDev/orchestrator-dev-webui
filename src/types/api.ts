@@ -20,6 +20,7 @@ export interface ConversationMessage {
   reasoning?: string
   tool_calls?: any[]
   tool_call_id?: string
+  created_at?: string // UTC timestamp from the API
 }
 
 export interface ConfigurationStatus {

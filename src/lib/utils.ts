@@ -16,6 +16,43 @@ export function formatDateTime(date: Date): string {
   }).format(date)
 }
 
+export function formatMessageTimestamp(utcTimestamp: string): string {
+  try {
+    // Parse the UTC timestamp and format it in the browser's local timezone
+    const date = new Date(utcTimestamp)
+    const now = new Date()
+    
+    // Get dates without time for comparison
+    const messageDate = new Date(date.getFullYear(), date.getMonth(), date.getDate())
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+    const yesterday = new Date(today.getTime() - 24 * 60 * 60 * 1000)
+    
+    // Format time in 24h format with seconds
+    const timeFormat = new Intl.DateTimeFormat('en-US', {
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false,
+    }).format(date)
+    
+    if (messageDate.getTime() === today.getTime()) {
+      // Today: show only time
+      return timeFormat
+    } else if (messageDate.getTime() === yesterday.getTime()) {
+      // Yesterday: show "yesterday" + time
+      return `yesterday ${timeFormat}`
+    } else {
+      // Older: show ISO date + time
+      const isoDate = date.getFullYear() + '-' + 
+        String(date.getMonth() + 1).padStart(2, '0') + '-' + 
+        String(date.getDate()).padStart(2, '0')
+      return `${isoDate} ${timeFormat}`
+    }
+  } catch (error) {
+    return 'Invalid time'
+  }
+}
+
 export function getStatusColor(status: string): string {
   switch (status) {
     case 'completed':

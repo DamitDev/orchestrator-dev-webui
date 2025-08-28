@@ -1,10 +1,11 @@
-import React, { useEffect, useRef } from 'react'
-import { useTask, useTaskConversation } from '../hooks/useApi'
+import React, { useEffect, useRef, useState } from 'react'
+import { useTask, useTaskConversation, useGuideTask } from '../hooks/useApi'
 import Card from './ui/Card'
 import StatusBadge from './ui/StatusBadge'
 import LoadingSpinner from './ui/LoadingSpinner'
-import { isRunningStatus } from '../lib/utils'
-import { MessageSquare, User, Bot, Wrench, AlertTriangle, Brain } from 'lucide-react'
+import Button from './ui/Button'
+import { isRunningStatus, formatMessageTimestamp } from '../lib/utils'
+import { MessageSquare, User, Bot, Wrench, AlertTriangle, Brain, MessageCircle, X } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import type { ConversationMessage } from '../types/api'
@@ -17,8 +18,13 @@ interface TaskDetailProps {
 const TaskDetail: React.FC<TaskDetailProps> = ({ taskId, refreshInterval }) => {
   const { data: task, isLoading: taskLoading } = useTask(taskId, refreshInterval)
   const { data: conversation, isLoading: conversationLoading } = useTaskConversation(taskId, refreshInterval)
+  const guideTask = useGuideTask()
+  
   const conversationEndRef = useRef<HTMLDivElement>(null)
   const scrollContainerRef = useRef<HTMLDivElement>(null)
+  
+  const [showGuideModal, setShowGuideModal] = useState(false)
+  const [guideMessage, setGuideMessage] = useState('')
 
   const isLoading = taskLoading || conversationLoading
 
@@ -54,6 +60,22 @@ const TaskDetail: React.FC<TaskDetailProps> = ({ taskId, refreshInterval }) => {
     }
     return Math.min((task.iteration / task.max_iterations) * 100, 100)
   }
+
+  // Handle guide message submission
+  const handleGuideSubmit = async () => {
+    if (!guideMessage.trim()) return
+    
+    try {
+      await guideTask.mutateAsync({ taskId, message: guideMessage.trim() })
+      setGuideMessage('')
+      setShowGuideModal(false)
+    } catch (error) {
+      // Error handling is done in the mutation hook
+    }
+  }
+
+  // Check if task can be guided (all states except cancelling, canceled, failed, completed)
+  const canGuideTask = task && !['cancelling', 'canceled', 'cancelled', 'failed', 'completed'].includes(task.status)
 
   if (isLoading) {
     return (
@@ -266,12 +288,65 @@ const TaskDetail: React.FC<TaskDetailProps> = ({ taskId, refreshInterval }) => {
               {task.result && (
                 <div className="mt-4">
                   <span className="text-gray-600 text-sm">Result:</span>
-                  <p className="mt-1 text-sm text-gray-900 bg-gray-100 p-3 rounded-md">
-                    {task.result}
-                  </p>
+                  <div className="mt-1 text-sm text-gray-900 bg-green-50 border border-green-200 p-3 rounded-md prose prose-sm max-w-none prose-p:my-2 prose-code:bg-green-100 prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-pre:bg-green-100 prose-pre:border break-words overflow-hidden markdown-tables">
+                    <ReactMarkdown 
+                      remarkPlugins={[remarkGfm]}
+                      components={{
+                        table: ({children}) => (
+                          <div className="overflow-x-auto my-4">
+                            <table className="min-w-full border-collapse border border-gray-300 text-sm">
+                              {children}
+                            </table>
+                          </div>
+                        ),
+                        thead: ({children}) => (
+                          <thead className="bg-gray-50">
+                            {children}
+                          </thead>
+                        ),
+                        tbody: ({children}) => (
+                          <tbody className="bg-white">
+                            {children}
+                          </tbody>
+                        ),
+                        tr: ({children}) => (
+                          <tr className="border-b border-gray-200">
+                            {children}
+                          </tr>
+                        ),
+                        th: ({children}) => (
+                          <th className="border border-gray-300 px-4 py-2 text-left font-semibold text-gray-900 bg-gray-50">
+                            {children}
+                          </th>
+                        ),
+                        td: ({children}) => (
+                          <td className="border border-gray-300 px-4 py-2 text-gray-700">
+                            {children}
+                          </td>
+                        ),
+                      }}
+                    >
+                      {task.result}
+                    </ReactMarkdown>
+                  </div>
                 </div>
               )}
             </div>
+            
+            {/* Guide Task Button */}
+            {canGuideTask && (
+              <div className="flex-shrink-0 ml-4">
+                <Button
+                  variant="warning"
+                  size="sm"
+                  onClick={() => setShowGuideModal(true)}
+                  className="flex items-center gap-2"
+                >
+                  <MessageCircle className="h-4 w-4" />
+                  Guide Task
+                </Button>
+              </div>
+            )}
           </div>
           
           {/* Progress Bar */}
@@ -320,6 +395,11 @@ const TaskDetail: React.FC<TaskDetailProps> = ({ taskId, refreshInterval }) => {
                       {message.tool_calls && message.tool_calls.length > 0 && (
                         <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded">
                           Tool Call
+                        </span>
+                      )}
+                      {message.created_at && (
+                        <span className="text-xs text-gray-500 ml-auto font-mono">
+                          {formatMessageTimestamp(message.created_at)}
                         </span>
                       )}
                     </div>
@@ -374,6 +454,71 @@ const TaskDetail: React.FC<TaskDetailProps> = ({ taskId, refreshInterval }) => {
           </div>
         </div>
       </div>
+
+      {/* Guide Task Modal */}
+      {showGuideModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-lg max-w-lg w-full mx-4">
+            <div className="flex items-center justify-between p-6 border-b border-gray-200">
+              <h3 className="text-lg font-semibold text-gray-900">Guide Task</h3>
+              <button
+                onClick={() => setShowGuideModal(false)}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            
+            <div className="p-6">
+              <div className="mb-4">
+                <label htmlFor="guide-message" className="block text-sm font-medium text-gray-700 mb-2">
+                  Guidance Message
+                </label>
+                <textarea
+                  id="guide-message"
+                  rows={4}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
+                  placeholder="Enter your guidance message to help the task execution..."
+                  value={guideMessage}
+                  onChange={(e) => setGuideMessage(e.target.value)}
+                />
+              </div>
+              
+              <div className="bg-blue-50 border border-blue-200 rounded-md p-3 mb-4">
+                <div className="flex items-start gap-2">
+                  <MessageCircle className="h-4 w-4 text-blue-600 mt-0.5 flex-shrink-0" />
+                  <div className="text-sm text-blue-700">
+                    <p className="font-medium mb-1">How guidance works:</p>
+                    <p>Your message will interrupt the current task execution and provide guidance to help steer the task in the right direction.</p>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="flex items-center justify-end gap-3">
+                <Button
+                  variant="secondary"
+                  onClick={() => setShowGuideModal(false)}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  variant="warning"
+                  onClick={handleGuideSubmit}
+                  disabled={!guideMessage.trim() || guideTask.isPending}
+                  className="flex items-center gap-2"
+                >
+                  {guideTask.isPending ? (
+                    <LoadingSpinner size="sm" />
+                  ) : (
+                    <MessageCircle className="h-4 w-4" />
+                  )}
+                  {guideTask.isPending ? 'Sending...' : 'Send Guidance'}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
