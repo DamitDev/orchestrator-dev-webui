@@ -6,13 +6,15 @@ import type {
   TaskCreateRequest, 
   TaskActionRequest,
   LLMBackendInfo,
-  MCPServerInfo
+  MCPServerInfo,
+  TasksResponse,
+  TasksQueryParams
 } from '../types/api'
 
-const API_BASE_URL = 'http://localhost:8080'
+const API_URL = 'http://172.16.240.6:8082'
 
 const api = axios.create({
-  baseURL: API_BASE_URL,
+  baseURL: API_URL,
   timeout: 30000,
   headers: {
     'Content-Type': 'application/json',
@@ -21,9 +23,17 @@ const api = axios.create({
 
 // Task API
 export const tasksApi = {
-  getAll: async (): Promise<Task[]> => {
-    const response = await api.get('/tasks')
-    return response.data.tasks
+  getAll: async (params?: TasksQueryParams): Promise<TasksResponse> => {
+    const queryParams = new URLSearchParams()
+    
+    if (params?.page) queryParams.append('page', params.page.toString())
+    if (params?.limit) queryParams.append('limit', params.limit.toString())
+    if (params?.order_by) queryParams.append('order_by', params.order_by)
+    if (params?.order_direction) queryParams.append('order_direction', params.order_direction)
+    
+    const url = `/tasks${queryParams.toString() ? `?${queryParams.toString()}` : ''}`
+    const response = await api.get(url)
+    return response.data
   },
 
   getById: async (id: string): Promise<Task> => {

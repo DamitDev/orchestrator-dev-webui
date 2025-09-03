@@ -4,8 +4,10 @@ import Card from './ui/Card'
 import Button from './ui/Button'
 import StatusBadge from './ui/StatusBadge'
 import LoadingSpinner from './ui/LoadingSpinner'
-import { Plus, Search, X, Check, XCircle, Settings, FileText } from 'lucide-react'
-import type { Task } from '../types/api'
+import Pagination from './ui/Pagination'
+import { formatMessageTimestamp } from '../lib/utils'
+import { Plus, Search, X, Check, XCircle, Settings, FileText, ChevronUp, ChevronDown } from 'lucide-react'
+import type { Task, TasksQueryParams } from '../types/api'
 
 interface TaskListProps {
   onTaskSelect: (task: Task) => void
@@ -20,6 +22,12 @@ const TaskList: React.FC<TaskListProps> = ({ onTaskSelect, selectedTaskId, refre
   const [creationMode, setCreationMode] = useState<TaskCreationMode>('simple')
   const [searchTerm, setSearchTerm] = useState('')
   
+  // Pagination and sorting state
+  const [currentPage, setCurrentPage] = useState(1)
+  const [pageSize, setPageSize] = useState(25)
+  const [orderBy, setOrderBy] = useState<'created_at' | 'updated_at'>('updated_at')
+  const [orderDirection, setOrderDirection] = useState<'asc' | 'desc'>('desc')
+  
   // Form fields
   const [ticketId, setTicketId] = useState('')
   const [goalPrompt, setGoalPrompt] = useState('')
@@ -30,17 +38,27 @@ const TaskList: React.FC<TaskListProps> = ({ onTaskSelect, selectedTaskId, refre
   const [maxIterations, setMaxIterations] = useState(50)
   const [reasoningEffort, setReasoningEffort] = useState<'low' | 'medium' | 'high'>('low')
   
-  const { data: tasks = [], isLoading, error } = useTasks(refreshInterval)
+  const queryParams: TasksQueryParams = {
+    page: currentPage,
+    limit: pageSize,
+    order_by: orderBy,
+    order_direction: orderDirection,
+  }
+  
+  const { data: tasksResponse, isLoading, error } = useTasks(queryParams, refreshInterval)
   const createTaskMutation = useCreateTask()
   const cancelTaskMutation = useCancelTask()
   const taskActionMutation = useTaskAction()
 
-  const filteredTasks = tasks.filter(task => 
+  const tasks = tasksResponse?.tasks || []
+  const pagination = tasksResponse?.pagination
+
+  const filteredTasks = searchTerm.trim() ? tasks.filter(task => 
     task.goal_prompt.toLowerCase().includes(searchTerm.toLowerCase()) ||
     task.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
     task.ticket_id.toLowerCase().includes(searchTerm.toLowerCase()) ||
     task.status.toLowerCase().includes(searchTerm.toLowerCase())
-  )
+  ) : tasks
 
   const resetForm = () => {
     setTicketId('')
@@ -51,6 +69,27 @@ const TaskList: React.FC<TaskListProps> = ({ onTaskSelect, selectedTaskId, refre
     setSolutionStrategy('')
     setMaxIterations(50)
     setReasoningEffort('low')
+  }
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page)
+  }
+
+  const handlePageSizeChange = (newPageSize: number) => {
+    setPageSize(newPageSize)
+    setCurrentPage(1) // Reset to first page when changing page size
+  }
+
+  const handleSortChange = (newOrderBy: 'created_at' | 'updated_at') => {
+    if (newOrderBy === orderBy) {
+      // Toggle direction if same field
+      setOrderDirection(orderDirection === 'asc' ? 'desc' : 'asc')
+    } else {
+      // Set new field with default direction
+      setOrderBy(newOrderBy)
+      setOrderDirection('desc')
+    }
+    setCurrentPage(1) // Reset to first page when changing sort
   }
 
   const handleCreateTask = async (e: React.FormEvent) => {
@@ -122,7 +161,9 @@ const TaskList: React.FC<TaskListProps> = ({ onTaskSelect, selectedTaskId, refre
     <div className="flex flex-col h-full space-y-4">
       {/* Header */}
       <div className="flex items-center justify-between flex-shrink-0">
-        <h2 className="text-lg font-semibold text-gray-900">Tasks ({tasks.length})</h2>
+        <h2 className="text-lg font-semibold text-gray-900">
+          Tasks ({pagination?.total_items || 0})
+        </h2>
         <Button
           onClick={() => setShowCreateForm(true)}
           size="sm"
@@ -143,6 +184,53 @@ const TaskList: React.FC<TaskListProps> = ({ onTaskSelect, selectedTaskId, refre
           onChange={(e) => setSearchTerm(e.target.value)}
           className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent"
         />
+      </div>
+
+      {/* Controls Row */}
+      <div className="flex items-center justify-between gap-4 flex-shrink-0">
+        {/* Sort Controls */}
+        <div className="flex items-center gap-2">
+          <Button
+            variant={orderBy === 'updated_at' ? 'primary' : 'secondary'}
+            size="sm"
+            onClick={() => handleSortChange('updated_at')}
+            className="flex items-center gap-1"
+          >
+            Updated
+            {orderBy === 'updated_at' && (
+              orderDirection === 'asc' ? 
+                <ChevronUp className="h-3 w-3" /> : 
+                <ChevronDown className="h-3 w-3" />
+            )}
+          </Button>
+          <Button
+            variant={orderBy === 'created_at' ? 'primary' : 'secondary'}
+            size="sm"
+            onClick={() => handleSortChange('created_at')}
+            className="flex items-center gap-1"
+          >
+            Created
+            {orderBy === 'created_at' && (
+              orderDirection === 'asc' ? 
+                <ChevronUp className="h-3 w-3" /> : 
+                <ChevronDown className="h-3 w-3" />
+            )}
+          </Button>
+        </div>
+
+        {/* Page Size Selector */}
+        <div className="flex items-center gap-2">
+          <select
+            value={pageSize}
+            onChange={(e) => handlePageSizeChange(Number(e.target.value))}
+            className="px-3 py-1 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+          >
+            <option value={25}>25</option>
+            <option value={50}>50</option>
+            <option value={100}>100</option>
+            <option value={250}>250</option>
+          </select>
+        </div>
       </div>
 
       {/* Create Task Form */}
@@ -405,6 +493,9 @@ const TaskList: React.FC<TaskListProps> = ({ onTaskSelect, selectedTaskId, refre
                     <span>
                       Iteration {task.iteration}/{task.max_iterations}
                     </span>
+                    <span>
+                      {formatMessageTimestamp(task.updated_at)}
+                    </span>
                   </div>
                 </div>
 
@@ -456,6 +547,17 @@ const TaskList: React.FC<TaskListProps> = ({ onTaskSelect, selectedTaskId, refre
           ))
         )}
       </div>
+
+      {/* Pagination - Only show when not searching (server-side pagination) */}
+      {!searchTerm.trim() && pagination && (
+        <Pagination
+          currentPage={pagination.current_page}
+          totalPages={pagination.total_pages}
+          hasNext={pagination.has_next}
+          hasPrev={pagination.has_prev}
+          onPageChange={handlePageChange}
+        />
+      )}
     </div>
   )
 }

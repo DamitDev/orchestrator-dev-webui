@@ -1,11 +1,11 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { tasksApi, configApi, healthApi } from '../lib/api'
 import { toast } from 'react-hot-toast'
-import type { TaskCreateRequest, TaskActionRequest } from '../types/api'
+import type { TaskCreateRequest, TaskActionRequest, TasksQueryParams } from '../types/api'
 
 // Query keys
 export const queryKeys = {
-  tasks: ['tasks'] as const,
+  tasks: (params?: TasksQueryParams) => ['tasks', params] as const,
   task: (id: string) => ['task', id] as const,
   taskConversation: (id: string) => ['task', id, 'conversation'] as const,
   config: ['config'] as const,
@@ -16,10 +16,10 @@ export const queryKeys = {
 }
 
 // Tasks hooks
-export const useTasks = (refetchInterval?: number) => {
+export const useTasks = (params?: TasksQueryParams, refetchInterval?: number) => {
   return useQuery({
-    queryKey: queryKeys.tasks,
-    queryFn: tasksApi.getAll,
+    queryKey: queryKeys.tasks(params),
+    queryFn: () => tasksApi.getAll(params),
     refetchInterval: refetchInterval || 5000, // Default 5 seconds
     refetchIntervalInBackground: true,
   })
@@ -97,7 +97,7 @@ export const useCreateTask = () => {
   return useMutation({
     mutationFn: (data: TaskCreateRequest) => tasksApi.create(data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.tasks })
+      queryClient.invalidateQueries({ queryKey: ['tasks'] })
       queryClient.invalidateQueries({ queryKey: queryKeys.config })
       toast.success('Task created successfully!')
     },
@@ -113,7 +113,7 @@ export const useCancelTask = () => {
   return useMutation({
     mutationFn: (taskId: string) => tasksApi.cancel(taskId),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.tasks })
+      queryClient.invalidateQueries({ queryKey: ['tasks'] })
       queryClient.invalidateQueries({ queryKey: queryKeys.config })
       toast.success('Task cancelled successfully!')
     },
@@ -129,7 +129,7 @@ export const useTaskAction = () => {
   return useMutation({
     mutationFn: (data: TaskActionRequest) => tasksApi.action(data),
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.tasks })
+      queryClient.invalidateQueries({ queryKey: ['tasks'] })
       queryClient.invalidateQueries({ queryKey: queryKeys.task(variables.task_id) })
       queryClient.invalidateQueries({ queryKey: queryKeys.config })
       toast.success(variables.approved ? 'Task approved!' : 'Task rejected!')
@@ -147,7 +147,7 @@ export const useGuideTask = () => {
     mutationFn: ({ taskId, message }: { taskId: string; message: string }) => 
       tasksApi.guide(taskId, message),
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.tasks })
+      queryClient.invalidateQueries({ queryKey: ['tasks'] })
       queryClient.invalidateQueries({ queryKey: queryKeys.task(variables.taskId) })
       queryClient.invalidateQueries({ queryKey: queryKeys.taskConversation(variables.taskId) })
       queryClient.invalidateQueries({ queryKey: queryKeys.config })

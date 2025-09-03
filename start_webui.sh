@@ -43,32 +43,32 @@ fi
 
 # Check if Orchestrator API is running
 echo "🔍 Checking Orchestrator API connectivity..."
-API_URL="http://localhost:8080/health"
+export API_URL="http://172.16.240.6:8082"
 
 if command -v curl &> /dev/null; then
-    HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" "$API_URL" --connect-timeout 5)
+    HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" "$API_URL/health" --connect-timeout 5)
     if [ "$HTTP_CODE" = "200" ]; then
-        echo "✅ Orchestrator API is running at http://localhost:8080"
+        echo "✅ Orchestrator API is running at $API_URL"
     else
-        echo "⚠️  Warning: Orchestrator API is not responding at http://localhost:8081"
+        echo "⚠️  Warning: Orchestrator API is not responding at $API_URL"
         echo "   Please ensure the Orchestrator API is running before using the WebUI."
     fi
 elif command -v wget &> /dev/null; then
-    if wget --timeout=5 --tries=1 --spider "$API_URL" &> /dev/null; then
-        echo "✅ Orchestrator API is running at http://localhost:8080"
+    if wget --timeout=5 --tries=1 --spider "$API_URL/health" &> /dev/null; then
+        echo "✅ Orchestrator API is running at $API_URL"
     else
-        echo "⚠️  Warning: Orchestrator API is not responding at http://localhost:8080"
+        echo "⚠️  Warning: Orchestrator API is not responding at $API_URL"
         echo "   Please ensure the Orchestrator API is running before using the WebUI."
     fi
 else
     echo "⚠️  Warning: Cannot check API connectivity (curl/wget not found)"
-    echo "   Please ensure the Orchestrator API is running at http://localhost:8080"
+    echo "   Please ensure the Orchestrator API is running at $API_URL"
 fi
 
 echo ""
 echo "🌐 Starting development server..."
 echo "📍 WebUI will be available at: http://localhost:5173"
-echo "📍 API endpoint: http://localhost:8080"
+echo "📍 API endpoint: $API_URL"
 echo ""
 echo "Press Ctrl+C to stop the server"
 echo ""

@@ -7,6 +7,8 @@ export interface Task {
   goal_prompt: string
   result: string
   approval_reason: string
+  created_at: string
+  updated_at: string
 }
 
 export interface TaskConversation {
@@ -67,4 +69,25 @@ export interface ApiResponse<T> {
   success: boolean
   message?: string
   error?: string
+}
+
+export interface PaginationInfo {
+  current_page: number
+  per_page: number
+  total_items: number
+  total_pages: number
+  has_next: boolean
+  has_prev: boolean
+}
+
+export interface TasksResponse {
+  tasks: Task[]
+  pagination: PaginationInfo
+}
+
+export interface TasksQueryParams {
+  page?: number
+  limit?: number
+  order_by?: 'created_at' | 'updated_at'
+  order_direction?: 'asc' | 'desc'
 }
