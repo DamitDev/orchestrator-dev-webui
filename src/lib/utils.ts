@@ -60,8 +60,12 @@ export function getStatusColor(status: string): string {
     case 'failed':
     case 'canceled':
       return 'bg-red-100 text-red-800'
+    case 'cancelling':
+      return 'bg-red-200 text-red-900'
     case 'action_required':
       return 'bg-orange-100 text-orange-800'
+    case 'help_required':
+      return 'bg-blue-100 text-blue-800'
     case 'in_progress':
     case 'validation':
       return 'bg-yellow-100 text-yellow-800'
@@ -83,8 +87,12 @@ export function getStatusIcon(status: string): string {
       return '❌'
     case 'canceled':
       return '🚫'
+    case 'cancelling':
+      return '⏹️'
     case 'action_required':
       return '🔶'
+    case 'help_required':
+      return '💬'
     case 'in_progress':
       return '🔄'
     case 'validation':

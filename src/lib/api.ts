@@ -11,7 +11,8 @@ import type {
   TasksQueryParams
 } from '../types/api'
 
-const API_URL = 'http://172.16.240.6:8082'
+//const API_URL = 'http://172.16.240.6:8082'
+const API_URL = 'http://localhost:8082'
 
 const api = axios.create({
   baseURL: API_URL,
@@ -62,6 +63,11 @@ export const tasksApi = {
   guide: async (taskId: string, message: string): Promise<{ success: boolean; message: string }> => {
     const response = await api.post('/task/guide', { task_id: taskId, message })
     return response.data
+  },
+
+  help: async (taskId: string, response: string): Promise<{ success: boolean; message: string }> => {
+    const response_data = await api.post('/task/help', { task_id: taskId, response })
+    return response_data.data
   },
 }
 

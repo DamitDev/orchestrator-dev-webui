@@ -1,12 +1,12 @@
 import React, { useState } from 'react'
-import { useTasks, useCreateTask, useCancelTask, useTaskAction } from '../hooks/useApi'
+import { useTasks, useCreateTask, useCancelTask, useTaskAction, useHelpTask } from '../hooks/useApi'
 import Card from './ui/Card'
 import Button from './ui/Button'
 import StatusBadge from './ui/StatusBadge'
 import LoadingSpinner from './ui/LoadingSpinner'
 import Pagination from './ui/Pagination'
 import { formatMessageTimestamp } from '../lib/utils'
-import { Plus, Search, X, Check, XCircle, Settings, FileText, ChevronUp, ChevronDown } from 'lucide-react'
+import { Plus, Search, X, Check, XCircle, Settings, FileText, ChevronUp, ChevronDown, MessageCircle } from 'lucide-react'
 import type { Task, TasksQueryParams } from '../types/api'
 
 interface TaskListProps {
@@ -21,6 +21,11 @@ const TaskList: React.FC<TaskListProps> = ({ onTaskSelect, selectedTaskId, refre
   const [showCreateForm, setShowCreateForm] = useState(false)
   const [creationMode, setCreationMode] = useState<TaskCreationMode>('simple')
   const [searchTerm, setSearchTerm] = useState('')
+  
+  // Help dialog state
+  const [showHelpDialog, setShowHelpDialog] = useState(false)
+  const [helpTaskId, setHelpTaskId] = useState<string>('')
+  const [helpResponse, setHelpResponse] = useState('')
   
   // Pagination and sorting state
   const [currentPage, setCurrentPage] = useState(1)
@@ -49,6 +54,7 @@ const TaskList: React.FC<TaskListProps> = ({ onTaskSelect, selectedTaskId, refre
   const createTaskMutation = useCreateTask()
   const cancelTaskMutation = useCancelTask()
   const taskActionMutation = useTaskAction()
+  const helpTaskMutation = useHelpTask()
 
   const tasks = tasksResponse?.tasks || []
   const pagination = tasksResponse?.pagination
@@ -69,6 +75,30 @@ const TaskList: React.FC<TaskListProps> = ({ onTaskSelect, selectedTaskId, refre
     setSolutionStrategy('')
     setMaxIterations(50)
     setReasoningEffort('low')
+  }
+
+  const resetHelpDialog = () => {
+    setShowHelpDialog(false)
+    setHelpTaskId('')
+    setHelpResponse('')
+  }
+
+  const handleShowHelpDialog = (task: Task) => {
+    setHelpTaskId(task.id)
+    setHelpResponse('')
+    setShowHelpDialog(true)
+  }
+
+  const handleSendHelp = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!helpResponse.trim()) return
+
+    try {
+      await helpTaskMutation.mutateAsync({ taskId: helpTaskId, response: helpResponse })
+      resetHelpDialog()
+    } catch (error) {
+      // Error handled by mutation
+    }
   }
 
   const handlePageChange = (page: number) => {
@@ -438,6 +468,60 @@ const TaskList: React.FC<TaskListProps> = ({ onTaskSelect, selectedTaskId, refre
         </Card>
       )}
 
+      {/* Help Dialog */}
+      {showHelpDialog && (
+        <Card className="border-blue-200 flex-shrink-0">
+          <form onSubmit={handleSendHelp} className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-md font-medium text-gray-900">Provide Help to Agent</h3>
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                onClick={resetHelpDialog}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Your Help Response
+              </label>
+              <textarea
+                value={helpResponse}
+                onChange={(e) => setHelpResponse(e.target.value)}
+                placeholder="Provide help or guidance to the agent..."
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                rows={4}
+                required
+              />
+            </div>
+
+            <div className="flex justify-end gap-2">
+              <Button
+                type="submit"
+                variant="primary"
+                disabled={helpTaskMutation.isPending || !helpResponse.trim()}
+              >
+                {helpTaskMutation.isPending ? (
+                  <LoadingSpinner size="sm" />
+                ) : (
+                  'Send Help'
+                )}
+              </Button>
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={resetHelpDialog}
+              >
+                Cancel
+              </Button>
+            </div>
+          </form>
+        </Card>
+      )}
+
       {/* Task List */}
       <div className="space-y-2 flex-1 overflow-y-auto">
         {filteredTasks.length === 0 ? (
@@ -467,6 +551,9 @@ const TaskList: React.FC<TaskListProps> = ({ onTaskSelect, selectedTaskId, refre
                     <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded font-medium">
                       {task.ticket_id}
                     </span>
+                    {task.status === 'cancelling' && (
+                      <LoadingSpinner size="sm" />
+                    )}
                   </div>
                   
                   <p className="text-sm text-gray-900 mb-2 line-clamp-2">
@@ -482,6 +569,22 @@ const TaskList: React.FC<TaskListProps> = ({ onTaskSelect, selectedTaskId, refre
                         <div className="flex-1">
                           <p className="text-xs font-medium text-amber-800 mb-1">Supervisor Action Required</p>
                           <p className="text-sm text-amber-700 leading-relaxed whitespace-pre-wrap">
+                            {task.approval_reason}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {task.status === 'help_required' && task.approval_reason && (
+                    <div className="mb-2 p-2 bg-blue-50 border border-blue-200 rounded-md">
+                      <div className="flex items-start gap-2">
+                        <div className="flex-shrink-0 mt-0.5">
+                          <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-xs font-medium text-blue-800 mb-1">Agent Needs Help</p>
+                          <p className="text-sm text-blue-700 leading-relaxed whitespace-pre-wrap">
                             {task.approval_reason}
                           </p>
                         </div>
@@ -526,6 +629,20 @@ const TaskList: React.FC<TaskListProps> = ({ onTaskSelect, selectedTaskId, refre
                         <X className="h-3 w-3" />
                       </Button>
                     </div>
+                  )}
+
+                  {task.status === 'help_required' && (
+                    <Button
+                      size="sm"
+                      variant="primary"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleShowHelpDialog(task)
+                      }}
+                      disabled={helpTaskMutation.isPending}
+                    >
+                      <MessageCircle className="h-3 w-3" />
+                    </Button>
                   )}
                   
                   {['queued', 'in_progress', 'validation', 'function_execution'].includes(task.status) && (
