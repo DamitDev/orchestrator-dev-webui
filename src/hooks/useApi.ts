@@ -16,67 +16,55 @@ export const queryKeys = {
 }
 
 // Tasks hooks
-export const useTasks = (params?: TasksQueryParams, refetchInterval?: number) => {
+export const useTasks = (params?: TasksQueryParams) => {
   return useQuery({
     queryKey: queryKeys.tasks(params),
     queryFn: () => tasksApi.getAll(params),
-    refetchInterval: refetchInterval || 5000, // Default 5 seconds
-    refetchIntervalInBackground: true,
   })
 }
 
-export const useTask = (id: string | null, refetchInterval?: number) => {
+export const useTask = (id: string | null) => {
   return useQuery({
     queryKey: queryKeys.task(id || ''),
     queryFn: () => tasksApi.getById(id!),
     enabled: !!id,
-    refetchInterval: refetchInterval || 2000, // Default 2 seconds for individual task
-    refetchIntervalInBackground: true,
   })
 }
 
-export const useTaskConversation = (id: string | null, refetchInterval?: number) => {
+export const useTaskConversation = (id: string | null) => {
   return useQuery({
     queryKey: queryKeys.taskConversation(id || ''),
     queryFn: () => tasksApi.getConversation(id!),
     enabled: !!id,
-    refetchInterval: refetchInterval || 3000, // Default 3 seconds for conversation
-    refetchIntervalInBackground: true,
   })
 }
 
 // Configuration hooks
-export const useConfig = (refetchInterval?: number) => {
+export const useConfig = () => {
   return useQuery({
     queryKey: queryKeys.config,
-    queryFn: configApi.getStatus,
-    refetchInterval: refetchInterval || 10000, // Default 10 seconds
-    refetchIntervalInBackground: true,
+    queryFn: () => configApi.getStatus(),
   })
 }
 
 export const useLLMBackends = () => {
   return useQuery({
     queryKey: queryKeys.llmBackends,
-    queryFn: configApi.getLLMBackends,
-    refetchInterval: 10000, // Refresh every 10 seconds
-    refetchIntervalInBackground: true,
+    queryFn: () => configApi.getLLMBackends(),
   })
 }
 
 export const useMCPServers = () => {
   return useQuery({
     queryKey: queryKeys.mcpServers,
-    queryFn: configApi.getMCPServers,
-    refetchInterval: 10000, // Refresh every 10 seconds
-    refetchIntervalInBackground: true,
+    queryFn: () => configApi.getMCPServers(),
   })
 }
 
 export const useTaskHandler = () => {
   return useQuery({
     queryKey: queryKeys.taskHandler,
-    queryFn: configApi.getTaskHandlerStatus,
+    queryFn: () => configApi.getTaskHandlerStatus(),
   })
 }
 

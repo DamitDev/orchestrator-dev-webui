@@ -5,6 +5,8 @@ import Dashboard from './components/Dashboard'
 import TaskList from './components/TaskList'
 import TaskDetail from './components/TaskDetail'
 import Settings from './components/Settings'
+import { WebSocketProvider } from './components/WebSocketProvider'
+import { ConnectionStatus } from './components/ConnectionStatus'
 import { LayoutDashboard, ListTodo, Settings as SettingsIcon, Cpu } from 'lucide-react'
 import type { Task } from './types/api'
 
@@ -22,7 +24,6 @@ type Tab = 'dashboard' | 'tasks' | 'settings'
 function App() {
   const [activeTab, setActiveTab] = useState<Tab>('dashboard')
   const [selectedTask, setSelectedTask] = useState<Task | null>(null)
-  const [refreshInterval, setRefreshInterval] = useState(5000) // 5 seconds default
 
   const tabs = [
     { id: 'dashboard' as const, label: 'Dashboard', icon: LayoutDashboard },
@@ -48,14 +49,12 @@ function App() {
               <TaskList
                 onTaskSelect={handleTaskSelect}
                 selectedTaskId={selectedTask?.id}
-                refreshInterval={refreshInterval}
               />
             </div>
             <div className="lg:col-span-2 flex flex-col min-h-0">
               {selectedTask ? (
                 <TaskDetail
                   taskId={selectedTask.id}
-                  refreshInterval={refreshInterval}
                 />
               ) : (
                 <div className="bg-white rounded-lg shadow-sm border border-gray-200 h-full flex items-center justify-center">
@@ -71,10 +70,7 @@ function App() {
         )
       case 'settings':
         return (
-          <Settings
-            refreshInterval={refreshInterval}
-            onRefreshIntervalChange={setRefreshInterval}
-          />
+          <Settings />
         )
       default:
         return <Dashboard />
@@ -83,7 +79,8 @@ function App() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <div className="h-screen bg-gray-50 flex flex-col">
+      <WebSocketProvider>
+        <div className="h-screen bg-gray-50 flex flex-col">
         {/* Navigation */}
         <nav className="bg-white shadow-sm border-b border-gray-200 flex-shrink-0">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -97,7 +94,9 @@ function App() {
                 </div>
               </div>
               
-              <div className="flex items-center space-x-1">
+              <div className="flex items-center space-x-4">
+                <ConnectionStatus />
+                <div className="flex items-center space-x-1">
                 {tabs.map((tab) => {
                   const IconComponent = tab.icon
                   return (
@@ -115,6 +114,7 @@ function App() {
                     </button>
                   )
                 })}
+                </div>
               </div>
             </div>
           </div>
@@ -152,7 +152,8 @@ function App() {
             },
           }}
         />
-      </div>
+        </div>
+      </WebSocketProvider>
     </QueryClientProvider>
   )
 }

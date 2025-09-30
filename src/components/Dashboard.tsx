@@ -5,7 +5,7 @@ import LoadingSpinner from './ui/LoadingSpinner'
 import { Activity, Brain, Layers, Users } from 'lucide-react'
 
 const Dashboard: React.FC = () => {
-  const { data: config, isLoading, error } = useConfig(5000) // Update every 5 seconds
+  const { data: config, isLoading, error } = useConfig() // Real-time updates via WebSocket
 
   if (isLoading) {
     return (

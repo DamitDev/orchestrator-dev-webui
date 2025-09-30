@@ -12,12 +12,11 @@ import type { Task, TasksQueryParams } from '../types/api'
 interface TaskListProps {
   onTaskSelect: (task: Task) => void
   selectedTaskId?: string
-  refreshInterval: number
 }
 
 type TaskCreationMode = 'simple' | 'advanced'
 
-const TaskList: React.FC<TaskListProps> = ({ onTaskSelect, selectedTaskId, refreshInterval }) => {
+const TaskList: React.FC<TaskListProps> = ({ onTaskSelect, selectedTaskId }) => {
   const [showCreateForm, setShowCreateForm] = useState(false)
   const [creationMode, setCreationMode] = useState<TaskCreationMode>('simple')
   const [searchTerm, setSearchTerm] = useState('')
@@ -50,7 +49,7 @@ const TaskList: React.FC<TaskListProps> = ({ onTaskSelect, selectedTaskId, refre
     order_direction: orderDirection,
   }
   
-  const { data: tasksResponse, isLoading, error } = useTasks(queryParams, refreshInterval)
+  const { data: tasksResponse, isLoading, error } = useTasks(queryParams)
   const createTaskMutation = useCreateTask()
   const cancelTaskMutation = useCancelTask()
   const taskActionMutation = useTaskAction()

@@ -6,12 +6,9 @@ import LoadingSpinner from './ui/LoadingSpinner'
 import LLMBackendManager from './LLMBackendManager'
 import MCPServerManager from './MCPServerManager'
 
-interface SettingsProps {
-  refreshInterval: number
-  onRefreshIntervalChange: (interval: number) => void
-}
+interface SettingsProps {}
 
-const Settings: React.FC<SettingsProps> = ({ refreshInterval, onRefreshIntervalChange }) => {
+const Settings: React.FC<SettingsProps> = () => {
   const [selectedAgent, setSelectedAgent] = useState('')
   const [selectedOrchestrator, setSelectedOrchestrator] = useState('')
   
@@ -35,38 +32,11 @@ const Settings: React.FC<SettingsProps> = ({ refreshInterval, onRefreshIntervalC
     }
   }
 
-  const refreshIntervalOptions = [
-    { value: 1000, label: '1 second' },
-    { value: 2000, label: '2 seconds' },
-    { value: 5000, label: '5 seconds' },
-    { value: 10000, label: '10 seconds' },
-    { value: 30000, label: '30 seconds' },
-  ]
+
 
   return (
     <div className="space-y-6">
-      {/* Refresh Settings */}
-      <Card title="Refresh Settings" className="space-y-4">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Refresh Interval
-          </label>
-          <select
-            value={refreshInterval}
-            onChange={(e) => onRefreshIntervalChange(parseInt(e.target.value))}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-          >
-            {refreshIntervalOptions.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-          <p className="mt-1 text-xs text-gray-500">
-            How often to poll the API for updates
-          </p>
-        </div>
-      </Card>
+
 
       {/* Model Configuration */}
       <Card title="Model Configuration">

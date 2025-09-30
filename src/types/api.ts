@@ -20,6 +20,7 @@ export interface ConversationMessage {
   role: string
   content: string
   reasoning?: string
+  name?: string
   tool_calls?: any[]
   tool_call_id?: string
   created_at?: string // UTC timestamp from the API

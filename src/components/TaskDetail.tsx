@@ -12,12 +12,11 @@ import type { ConversationMessage } from '../types/api'
 
 interface TaskDetailProps {
   taskId: string
-  refreshInterval: number
 }
 
-const TaskDetail: React.FC<TaskDetailProps> = ({ taskId, refreshInterval }) => {
-  const { data: task, isLoading: taskLoading } = useTask(taskId, refreshInterval)
-  const { data: conversation, isLoading: conversationLoading } = useTaskConversation(taskId, refreshInterval)
+const TaskDetail: React.FC<TaskDetailProps> = ({ taskId }) => {
+  const { data: task, isLoading: taskLoading } = useTask(taskId)
+  const { data: conversation, isLoading: conversationLoading } = useTaskConversation(taskId)
   const guideTask = useGuideTask()
   
   const conversationEndRef = useRef<HTMLDivElement>(null)
