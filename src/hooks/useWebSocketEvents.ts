@@ -90,9 +90,28 @@ export const useWebSocketEvents = () => {
           // Update config for task counts
           queryClient.invalidateQueries({ queryKey: queryKeys.config })
           
+          // For statuses that need additional data (like help/approval messages), invalidate to fetch fresh data
+          if (['help_required', 'action_required'].includes(taskEvent.new_status)) {
+            queryClient.invalidateQueries({ queryKey: queryKeys.task(taskEvent.task_id) })
+            queryClient.invalidateQueries({ queryKey: queryKeys.tasks() })
+          }
+          
           // Show status change notifications for important changes
-          if (['completed', 'failed', 'pending_approval'].includes(taskEvent.new_status)) {
-            toast.success(`Task ${taskEvent.task_id.slice(0, 8)} is now ${taskEvent.new_status}`)
+          if (['completed', 'failed', 'pending_approval', 'help_required', 'action_required'].includes(taskEvent.new_status)) {
+            const status = taskEvent.new_status.replace(/_/g, ' ')
+            if (taskEvent.new_status === 'help_required') {
+              toast(`Task ${taskEvent.task_id.slice(0, 8)}: Help needed`, {
+                icon: '�',
+                duration: 10000,
+              })
+            } else if (taskEvent.new_status === 'action_required') {
+              toast(`Task ${taskEvent.task_id.slice(0, 8)}: Action required`, {
+                icon: '⚠️',
+                duration: 10000,
+              })
+            } else {
+              toast.success(`Task ${taskEvent.task_id.slice(0, 8)} is now ${status}`)
+            }
           }
           break
         }
@@ -331,10 +350,12 @@ export const useWebSocketEvents = () => {
         case 'help_requested': {
           const helpEvent = event as HelpRequestedEvent
           
+          // Invalidate queries to fetch updated task data with help message
           queryClient.invalidateQueries({ queryKey: queryKeys.task(helpEvent.task_id) })
+          queryClient.invalidateQueries({ queryKey: queryKeys.tasks() })
           
           toast(`Help requested: ${helpEvent.help_message}`, {
-            icon: '🆘',
+            icon: '?',
             duration: 10000,
           })
           break

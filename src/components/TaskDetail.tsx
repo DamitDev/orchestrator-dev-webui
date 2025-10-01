@@ -268,6 +268,20 @@ const TaskDetail: React.FC<TaskDetailProps> = ({ taskId }) => {
                   </div>
                 </div>
               )}
+
+              {task.status === 'help_required' && (
+                <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                  <div className="flex items-start gap-3">
+                    <MessageCircle className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
+                    <div className="flex-1">
+                      <h3 className="text-sm font-semibold text-blue-800 mb-2">Agent Needs Help</h3>
+                      <p className="text-sm text-blue-700 leading-relaxed whitespace-pre-wrap">
+                        {task.approval_reason || 'Agent is requesting help...'}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
               
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>

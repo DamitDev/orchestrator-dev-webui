@@ -575,7 +575,7 @@ const TaskList: React.FC<TaskListProps> = ({ onTaskSelect, selectedTaskId }) => 
                     </div>
                   )}
 
-                  {task.status === 'help_required' && task.approval_reason && (
+                  {task.status === 'help_required' && (
                     <div className="mb-2 p-2 bg-blue-50 border border-blue-200 rounded-md">
                       <div className="flex items-start gap-2">
                         <div className="flex-shrink-0 mt-0.5">
@@ -584,7 +584,7 @@ const TaskList: React.FC<TaskListProps> = ({ onTaskSelect, selectedTaskId }) => 
                         <div className="flex-1">
                           <p className="text-xs font-medium text-blue-800 mb-1">Agent Needs Help</p>
                           <p className="text-sm text-blue-700 leading-relaxed whitespace-pre-wrap">
-                            {task.approval_reason}
+                            {task.approval_reason || 'Agent is requesting help...'}
                           </p>
                         </div>
                       </div>
