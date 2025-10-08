@@ -58,7 +58,7 @@ export function getStatusColor(status: string): string {
     case 'completed':
       return 'bg-green-100 text-green-800'
     case 'failed':
-    case 'canceled':
+    case 'cancelled':
       return 'bg-red-100 text-red-800'
     case 'cancelling':
       return 'bg-red-200 text-red-900'
@@ -67,8 +67,11 @@ export function getStatusColor(status: string): string {
     case 'help_required':
       return 'bg-blue-100 text-blue-800'
     case 'in_progress':
+    case 'agent_turn':
     case 'validation':
       return 'bg-yellow-100 text-yellow-800'
+    case 'user_turn':
+      return 'bg-cyan-100 text-cyan-800'
     case 'function_execution':
       return 'bg-purple-100 text-purple-800'
     case 'queued':
@@ -86,6 +89,7 @@ export function getStatusIcon(status: string): string {
     case 'failed':
       return '❌'
     case 'canceled':
+    case 'cancelled':
       return '🚫'
     case 'cancelling':
       return '⏹️'
@@ -94,8 +98,12 @@ export function getStatusIcon(status: string): string {
     case 'help_required':
       return '💬'
     case 'in_progress':
+    case 'agent_turn':
       return '🔄'
+    case 'user_turn':
+      return '👤'
     case 'validation':
+    case 'validating':
       return '🔍'
     case 'function_execution':
       return '⚡'
@@ -109,5 +117,5 @@ export function getStatusIcon(status: string): string {
 }
 
 export function isRunningStatus(status: string): boolean {
-  return ['in_progress'].includes(status)
+  return ['in_progress', 'agent_turn', 'user_turn', 'validation', 'validating'].includes(status)
 }

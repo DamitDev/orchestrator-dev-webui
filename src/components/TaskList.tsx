@@ -61,7 +61,7 @@ const TaskList: React.FC<TaskListProps> = ({ onTaskSelect, selectedTaskId }) => 
   const filteredTasks = searchTerm.trim() ? tasks.filter(task => 
     task.goal_prompt.toLowerCase().includes(searchTerm.toLowerCase()) ||
     task.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    task.ticket_id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (task.ticket_id && task.ticket_id.toLowerCase().includes(searchTerm.toLowerCase())) ||
     task.status.toLowerCase().includes(searchTerm.toLowerCase())
   ) : tasks
 
