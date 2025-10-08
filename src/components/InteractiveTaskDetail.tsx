@@ -5,7 +5,7 @@ import StatusBadge from './ui/StatusBadge'
 import LoadingSpinner from './ui/LoadingSpinner'
 import Button from './ui/Button'
 import { isRunningStatus, formatMessageTimestamp } from '../lib/utils'
-import { MessageSquare, AlertTriangle, Brain, Users, Send, CheckCircle, XCircle, X } from 'lucide-react'
+import { MessageSquare, AlertTriangle, Brain, Users, Send, CheckCircle, XCircle } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import type { ConversationMessage } from '../types/api'
@@ -34,8 +34,6 @@ const InteractiveTaskDetail: React.FC<InteractiveTaskDetailProps> = ({ taskId })
   const messageInputRef = useRef<HTMLTextAreaElement>(null)
   
   const [userMessage, setUserMessage] = useState('')
-  const [showMarkFailedDialog, setShowMarkFailedDialog] = useState(false)
-  const [failureReason, setFailureReason] = useState('')
 
   const isLoading = taskLoading || conversationLoading
   const canInteract = task && task.status === 'user_turn'
@@ -110,14 +108,9 @@ const InteractiveTaskDetail: React.FC<InteractiveTaskDetailProps> = ({ taskId })
   }
 
   // Handle mark failed
-  const handleMarkFailed = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!failureReason.trim()) return
-
+  const handleMarkFailed = async () => {
     try {
-      await markFailedMutation.mutateAsync({ taskId, reason: failureReason.trim() })
-      setFailureReason('')
-      setShowMarkFailedDialog(false)
+      await markFailedMutation.mutateAsync(taskId)
     } catch (error) {
       // Error handling is done in the mutation hook
     }
@@ -275,7 +268,7 @@ const InteractiveTaskDetail: React.FC<InteractiveTaskDetailProps> = ({ taskId })
                 <Button
                   variant="danger"
                   size="sm"
-                  onClick={() => setShowMarkFailedDialog(true)}
+                  onClick={handleMarkFailed}
                   disabled={markFailedMutation.isPending}
                   className="flex items-center gap-2"
                 >
@@ -433,65 +426,6 @@ const InteractiveTaskDetail: React.FC<InteractiveTaskDetailProps> = ({ taskId })
           )}
         </div>
       </div>
-
-      {/* Mark Failed Dialog */}
-      {showMarkFailedDialog && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-lg max-w-lg w-full mx-4">
-            <div className="flex items-center justify-between p-6 border-b border-gray-200">
-              <h3 className="text-lg font-semibold text-gray-900">Mark Task as Failed</h3>
-              <button
-                onClick={() => setShowMarkFailedDialog(false)}
-                className="text-gray-400 hover:text-gray-600 transition-colors"
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-            
-            <form onSubmit={handleMarkFailed} className="p-6">
-              <div className="mb-4">
-                <label htmlFor="failure-reason" className="block text-sm font-medium text-gray-700 mb-2">
-                  Failure Reason <span className="text-red-500">*</span>
-                </label>
-                <textarea
-                  id="failure-reason"
-                  rows={4}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 resize-none"
-                  placeholder="Explain why the task failed..."
-                  value={failureReason}
-                  onChange={(e) => setFailureReason(e.target.value)}
-                  required
-                />
-              </div>
-              
-              <div className="flex items-center justify-end gap-3">
-                <Button
-                  type="button"
-                  variant="secondary"
-                  onClick={() => setShowMarkFailedDialog(false)}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  type="submit"
-                  variant="danger"
-                  disabled={!failureReason.trim() || markFailedMutation.isPending}
-                  className="flex items-center gap-2"
-                >
-                  {markFailedMutation.isPending ? (
-                    <LoadingSpinner size="sm" />
-                  ) : (
-                    <>
-                      <XCircle className="h-4 w-4" />
-                      Mark as Failed
-                    </>
-                  )}
-                </Button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
     </div>
   )
 }

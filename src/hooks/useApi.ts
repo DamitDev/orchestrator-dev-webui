@@ -305,11 +305,10 @@ export const useMarkTaskFailed = () => {
   const queryClient = useQueryClient()
   
   return useMutation({
-    mutationFn: ({ taskId, reason }: { taskId: string; reason: string }) => 
-      tasksApi.markFailed(taskId, reason),
-    onSuccess: (_, variables) => {
+    mutationFn: (taskId: string) => tasksApi.markFailed(taskId),
+    onSuccess: (_, taskId) => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] })
-      queryClient.invalidateQueries({ queryKey: queryKeys.task(variables.taskId) })
+      queryClient.invalidateQueries({ queryKey: queryKeys.task(taskId) })
       queryClient.invalidateQueries({ queryKey: queryKeys.config })
       toast.success('Task marked as failed!')
     },

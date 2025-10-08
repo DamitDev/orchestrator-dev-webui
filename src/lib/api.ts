@@ -84,8 +84,8 @@ export const tasksApi = {
     return response.data
   },
 
-  markFailed: async (taskId: string, reason: string): Promise<{ success: boolean; message: string }> => {
-    const response = await api.post('/task/interactive/mark_failed', { task_id: taskId, reason })
+  markFailed: async (taskId: string): Promise<{ success: boolean; message: string }> => {
+    const response = await api.post('/task/interactive/mark_failed', { task_id: taskId })
     return response.data
   },
 }
