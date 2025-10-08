@@ -1,10 +1,11 @@
-import React, { useEffect, useRef } from 'react'
-import { useTask, useTaskConversation } from '../hooks/useApi'
+import React, { useEffect, useRef, useState } from 'react'
+import { useTask, useTaskConversation, useSendInteractiveMessage, useMarkTaskComplete, useMarkTaskFailed } from '../hooks/useApi'
 import Card from './ui/Card'
 import StatusBadge from './ui/StatusBadge'
 import LoadingSpinner from './ui/LoadingSpinner'
+import Button from './ui/Button'
 import { isRunningStatus, formatMessageTimestamp } from '../lib/utils'
-import { MessageSquare, AlertTriangle, Brain, Users } from 'lucide-react'
+import { MessageSquare, AlertTriangle, Brain, Users, Send, CheckCircle, XCircle, X } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import type { ConversationMessage } from '../types/api'
@@ -24,11 +25,21 @@ interface InteractiveTaskDetailProps {
 const InteractiveTaskDetail: React.FC<InteractiveTaskDetailProps> = ({ taskId }) => {
   const { data: task, isLoading: taskLoading } = useTask(taskId)
   const { data: conversation, isLoading: conversationLoading } = useTaskConversation(taskId)
+  const sendMessageMutation = useSendInteractiveMessage()
+  const markCompleteMutation = useMarkTaskComplete()
+  const markFailedMutation = useMarkTaskFailed()
   
   const conversationEndRef = useRef<HTMLDivElement>(null)
   const scrollContainerRef = useRef<HTMLDivElement>(null)
+  const messageInputRef = useRef<HTMLTextAreaElement>(null)
+  
+  const [userMessage, setUserMessage] = useState('')
+  const [showMarkFailedDialog, setShowMarkFailedDialog] = useState(false)
+  const [failureReason, setFailureReason] = useState('')
 
   const isLoading = taskLoading || conversationLoading
+  const canInteract = task && task.status === 'user_turn'
+  const isTaskStopped = task && ['completed', 'failed', 'cancelled', 'canceled'].includes(task.status)
 
   // Auto-scroll to bottom when conversation updates
   useEffect(() => {
@@ -52,6 +63,13 @@ const InteractiveTaskDetail: React.FC<InteractiveTaskDetailProps> = ({ taskId })
     }
   }, [taskId])
 
+  // Auto-focus message input when status changes to user_turn
+  useEffect(() => {
+    if (canInteract && messageInputRef.current) {
+      messageInputRef.current.focus()
+    }
+  }, [canInteract])
+
   // Calculate progress percentage - 100% if completed/failed, otherwise current/max
   const getProgressPercentage = () => {
     if (!task) return 0
@@ -59,6 +77,50 @@ const InteractiveTaskDetail: React.FC<InteractiveTaskDetailProps> = ({ taskId })
       return 100
     }
     return Math.min((task.iteration / task.max_iterations) * 100, 100)
+  }
+
+  // Handle sending message
+  const handleSendMessage = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!userMessage.trim() || !canInteract) return
+
+    try {
+      await sendMessageMutation.mutateAsync({ taskId, message: userMessage.trim() })
+      setUserMessage('')
+    } catch (error) {
+      // Error handling is done in the mutation hook
+    }
+  }
+
+  // Handle keyboard shortcuts
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault()
+      handleSendMessage(e)
+    }
+  }
+
+  // Handle mark complete
+  const handleMarkComplete = async () => {
+    try {
+      await markCompleteMutation.mutateAsync(taskId)
+    } catch (error) {
+      // Error handling is done in the mutation hook
+    }
+  }
+
+  // Handle mark failed
+  const handleMarkFailed = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!failureReason.trim()) return
+
+    try {
+      await markFailedMutation.mutateAsync({ taskId, reason: failureReason.trim() })
+      setFailureReason('')
+      setShowMarkFailedDialog(false)
+    } catch (error) {
+      // Error handling is done in the mutation hook
+    }
   }
 
   if (isLoading) {
@@ -111,7 +173,7 @@ const InteractiveTaskDetail: React.FC<InteractiveTaskDetailProps> = ({ taskId })
                   <div className="flex items-start gap-3">
                     <Users className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
                     <div className="flex-1">
-                      <h3 className="text-sm font-semibold text-blue-800 mb-2">Waiting for User Input</h3>
+                      <h3 className="text-sm font-semibold text-blue-800 mb-2">Waiting for Your Input</h3>
                       <p className="text-sm text-blue-700 leading-relaxed">
                         The agent is waiting for your response to continue the conversation.
                       </p>
@@ -196,6 +258,32 @@ const InteractiveTaskDetail: React.FC<InteractiveTaskDetailProps> = ({ taskId })
                 </div>
               )}
             </div>
+
+            {/* Task Control Buttons */}
+            {!isTaskStopped && (
+              <div className="flex-shrink-0 ml-4 flex gap-2">
+                <Button
+                  variant="success"
+                  size="sm"
+                  onClick={handleMarkComplete}
+                  disabled={markCompleteMutation.isPending}
+                  className="flex items-center gap-2"
+                >
+                  <CheckCircle className="h-4 w-4" />
+                  Mark Complete
+                </Button>
+                <Button
+                  variant="danger"
+                  size="sm"
+                  onClick={() => setShowMarkFailedDialog(true)}
+                  disabled={markFailedMutation.isPending}
+                  className="flex items-center gap-2"
+                >
+                  <XCircle className="h-4 w-4" />
+                  Mark Failed
+                </Button>
+              </div>
+            )}
           </div>
           
           {/* Progress Bar */}
@@ -213,21 +301,23 @@ const InteractiveTaskDetail: React.FC<InteractiveTaskDetailProps> = ({ taskId })
         </div>
       </Card>
 
-      {/* Conversation */}
+      {/* Chat Conversation */}
       <div className="flex-1 bg-white rounded-lg shadow-sm border border-gray-200 flex flex-col min-h-0 overflow-hidden">
         <div className="px-6 py-4 border-b border-gray-200 flex-shrink-0">
-          <h3 className="text-lg font-medium text-gray-900">Conversation History</h3>
+          <h3 className="text-lg font-medium text-gray-900">Conversation</h3>
         </div>
+        
+        {/* Messages */}
         <div 
           ref={scrollContainerRef}
           className="flex-1 overflow-y-auto px-6 py-4 conversation-scroll"
-          style={{ minHeight: '400px' }}
+          style={{ minHeight: '300px' }}
         >
           <div className="space-y-4">
             {conversation.conversation.length === 0 ? (
               <div className="text-center text-gray-500 py-8">
                 <MessageSquare className="h-8 w-8 mx-auto mb-2 text-gray-400" />
-                <p>No conversation yet</p>
+                <p>No conversation yet. Start chatting below!</p>
               </div>
             ) : (
               <>
@@ -302,7 +392,106 @@ const InteractiveTaskDetail: React.FC<InteractiveTaskDetailProps> = ({ taskId })
             )}
           </div>
         </div>
+
+        {/* Message Input */}
+        <div className="px-6 py-4 border-t border-gray-200 flex-shrink-0 bg-gray-50">
+          {canInteract ? (
+            <form onSubmit={handleSendMessage} className="flex gap-2">
+              <textarea
+                ref={messageInputRef}
+                value={userMessage}
+                onChange={(e) => setUserMessage(e.target.value)}
+                onKeyDown={handleKeyDown}
+                placeholder="Type your message... (Press Enter to send, Shift+Enter for new line)"
+                rows={2}
+                className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                disabled={sendMessageMutation.isPending}
+              />
+              <Button
+                type="submit"
+                disabled={!userMessage.trim() || sendMessageMutation.isPending}
+                className="flex items-center gap-2 self-end"
+              >
+                {sendMessageMutation.isPending ? (
+                  <LoadingSpinner size="sm" />
+                ) : (
+                  <>
+                    <Send className="h-4 w-4" />
+                    Send
+                  </>
+                )}
+              </Button>
+            </form>
+          ) : (
+            <div className="text-center text-gray-500 py-2">
+              {isTaskStopped ? (
+                <p className="text-sm">Task has ended. No more messages can be sent.</p>
+              ) : (
+                <p className="text-sm">Waiting for agent response...</p>
+              )}
+            </div>
+          )}
+        </div>
       </div>
+
+      {/* Mark Failed Dialog */}
+      {showMarkFailedDialog && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-lg max-w-lg w-full mx-4">
+            <div className="flex items-center justify-between p-6 border-b border-gray-200">
+              <h3 className="text-lg font-semibold text-gray-900">Mark Task as Failed</h3>
+              <button
+                onClick={() => setShowMarkFailedDialog(false)}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            
+            <form onSubmit={handleMarkFailed} className="p-6">
+              <div className="mb-4">
+                <label htmlFor="failure-reason" className="block text-sm font-medium text-gray-700 mb-2">
+                  Failure Reason <span className="text-red-500">*</span>
+                </label>
+                <textarea
+                  id="failure-reason"
+                  rows={4}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 resize-none"
+                  placeholder="Explain why the task failed..."
+                  value={failureReason}
+                  onChange={(e) => setFailureReason(e.target.value)}
+                  required
+                />
+              </div>
+              
+              <div className="flex items-center justify-end gap-3">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={() => setShowMarkFailedDialog(false)}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  variant="danger"
+                  disabled={!failureReason.trim() || markFailedMutation.isPending}
+                  className="flex items-center gap-2"
+                >
+                  {markFailedMutation.isPending ? (
+                    <LoadingSpinner size="sm" />
+                  ) : (
+                    <>
+                      <XCircle className="h-4 w-4" />
+                      Mark as Failed
+                    </>
+                  )}
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

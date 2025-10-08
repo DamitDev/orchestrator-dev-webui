@@ -6,7 +6,7 @@ import StatusBadge from './ui/StatusBadge'
 import LoadingSpinner from './ui/LoadingSpinner'
 import Pagination from './ui/Pagination'
 import { formatMessageTimestamp } from '../lib/utils'
-import { Plus, Search, X, Check, XCircle, Settings, FileText, ChevronUp, ChevronDown, MessageCircle } from 'lucide-react'
+import { Plus, Search, X, Check, XCircle, ChevronUp, ChevronDown, MessageCircle, Zap, Ticket, Users } from 'lucide-react'
 import type { Task, TasksQueryParams } from '../types/api'
 
 interface TaskListProps {
@@ -14,11 +14,11 @@ interface TaskListProps {
   selectedTaskId?: string
 }
 
-type TaskCreationMode = 'simple' | 'advanced'
+type WorkflowType = 'proactive' | 'ticket' | 'interactive'
 
 const TaskList: React.FC<TaskListProps> = ({ onTaskSelect, selectedTaskId }) => {
   const [showCreateForm, setShowCreateForm] = useState(false)
-  const [creationMode, setCreationMode] = useState<TaskCreationMode>('simple')
+  const [workflowType, setWorkflowType] = useState<WorkflowType>('proactive')
   const [searchTerm, setSearchTerm] = useState('')
   
   // Help dialog state
@@ -33,14 +33,16 @@ const TaskList: React.FC<TaskListProps> = ({ onTaskSelect, selectedTaskId }) => 
   const [orderDirection, setOrderDirection] = useState<'asc' | 'desc'>('desc')
   
   // Form fields
-  const [ticketId, setTicketId] = useState('')
   const [goalPrompt, setGoalPrompt] = useState('')
+  // Ticket workflow fields
+  const [ticketId, setTicketId] = useState('')
   const [ticketText, setTicketText] = useState('')
   const [summary, setSummary] = useState('')
   const [problemSummary, setProblemSummary] = useState('')
   const [solutionStrategy, setSolutionStrategy] = useState('')
+  // Common fields
   const [maxIterations, setMaxIterations] = useState(50)
-  const [reasoningEffort, setReasoningEffort] = useState<'low' | 'medium' | 'high'>('low')
+  const [reasoningEffort, setReasoningEffort] = useState<'low' | 'medium' | 'high'>('medium')
   
   const queryParams: TasksQueryParams = {
     page: currentPage,
@@ -66,14 +68,15 @@ const TaskList: React.FC<TaskListProps> = ({ onTaskSelect, selectedTaskId }) => 
   ) : tasks
 
   const resetForm = () => {
-    setTicketId('')
+    setWorkflowType('proactive')
     setGoalPrompt('')
+    setTicketId('')
     setTicketText('')
     setSummary('')
     setProblemSummary('')
     setSolutionStrategy('')
     setMaxIterations(50)
-    setReasoningEffort('low')
+    setReasoningEffort('medium')
   }
 
   const resetHelpDialog = () => {
@@ -123,20 +126,25 @@ const TaskList: React.FC<TaskListProps> = ({ onTaskSelect, selectedTaskId }) => 
 
   const handleCreateTask = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!ticketId.trim()) return
-    if (creationMode === 'simple' && !goalPrompt.trim()) return
+    
+    // Validation based on workflow type
+    if (workflowType === 'proactive' || workflowType === 'interactive') {
+      if (!goalPrompt.trim()) return
+    } else if (workflowType === 'ticket') {
+      if (!ticketId.trim()) return
+    }
 
     try {
       const requestData: any = {
-        ticket_id: ticketId,
+        workflow_id: workflowType,
         max_iterations: maxIterations,
         reasoning_effort: reasoningEffort,
       }
 
-      if (creationMode === 'simple') {
+      if (workflowType === 'proactive' || workflowType === 'interactive') {
         requestData.goal_prompt = goalPrompt
-      } else {
-        requestData.goal_prompt = ""
+      } else if (workflowType === 'ticket') {
+        requestData.ticket_id = ticketId
         if (ticketText.trim()) requestData.ticket_text = ticketText
         if (summary.trim()) requestData.summary = summary
         if (problemSummary.trim()) requestData.problem_summary = problemSummary
@@ -262,209 +270,241 @@ const TaskList: React.FC<TaskListProps> = ({ onTaskSelect, selectedTaskId }) => 
         </div>
       </div>
 
-      {/* Create Task Form */}
+      {/* Create Task Modal */}
       {showCreateForm && (
-        <Card className="border-primary-200 flex-shrink-0">
-          <form onSubmit={handleCreateTask} className="space-y-6">
-            <div className="flex items-center justify-between">
-              <h3 className="text-md font-medium text-gray-900">Create New Task</h3>
-              <Button
-                type="button"
-                variant="secondary"
-                size="sm"
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-lg max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between p-6 border-b border-gray-200 sticky top-0 bg-white">
+              <h3 className="text-lg font-semibold text-gray-900">Create New Task</h3>
+              <button
                 onClick={() => {
                   setShowCreateForm(false)
                   resetForm()
                 }}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
               >
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
-
-            {/* Mode Selection */}
-            <div className="space-y-3">
-              <label className="block text-sm font-medium text-gray-700">
-                Creation Mode
-              </label>
-              <div className="flex space-x-4">
-                <label className="flex items-center">
-                  <input
-                    type="radio"
-                    name="creationMode"
-                    value="simple"
-                    checked={creationMode === 'simple'}
-                    onChange={(e) => setCreationMode(e.target.value as TaskCreationMode)}
-                    className="mr-2 text-primary-600 focus:ring-primary-500"
-                  />
-                  <div className="flex items-center space-x-2">
-                    <FileText className="h-4 w-4 text-gray-500" />
-                    <span className="text-sm text-gray-700">Simple (Goal Prompt)</span>
-                  </div>
-                </label>
-                <label className="flex items-center">
-                  <input
-                    type="radio"
-                    name="creationMode"
-                    value="advanced"
-                    checked={creationMode === 'advanced'}
-                    onChange={(e) => setCreationMode(e.target.value as TaskCreationMode)}
-                    className="mr-2 text-primary-600 focus:ring-primary-500"
-                  />
-                  <div className="flex items-center space-x-2">
-                    <Settings className="h-4 w-4 text-gray-500" />
-                    <span className="text-sm text-gray-700">Advanced (Structured Fields)</span>
-                  </div>
-                </label>
-              </div>
+                <X className="h-5 w-5" />
+              </button>
             </div>
             
-            {/* Ticket ID - Always Required */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Ticket ID <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                value={ticketId}
-                onChange={(e) => setTicketId(e.target.value)}
-                placeholder="Enter ticket ID (e.g., TASK-123)"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                required
-              />
-            </div>
-
-            {/* Simple Mode Fields */}
-            {creationMode === 'simple' && (
+            <form onSubmit={handleCreateTask} className="p-6 space-y-6">
+              {/* Workflow Type Selection */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Goal Prompt <span className="text-red-500">*</span>
+                <label className="block text-sm font-medium text-gray-700 mb-3">
+                  Workflow Type <span className="text-red-500">*</span>
                 </label>
-                <textarea
-                  value={goalPrompt}
-                  onChange={(e) => setGoalPrompt(e.target.value)}
-                  placeholder="Describe what you want the agent to accomplish..."
-                  rows={4}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                  required
-                />
+                <div className="grid grid-cols-3 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setWorkflowType('proactive')}
+                    className={`p-4 border-2 rounded-lg transition-all ${
+                      workflowType === 'proactive'
+                        ? 'border-purple-500 bg-purple-50'
+                        : 'border-gray-200 hover:border-gray-300'
+                    }`}
+                  >
+                    <Zap className={`h-6 w-6 mx-auto mb-2 ${
+                      workflowType === 'proactive' ? 'text-purple-600' : 'text-gray-400'
+                    }`} />
+                    <div className="text-sm font-medium text-gray-900">Proactive</div>
+                    <div className="text-xs text-gray-500 mt-1">Autonomous task</div>
+                  </button>
+                  
+                  <button
+                    type="button"
+                    onClick={() => setWorkflowType('ticket')}
+                    className={`p-4 border-2 rounded-lg transition-all ${
+                      workflowType === 'ticket'
+                        ? 'border-blue-500 bg-blue-50'
+                        : 'border-gray-200 hover:border-gray-300'
+                    }`}
+                  >
+                    <Ticket className={`h-6 w-6 mx-auto mb-2 ${
+                      workflowType === 'ticket' ? 'text-blue-600' : 'text-gray-400'
+                    }`} />
+                    <div className="text-sm font-medium text-gray-900">Ticket</div>
+                    <div className="text-xs text-gray-500 mt-1">Ticket-based</div>
+                  </button>
+                  
+                  <button
+                    type="button"
+                    onClick={() => setWorkflowType('interactive')}
+                    className={`p-4 border-2 rounded-lg transition-all ${
+                      workflowType === 'interactive'
+                        ? 'border-green-500 bg-green-50'
+                        : 'border-gray-200 hover:border-gray-300'
+                    }`}
+                  >
+                    <Users className={`h-6 w-6 mx-auto mb-2 ${
+                      workflowType === 'interactive' ? 'text-green-600' : 'text-gray-400'
+                    }`} />
+                    <div className="text-sm font-medium text-gray-900">Interactive</div>
+                    <div className="text-xs text-gray-500 mt-1">User interaction</div>
+                  </button>
+                </div>
               </div>
-            )}
 
-            {/* Advanced Mode Fields */}
-            {creationMode === 'advanced' && (
-              <div className="space-y-4">
+              {/* Proactive/Interactive Fields */}
+              {(workflowType === 'proactive' || workflowType === 'interactive') && (
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Ticket Text
+                    Goal Prompt <span className="text-red-500">*</span>
                   </label>
                   <textarea
-                    value={ticketText}
-                    onChange={(e) => setTicketText(e.target.value)}
-                    placeholder="Full text of the ticket or issue description..."
+                    value={goalPrompt}
+                    onChange={(e) => setGoalPrompt(e.target.value)}
+                    placeholder="Describe what you want the agent to accomplish..."
                     rows={4}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                    required
                   />
                 </div>
+              )}
 
+              {/* Ticket Workflow Fields */}
+              {workflowType === 'ticket' && (
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Ticket ID <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={ticketId}
+                      onChange={(e) => setTicketId(e.target.value)}
+                      placeholder="Enter ticket ID (e.g., TASK-123)"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Ticket Text
+                    </label>
+                    <textarea
+                      value={ticketText}
+                      onChange={(e) => setTicketText(e.target.value)}
+                      placeholder="Full text of the ticket or issue description..."
+                      rows={3}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Summary
+                    </label>
+                    <textarea
+                      value={summary}
+                      onChange={(e) => setSummary(e.target.value)}
+                      placeholder="Brief summary of the issue..."
+                      rows={2}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Problem Summary
+                    </label>
+                    <textarea
+                      value={problemSummary}
+                      onChange={(e) => setProblemSummary(e.target.value)}
+                      placeholder="Detailed analysis of the problem..."
+                      rows={3}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Solution Strategy
+                    </label>
+                    <textarea
+                      value={solutionStrategy}
+                      onChange={(e) => setSolutionStrategy(e.target.value)}
+                      placeholder="Proposed approach to solve the problem..."
+                      rows={3}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Common Settings */}
+              <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Summary
+                    Max Iterations
                   </label>
-                  <textarea
-                    value={summary}
-                    onChange={(e) => setSummary(e.target.value)}
-                    placeholder="Brief summary of the issue..."
-                    rows={2}
+                  <input
+                    type="number"
+                    value={maxIterations}
+                    onChange={(e) => setMaxIterations(parseInt(e.target.value) || 50)}
+                    min={1}
+                    max={200}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                   />
                 </div>
-
+                
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Problem Summary
+                    Reasoning Effort
                   </label>
-                  <textarea
-                    value={problemSummary}
-                    onChange={(e) => setProblemSummary(e.target.value)}
-                    placeholder="Detailed analysis of the problem..."
-                    rows={3}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Solution Strategy
-                  </label>
-                  <textarea
-                    value={solutionStrategy}
-                    onChange={(e) => setSolutionStrategy(e.target.value)}
-                    placeholder="Proposed approach to solve the problem..."
-                    rows={3}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                  />
+                  <div className="flex gap-2">
+                    {(['low', 'medium', 'high'] as const).map((level) => (
+                      <button
+                        key={level}
+                        type="button"
+                        onClick={() => setReasoningEffort(level)}
+                        className={`flex-1 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                          reasoningEffort === level
+                            ? 'bg-primary-600 text-white'
+                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        }`}
+                      >
+                        {level.charAt(0).toUpperCase() + level.slice(1)}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
-            )}
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Max Iterations
-              </label>
-              <input
-                type="number"
-                value={maxIterations}
-                onChange={(e) => setMaxIterations(parseInt(e.target.value) || 50)}
-                min={1}
-                max={200}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-              />
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Reasoning Effort
-              </label>
-              <select
-                value={reasoningEffort}
-                onChange={(e) => setReasoningEffort(e.target.value as 'low' | 'medium' | 'high')}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-              >
-                <option value="low">Low</option>
-                <option value="medium">Medium</option>
-                <option value="high">High</option>
-              </select>
-            </div>
-            
-            <div className="flex gap-3 pt-2">
-              <Button
-                type="submit"
-                disabled={
-                  createTaskMutation.isPending || 
-                  !ticketId.trim() ||
-                  (creationMode === 'simple' && !goalPrompt.trim())
-                }
-                className="flex-1"
-              >
-                {createTaskMutation.isPending ? (
-                  <LoadingSpinner size="sm" />
-                ) : (
-                  'Create Task'
-                )}
-              </Button>
-              <Button
-                type="button"
-                variant="secondary"
-                onClick={() => {
-                  setShowCreateForm(false)
-                  resetForm()
-                }}
-              >
-                Cancel
-              </Button>
-            </div>
-          </form>
-        </Card>
+              
+              <div className="flex items-center justify-end gap-3 pt-4 border-t">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={() => {
+                    setShowCreateForm(false)
+                    resetForm()
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={
+                    createTaskMutation.isPending || 
+                    (workflowType === 'proactive' && !goalPrompt.trim()) ||
+                    (workflowType === 'interactive' && !goalPrompt.trim()) ||
+                    (workflowType === 'ticket' && !ticketId.trim())
+                  }
+                  className="flex items-center gap-2"
+                >
+                  {createTaskMutation.isPending ? (
+                    <LoadingSpinner size="sm" />
+                  ) : (
+                    <>
+                      <Plus className="h-4 w-4" />
+                      Create Task
+                    </>
+                  )}
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
       )}
 
       {/* Help Dialog */}

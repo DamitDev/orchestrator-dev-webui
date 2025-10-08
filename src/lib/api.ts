@@ -72,6 +72,22 @@ export const tasksApi = {
     const response_data = await api.post('/task/help', { task_id: taskId, response })
     return response_data.data
   },
+
+  // Interactive workflow methods
+  sendMessage: async (taskId: string, message: string): Promise<{ success: boolean; message: string }> => {
+    const response = await api.post('/task/interactive/message', { task_id: taskId, message })
+    return response.data
+  },
+
+  markComplete: async (taskId: string): Promise<{ success: boolean; message: string }> => {
+    const response = await api.post('/task/interactive/mark_complete', { task_id: taskId })
+    return response.data
+  },
+
+  markFailed: async (taskId: string, reason: string): Promise<{ success: boolean; message: string }> => {
+    const response = await api.post('/task/interactive/mark_failed', { task_id: taskId, reason })
+    return response.data
+  },
 }
 
 // Configuration API
