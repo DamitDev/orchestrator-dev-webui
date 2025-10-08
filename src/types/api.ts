@@ -1,12 +1,13 @@
 export interface Task {
   id: string
-  ticket_id: string
+  workflow_id: string
   status: string
   iteration: number
   max_iterations: number
   goal_prompt: string
   result: string
   approval_reason: string
+  ticket_id?: string // Optional, only for ticket workflow
   created_at: string
   updated_at: string
 }
@@ -48,16 +49,24 @@ export interface MCPServerInfo {
 }
 
 export interface TaskCreateRequest {
-  ticket_id: string
+  workflow_id?: string // Defaults to 'proactive' in backend
   goal_prompt?: string
-  ticket_text?: string
-  summary?: string
-  problem_summary?: string
-  solution_strategy?: string
   max_iterations?: number
   system_prompt?: string
   developer_prompt?: string
   reasoning_effort?: 'low' | 'medium' | 'high'
+  
+  // Workflow-specific fields
+  // For ticket workflow:
+  ticket_id?: string
+  ticket_text?: string
+  summary?: string
+  problem_summary?: string
+  solution_strategy?: string
+  
+  // Model configuration (for proactive and ticket workflows):
+  agent_model_id?: string
+  orchestrator_model_id?: string
 }
 
 export interface TaskActionRequest {

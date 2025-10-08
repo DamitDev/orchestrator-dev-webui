@@ -263,3 +263,57 @@ export const useSetOrchestrator = () => {
     },
   })
 }
+
+// Interactive task mutations
+export const useSendInteractiveMessage = () => {
+  const queryClient = useQueryClient()
+  
+  return useMutation({
+    mutationFn: ({ taskId, message }: { taskId: string; message: string }) => 
+      tasksApi.sendMessage(taskId, message),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['tasks'] })
+      queryClient.invalidateQueries({ queryKey: queryKeys.task(variables.taskId) })
+      queryClient.invalidateQueries({ queryKey: queryKeys.taskConversation(variables.taskId) })
+      queryClient.invalidateQueries({ queryKey: queryKeys.config })
+      toast.success('Message sent successfully!')
+    },
+    onError: (error: any) => {
+      toast.error(`Failed to send message: ${error.response?.data?.error || error.message}`)
+    },
+  })
+}
+
+export const useMarkTaskComplete = () => {
+  const queryClient = useQueryClient()
+  
+  return useMutation({
+    mutationFn: (taskId: string) => tasksApi.markComplete(taskId),
+    onSuccess: (_, taskId) => {
+      queryClient.invalidateQueries({ queryKey: ['tasks'] })
+      queryClient.invalidateQueries({ queryKey: queryKeys.task(taskId) })
+      queryClient.invalidateQueries({ queryKey: queryKeys.config })
+      toast.success('Task marked as complete!')
+    },
+    onError: (error: any) => {
+      toast.error(`Failed to mark task complete: ${error.response?.data?.error || error.message}`)
+    },
+  })
+}
+
+export const useMarkTaskFailed = () => {
+  const queryClient = useQueryClient()
+  
+  return useMutation({
+    mutationFn: (taskId: string) => tasksApi.markFailed(taskId),
+    onSuccess: (_, taskId) => {
+      queryClient.invalidateQueries({ queryKey: ['tasks'] })
+      queryClient.invalidateQueries({ queryKey: queryKeys.task(taskId) })
+      queryClient.invalidateQueries({ queryKey: queryKeys.config })
+      toast.success('Task marked as failed!')
+    },
+    onError: (error: any) => {
+      toast.error(`Failed to mark task failed: ${error.response?.data?.error || error.message}`)
+    },
+  })
+}
