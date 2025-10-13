@@ -59,34 +59,60 @@ export const tasksApi = {
     await api.post('/task/cancel', { task_id: taskId })
   },
 
-  action: async (data: TaskActionRequest): Promise<void> => {
-    await api.post('/task/action', data)
-  },
+  // Proactive workflow methods
+  proactive: {
+    guide: async (taskId: string, message: string): Promise<{ success: boolean; message: string }> => {
+      const response = await api.post('/task/proactive/guide', { task_id: taskId, message })
+      return response.data
+    },
 
-  guide: async (taskId: string, message: string): Promise<{ success: boolean; message: string }> => {
-    const response = await api.post('/task/guide', { task_id: taskId, message })
-    return response.data
-  },
+    help: async (taskId: string, response: string): Promise<{ success: boolean; message: string }> => {
+      const response_data = await api.post('/task/proactive/help', { task_id: taskId, response })
+      return response_data.data
+    },
 
-  help: async (taskId: string, response: string): Promise<{ success: boolean; message: string }> => {
-    const response_data = await api.post('/task/help', { task_id: taskId, response })
-    return response_data.data
+    action: async (data: TaskActionRequest): Promise<void> => {
+      await api.post('/task/proactive/action', data)
+    },
   },
 
   // Interactive workflow methods
-  sendMessage: async (taskId: string, message: string): Promise<{ success: boolean; message: string }> => {
-    const response = await api.post('/task/interactive/message', { task_id: taskId, message })
-    return response.data
+  interactive: {
+    sendMessage: async (taskId: string, message: string): Promise<{ success: boolean; message: string }> => {
+      const response = await api.post('/task/interactive/message', { task_id: taskId, message })
+      return response.data
+    },
+
+    markComplete: async (taskId: string): Promise<{ success: boolean; message: string }> => {
+      const response = await api.post('/task/interactive/mark_complete', { task_id: taskId })
+      return response.data
+    },
+
+    markFailed: async (taskId: string): Promise<{ success: boolean; message: string }> => {
+      const response = await api.post('/task/interactive/mark_failed', { task_id: taskId })
+      return response.data
+    },
+
+    action: async (data: TaskActionRequest): Promise<void> => {
+      await api.post('/task/interactive/action', data)
+    },
   },
 
-  markComplete: async (taskId: string): Promise<{ success: boolean; message: string }> => {
-    const response = await api.post('/task/interactive/mark_complete', { task_id: taskId })
-    return response.data
-  },
+  // Ticket workflow methods
+  ticket: {
+    guide: async (taskId: string, message: string): Promise<{ success: boolean; message: string }> => {
+      const response = await api.post('/task/ticket/guide', { task_id: taskId, message })
+      return response.data
+    },
 
-  markFailed: async (taskId: string): Promise<{ success: boolean; message: string }> => {
-    const response = await api.post('/task/interactive/mark_failed', { task_id: taskId })
-    return response.data
+    help: async (taskId: string, response: string): Promise<{ success: boolean; message: string }> => {
+      const response_data = await api.post('/task/ticket/help', { task_id: taskId, response })
+      return response_data.data
+    },
+
+    action: async (data: TaskActionRequest): Promise<void> => {
+      await api.post('/task/ticket/action', data)
+    },
   },
 }
 

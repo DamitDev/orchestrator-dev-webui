@@ -111,29 +111,13 @@ export const useCancelTask = () => {
   })
 }
 
-export const useTaskAction = () => {
-  const queryClient = useQueryClient()
-  
-  return useMutation({
-    mutationFn: (data: TaskActionRequest) => tasksApi.action(data),
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['tasks'] })
-      queryClient.invalidateQueries({ queryKey: queryKeys.task(variables.task_id) })
-      queryClient.invalidateQueries({ queryKey: queryKeys.config })
-      toast.success(variables.approved ? 'Task approved!' : 'Task rejected!')
-    },
-    onError: (error: any) => {
-      toast.error(`Failed to perform task action: ${error.message}`)
-    },
-  })
-}
-
-export const useGuideTask = () => {
+// Proactive workflow hooks
+export const useProactiveGuideTask = () => {
   const queryClient = useQueryClient()
   
   return useMutation({
     mutationFn: ({ taskId, message }: { taskId: string; message: string }) => 
-      tasksApi.guide(taskId, message),
+      tasksApi.proactive.guide(taskId, message),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] })
       queryClient.invalidateQueries({ queryKey: queryKeys.task(variables.taskId) })
@@ -147,12 +131,12 @@ export const useGuideTask = () => {
   })
 }
 
-export const useHelpTask = () => {
+export const useProactiveHelpTask = () => {
   const queryClient = useQueryClient()
   
   return useMutation({
     mutationFn: ({ taskId, response }: { taskId: string; response: string }) => 
-      tasksApi.help(taskId, response),
+      tasksApi.proactive.help(taskId, response),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] })
       queryClient.invalidateQueries({ queryKey: queryKeys.task(variables.taskId) })
@@ -162,6 +146,97 @@ export const useHelpTask = () => {
     },
     onError: (error: any) => {
       toast.error(`Failed to send help response: ${error.response?.data?.error || error.message}`)
+    },
+  })
+}
+
+export const useProactiveTaskAction = () => {
+  const queryClient = useQueryClient()
+  
+  return useMutation({
+    mutationFn: (data: TaskActionRequest) => tasksApi.proactive.action(data),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['tasks'] })
+      queryClient.invalidateQueries({ queryKey: queryKeys.task(variables.task_id) })
+      queryClient.invalidateQueries({ queryKey: queryKeys.config })
+      toast.success(variables.approved ? 'Task approved!' : 'Task rejected!')
+    },
+    onError: (error: any) => {
+      toast.error(`Failed to perform task action: ${error.message}`)
+    },
+  })
+}
+
+// Interactive workflow hooks (already exist, adding action hook)
+export const useInteractiveTaskAction = () => {
+  const queryClient = useQueryClient()
+  
+  return useMutation({
+    mutationFn: (data: TaskActionRequest) => tasksApi.interactive.action(data),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['tasks'] })
+      queryClient.invalidateQueries({ queryKey: queryKeys.task(variables.task_id) })
+      queryClient.invalidateQueries({ queryKey: queryKeys.config })
+      toast.success(variables.approved ? 'Task approved!' : 'Task rejected!')
+    },
+    onError: (error: any) => {
+      toast.error(`Failed to perform task action: ${error.message}`)
+    },
+  })
+}
+
+// Ticket workflow hooks
+export const useTicketGuideTask = () => {
+  const queryClient = useQueryClient()
+  
+  return useMutation({
+    mutationFn: ({ taskId, message }: { taskId: string; message: string }) => 
+      tasksApi.ticket.guide(taskId, message),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['tasks'] })
+      queryClient.invalidateQueries({ queryKey: queryKeys.task(variables.taskId) })
+      queryClient.invalidateQueries({ queryKey: queryKeys.taskConversation(variables.taskId) })
+      queryClient.invalidateQueries({ queryKey: queryKeys.config })
+      toast.success('Guidance message sent successfully!')
+    },
+    onError: (error: any) => {
+      toast.error(`Failed to send guidance: ${error.response?.data?.error || error.message}`)
+    },
+  })
+}
+
+export const useTicketHelpTask = () => {
+  const queryClient = useQueryClient()
+  
+  return useMutation({
+    mutationFn: ({ taskId, response }: { taskId: string; response: string }) => 
+      tasksApi.ticket.help(taskId, response),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['tasks'] })
+      queryClient.invalidateQueries({ queryKey: queryKeys.task(variables.taskId) })
+      queryClient.invalidateQueries({ queryKey: queryKeys.taskConversation(variables.taskId) })
+      queryClient.invalidateQueries({ queryKey: queryKeys.config })
+      toast.success('Help response sent successfully!')
+    },
+    onError: (error: any) => {
+      toast.error(`Failed to send help response: ${error.response?.data?.error || error.message}`)
+    },
+  })
+}
+
+export const useTicketTaskAction = () => {
+  const queryClient = useQueryClient()
+  
+  return useMutation({
+    mutationFn: (data: TaskActionRequest) => tasksApi.ticket.action(data),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['tasks'] })
+      queryClient.invalidateQueries({ queryKey: queryKeys.task(variables.task_id) })
+      queryClient.invalidateQueries({ queryKey: queryKeys.config })
+      toast.success(variables.approved ? 'Task approved!' : 'Task rejected!')
+    },
+    onError: (error: any) => {
+      toast.error(`Failed to perform task action: ${error.message}`)
     },
   })
 }
@@ -264,13 +339,13 @@ export const useSetOrchestrator = () => {
   })
 }
 
-// Interactive task mutations
+// Interactive workflow hooks (existing interactive methods)
 export const useSendInteractiveMessage = () => {
   const queryClient = useQueryClient()
   
   return useMutation({
     mutationFn: ({ taskId, message }: { taskId: string; message: string }) => 
-      tasksApi.sendMessage(taskId, message),
+      tasksApi.interactive.sendMessage(taskId, message),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] })
       queryClient.invalidateQueries({ queryKey: queryKeys.task(variables.taskId) })
@@ -288,7 +363,7 @@ export const useMarkTaskComplete = () => {
   const queryClient = useQueryClient()
   
   return useMutation({
-    mutationFn: (taskId: string) => tasksApi.markComplete(taskId),
+    mutationFn: (taskId: string) => tasksApi.interactive.markComplete(taskId),
     onSuccess: (_, taskId) => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] })
       queryClient.invalidateQueries({ queryKey: queryKeys.task(taskId) })
@@ -305,7 +380,7 @@ export const useMarkTaskFailed = () => {
   const queryClient = useQueryClient()
   
   return useMutation({
-    mutationFn: (taskId: string) => tasksApi.markFailed(taskId),
+    mutationFn: (taskId: string) => tasksApi.interactive.markFailed(taskId),
     onSuccess: (_, taskId) => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] })
       queryClient.invalidateQueries({ queryKey: queryKeys.task(taskId) })

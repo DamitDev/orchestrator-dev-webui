@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react'
-import { useTask, useTaskConversation, useGuideTask } from '../hooks/useApi'
+import { useTask, useTaskConversation, useProactiveGuideTask } from '../hooks/useApi'
 import Card from './ui/Card'
 import StatusBadge from './ui/StatusBadge'
 import LoadingSpinner from './ui/LoadingSpinner'
@@ -25,7 +25,7 @@ interface ProactiveTaskDetailProps {
 const ProactiveTaskDetail: React.FC<ProactiveTaskDetailProps> = ({ taskId }) => {
   const { data: task, isLoading: taskLoading } = useTask(taskId)
   const { data: conversation, isLoading: conversationLoading } = useTaskConversation(taskId)
-  const guideTask = useGuideTask()
+  const guideTask = useProactiveGuideTask()
   
   const conversationEndRef = useRef<HTMLDivElement>(null)
   const scrollContainerRef = useRef<HTMLDivElement>(null)

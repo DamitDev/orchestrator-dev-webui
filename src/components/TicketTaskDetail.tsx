@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react'
-import { useTask, useTaskConversation, useGuideTask } from '../hooks/useApi'
+import { useTask, useTaskConversation, useTicketGuideTask } from '../hooks/useApi'
 import Card from './ui/Card'
 import StatusBadge from './ui/StatusBadge'
 import LoadingSpinner from './ui/LoadingSpinner'
@@ -25,7 +25,7 @@ interface TicketTaskDetailProps {
 const TicketTaskDetail: React.FC<TicketTaskDetailProps> = ({ taskId }) => {
   const { data: task, isLoading: taskLoading } = useTask(taskId)
   const { data: conversation, isLoading: conversationLoading } = useTaskConversation(taskId)
-  const guideTask = useGuideTask()
+  const guideTask = useTicketGuideTask()
   
   const conversationEndRef = useRef<HTMLDivElement>(null)
   const scrollContainerRef = useRef<HTMLDivElement>(null)

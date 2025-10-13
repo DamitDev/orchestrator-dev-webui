@@ -1,5 +1,14 @@
 import React, { useState } from 'react'
-import { useTasks, useCreateTask, useCancelTask, useTaskAction, useHelpTask } from '../hooks/useApi'
+import { 
+  useTasks, 
+  useCreateTask, 
+  useCancelTask, 
+  useProactiveTaskAction,
+  useInteractiveTaskAction,
+  useTicketTaskAction,
+  useProactiveHelpTask,
+  useTicketHelpTask
+} from '../hooks/useApi'
 import Card from './ui/Card'
 import Button from './ui/Button'
 import StatusBadge from './ui/StatusBadge'
@@ -54,8 +63,11 @@ const TaskList: React.FC<TaskListProps> = ({ onTaskSelect, selectedTaskId }) => 
   const { data: tasksResponse, isLoading, error } = useTasks(queryParams)
   const createTaskMutation = useCreateTask()
   const cancelTaskMutation = useCancelTask()
-  const taskActionMutation = useTaskAction()
-  const helpTaskMutation = useHelpTask()
+  const proactiveTaskActionMutation = useProactiveTaskAction()
+  const interactiveTaskActionMutation = useInteractiveTaskAction()
+  const ticketTaskActionMutation = useTicketTaskAction()
+  const proactiveHelpTaskMutation = useProactiveHelpTask()
+  const ticketHelpTaskMutation = useTicketHelpTask()
 
   const tasks = tasksResponse?.tasks || []
   const pagination = tasksResponse?.pagination
@@ -96,7 +108,17 @@ const TaskList: React.FC<TaskListProps> = ({ onTaskSelect, selectedTaskId }) => 
     if (!helpResponse.trim()) return
 
     try {
-      await helpTaskMutation.mutateAsync({ taskId: helpTaskId, response: helpResponse })
+      // Find the task to determine its workflow
+      const task = tasks.find(t => t.id === helpTaskId)
+      if (!task) return
+      
+      // Use appropriate workflow-specific mutation
+      if (task.workflow_id === 'ticket') {
+        await ticketHelpTaskMutation.mutateAsync({ taskId: helpTaskId, response: helpResponse })
+      } else {
+        // proactive workflow (default for proactive and any others)
+        await proactiveHelpTaskMutation.mutateAsync({ taskId: helpTaskId, response: helpResponse })
+      }
       resetHelpDialog()
     } catch (error) {
       // Error handled by mutation
@@ -164,11 +186,37 @@ const TaskList: React.FC<TaskListProps> = ({ onTaskSelect, selectedTaskId }) => 
   }
 
   const handleApproveTask = async (taskId: string) => {
-    await taskActionMutation.mutateAsync({ task_id: taskId, approved: true })
+    // Find the task to determine its workflow
+    const task = tasks.find(t => t.id === taskId)
+    if (!task) return
+    
+    // Use appropriate workflow-specific mutation
+    const actionData = { task_id: taskId, approved: true }
+    if (task.workflow_id === 'interactive') {
+      await interactiveTaskActionMutation.mutateAsync(actionData)
+    } else if (task.workflow_id === 'ticket') {
+      await ticketTaskActionMutation.mutateAsync(actionData)
+    } else {
+      // proactive workflow (default)
+      await proactiveTaskActionMutation.mutateAsync(actionData)
+    }
   }
 
   const handleRejectTask = async (taskId: string) => {
-    await taskActionMutation.mutateAsync({ task_id: taskId, approved: false })
+    // Find the task to determine its workflow
+    const task = tasks.find(t => t.id === taskId)
+    if (!task) return
+    
+    // Use appropriate workflow-specific mutation
+    const actionData = { task_id: taskId, approved: false }
+    if (task.workflow_id === 'interactive') {
+      await interactiveTaskActionMutation.mutateAsync(actionData)
+    } else if (task.workflow_id === 'ticket') {
+      await ticketTaskActionMutation.mutateAsync(actionData)
+    } else {
+      // proactive workflow (default)
+      await proactiveTaskActionMutation.mutateAsync(actionData)
+    }
   }
 
   if (isLoading) {
@@ -539,16 +587,16 @@ const TaskList: React.FC<TaskListProps> = ({ onTaskSelect, selectedTaskId }) => 
 
             <div className="flex justify-end gap-2">
               <Button
-                type="submit"
-                variant="primary"
-                disabled={helpTaskMutation.isPending || !helpResponse.trim()}
-              >
-                {helpTaskMutation.isPending ? (
-                  <LoadingSpinner size="sm" />
-                ) : (
-                  'Send Help'
-                )}
-              </Button>
+                  type="submit"
+                  variant="primary"
+                  disabled={proactiveHelpTaskMutation.isPending || ticketHelpTaskMutation.isPending || !helpResponse.trim()}
+                >
+                  {(proactiveHelpTaskMutation.isPending || ticketHelpTaskMutation.isPending) ? (
+                    <LoadingSpinner size="sm" />
+                  ) : (
+                    'Send Help'
+                  )}
+                </Button>
               <Button
                 type="button"
                 variant="secondary"
@@ -652,7 +700,7 @@ const TaskList: React.FC<TaskListProps> = ({ onTaskSelect, selectedTaskId }) => 
                           e.stopPropagation()
                           handleApproveTask(task.id)
                         }}
-                        disabled={taskActionMutation.isPending}
+                        disabled={proactiveTaskActionMutation.isPending || interactiveTaskActionMutation.isPending || ticketTaskActionMutation.isPending}
                       >
                         <Check className="h-3 w-3" />
                       </Button>
@@ -663,7 +711,7 @@ const TaskList: React.FC<TaskListProps> = ({ onTaskSelect, selectedTaskId }) => 
                           e.stopPropagation()
                           handleRejectTask(task.id)
                         }}
-                        disabled={taskActionMutation.isPending}
+                        disabled={proactiveTaskActionMutation.isPending || interactiveTaskActionMutation.isPending || ticketTaskActionMutation.isPending}
                       >
                         <X className="h-3 w-3" />
                       </Button>
@@ -678,7 +726,7 @@ const TaskList: React.FC<TaskListProps> = ({ onTaskSelect, selectedTaskId }) => 
                         e.stopPropagation()
                         handleShowHelpDialog(task)
                       }}
-                      disabled={helpTaskMutation.isPending}
+                      disabled={proactiveHelpTaskMutation.isPending || ticketHelpTaskMutation.isPending}
                     >
                       <MessageCircle className="h-3 w-3" />
                     </Button>
