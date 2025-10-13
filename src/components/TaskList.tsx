@@ -732,7 +732,7 @@ const TaskList: React.FC<TaskListProps> = ({ onTaskSelect, selectedTaskId }) => 
                     </Button>
                   )}
                   
-                  {['queued', 'in_progress', 'validation', 'function_execution'].includes(task.status) && (
+                  {!['completed', 'failed', 'cancelled', 'canceled'].includes(task.status) && (
                     <Button
                       size="sm"
                       variant="danger"
