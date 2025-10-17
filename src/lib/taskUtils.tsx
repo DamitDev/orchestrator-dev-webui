@@ -119,7 +119,7 @@ export const getMessageIcon = (role: string) => {
 export const getRoleDisplayName = (role: string): string => {
   switch (role) {
     case 'user':
-      return 'Orchestrator'
+      return 'User'
     case 'assistant':
       return 'Agent'
     case 'system':
@@ -161,6 +161,7 @@ export const getStateDisplayName = (state: string, _workflow_id?: string): strin
   const stateMap: Record<string, string> = {
     'in_progress': 'Agent Turn',
     'agent_turn': 'Agent Turn',
+    'orchestrator_turn': 'Orchestrator Turn',
     'user_turn': 'User Turn',
     'validation': 'Validation',
     'validating': 'Validating',
@@ -177,4 +178,56 @@ export const getStateDisplayName = (state: string, _workflow_id?: string): strin
   }
   
   return stateMap[state] || state.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
+}
+
+/**
+ * Get phase information for Matrix workflow
+ */
+export interface MatrixPhaseInfo {
+  title: string
+  description: string
+  isInteractive: boolean
+  icon: string
+}
+
+export const getMatrixPhaseInfo = (phase: number): MatrixPhaseInfo => {
+  const phases: Record<number, MatrixPhaseInfo> = {
+    0: {
+      title: "Initialization",
+      description: "Setting up the task",
+      isInteractive: false,
+      icon: "🔄",
+    },
+    1: {
+      title: "Discussing Aspect Goal",
+      description: "Consultative discussion about business needs and desired behavior. Focus on business logic - implications, trade-offs, edge cases.",
+      isInteractive: true,
+      icon: "📋",
+    },
+    2: {
+      title: "Selecting Tools",
+      description: "System is automatically identifying required data collection tools. No user interaction needed - this phase completes automatically.",
+      isInteractive: false,
+      icon: "🔧",
+    },
+    3: {
+      title: "Algorithm Design & Specification",
+      description: "Step 1: Exploring database and understanding data structure. Step 2: Creating and refining algorithm description. Step 3: Preparing implementation specification. The Agent will present algorithm design for your review and feedback.",
+      isInteractive: true,
+      icon: "📊",
+    },
+    4: {
+      title: "Implementation & Testing",
+      description: "Agent is implementing the algorithm in Python and testing it. Review test results and provide feedback or approve for deployment.",
+      isInteractive: true,
+      icon: "💻",
+    },
+  }
+  
+  return phases[phase] || {
+    title: "Unknown Phase",
+    description: "",
+    isInteractive: false,
+    icon: "❓",
+  }
 }

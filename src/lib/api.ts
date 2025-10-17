@@ -115,6 +115,28 @@ export const tasksApi = {
       await api.post('/task/ticket/action', data)
     },
   },
+
+  // Matrix workflow methods
+  matrix: {
+    sendMessage: async (taskId: string, message: string): Promise<{ success: boolean; message: string }> => {
+      const response = await api.post('/task/matrix/message', { task_id: taskId, message })
+      return response.data
+    },
+
+    markComplete: async (taskId: string): Promise<{ success: boolean; message: string }> => {
+      const response = await api.post('/task/matrix/mark_complete', { task_id: taskId })
+      return response.data
+    },
+
+    markFailed: async (taskId: string): Promise<{ success: boolean; message: string }> => {
+      const response = await api.post('/task/matrix/mark_failed', { task_id: taskId })
+      return response.data
+    },
+
+    action: async (data: TaskActionRequest): Promise<void> => {
+      await api.post('/task/matrix/action', data)
+    },
+  },
 }
 
 // Configuration API

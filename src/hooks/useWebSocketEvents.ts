@@ -10,6 +10,7 @@ import type {
   TaskDeletedEvent,
   TaskBulkDeletedEvent,
   TaskResultUpdatedEvent,
+  TaskWorkflowDataChangedEvent,
   MessageAddedEvent,
   ApprovalRequestedEvent,
   ApprovalProvidedEvent,
@@ -238,6 +239,66 @@ export const useWebSocketEvents = () => {
               })
             }
           })
+          break
+        }
+
+        case 'task_workflow_data_changed': {
+          const taskEvent = event as TaskWorkflowDataChangedEvent
+          
+          // Update specific task cache with workflow data changes
+          queryClient.setQueryData(queryKeys.task(taskEvent.task_id), (oldTask: Task | undefined) => {
+            if (!oldTask) return oldTask
+            
+            // Merge changed fields into existing workflow_data
+            const updatedWorkflowData = {
+              ...(oldTask.workflow_data || {}),
+              ...taskEvent.changed_fields,
+            }
+            
+            return {
+              ...oldTask,
+              workflow_data: updatedWorkflowData,
+              updated_at: event.timestamp,
+            }
+          })
+          
+          // Update all tasks list caches
+          const queryCache = queryClient.getQueryCache()
+          queryCache.getAll().forEach((query) => {
+            const queryKey = query.queryKey
+            if (queryKey[0] === 'tasks' && query.state.data) {
+              queryClient.setQueryData(queryKey, (oldData: any) => {
+                if (!oldData?.tasks) return oldData
+                return {
+                  ...oldData,
+                  tasks: oldData.tasks.map((task: Task) => {
+                    if (task.id !== taskEvent.task_id) return task
+                    
+                    // Merge changed fields into existing workflow_data
+                    const updatedWorkflowData = {
+                      ...(task.workflow_data || {}),
+                      ...taskEvent.changed_fields,
+                    }
+                    
+                    return {
+                      ...task,
+                      workflow_data: updatedWorkflowData,
+                      updated_at: event.timestamp,
+                    }
+                  }),
+                }
+              })
+            }
+          })
+          
+          // Show notification for important workflow data changes (like phase changes for matrix)
+          if (taskEvent.workflow_id === 'matrix' && 'phase' in taskEvent.changed_fields) {
+            const newPhase = taskEvent.changed_fields.phase
+            toast.success(`Task ${taskEvent.task_id.slice(0, 8)}: Moved to Phase ${newPhase}`, {
+              duration: 5000,
+            })
+          }
+          
           break
         }
 
