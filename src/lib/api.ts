@@ -8,14 +8,15 @@ import type {
   LLMBackendInfo,
   MCPServerInfo,
   TasksResponse,
-  TasksQueryParams
+  TasksQueryParams,
+  AllToolsResponse
 } from '../types/api'
 
 //const API_URL = 'http://172.16.240.6:8082'
-const API_URL = 'http://localhost:8082'
+const API_URL = 'http://localhost:8496'
 
 // WebSocket configuration
-export const WEBSOCKET_URL = 'ws://localhost:8082/ws?client_id=webui'
+export const WEBSOCKET_URL = 'ws://localhost:8496/ws?client_id=webui'
 
 const api = axios.create({
   baseURL: API_URL,
@@ -168,6 +169,14 @@ export const configApi = {
 
   removeMCPServer: async (host: string): Promise<void> => {
     await api.post('/configuration/mcpserver/remove', { host })
+  },
+}
+
+// Tools API
+export const toolsApi = {
+  getAll: async (): Promise<AllToolsResponse> => {
+    const response = await api.get('/tools/all')
+    return response.data
   },
 }
 

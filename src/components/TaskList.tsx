@@ -7,13 +7,16 @@ import {
   useInteractiveTaskAction,
   useTicketTaskAction,
   useProactiveHelpTask,
-  useTicketHelpTask
+  useTicketHelpTask,
+  useTools
 } from '../hooks/useApi'
 import Card from './ui/Card'
 import Button from './ui/Button'
 import StatusBadge from './ui/StatusBadge'
 import LoadingSpinner from './ui/LoadingSpinner'
 import Pagination from './ui/Pagination'
+import ToolSelector from './ToolSelector'
+import ToolOfflineWarning from './ToolOfflineWarning'
 import { formatMessageTimestamp } from '../lib/utils'
 import { Plus, Search, X, Check, XCircle, ChevronUp, ChevronDown, MessageCircle, Zap, Ticket, Users } from 'lucide-react'
 import type { Task, TasksQueryParams } from '../types/api'
@@ -52,6 +55,7 @@ const TaskList: React.FC<TaskListProps> = ({ onTaskSelect, selectedTaskId }) => 
   // Common fields
   const [maxIterations, setMaxIterations] = useState(50)
   const [reasoningEffort, setReasoningEffort] = useState<'low' | 'medium' | 'high'>('medium')
+  const [availableTools, setAvailableTools] = useState<string[] | null>(null)
   
   const queryParams: TasksQueryParams = {
     page: currentPage,
@@ -61,6 +65,7 @@ const TaskList: React.FC<TaskListProps> = ({ onTaskSelect, selectedTaskId }) => 
   }
   
   const { data: tasksResponse, isLoading, error } = useTasks(queryParams)
+  const { data: toolsData } = useTools()
   const createTaskMutation = useCreateTask()
   const cancelTaskMutation = useCancelTask()
   const proactiveTaskActionMutation = useProactiveTaskAction()
@@ -89,6 +94,7 @@ const TaskList: React.FC<TaskListProps> = ({ onTaskSelect, selectedTaskId }) => 
     setSolutionStrategy('')
     setMaxIterations(50)
     setReasoningEffort('medium')
+    setAvailableTools(null)
   }
 
   const resetHelpDialog = () => {
@@ -161,6 +167,11 @@ const TaskList: React.FC<TaskListProps> = ({ onTaskSelect, selectedTaskId }) => 
         workflow_id: workflowType,
         max_iterations: maxIterations,
         reasoning_effort: reasoningEffort,
+      }
+
+      // Add available_tools based on selection state
+      if (availableTools !== null) {
+        requestData.available_tools = availableTools
       }
 
       if (workflowType === 'proactive' || workflowType === 'interactive') {
@@ -480,6 +491,12 @@ const TaskList: React.FC<TaskListProps> = ({ onTaskSelect, selectedTaskId }) => 
                 </div>
               )}
 
+              {/* Tool Selection */}
+              <ToolSelector
+                selectedTools={availableTools}
+                onToolsChange={setAvailableTools}
+              />
+
               {/* Common Settings */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
@@ -635,9 +652,16 @@ const TaskList: React.FC<TaskListProps> = ({ onTaskSelect, selectedTaskId }) => 
                     <span className="text-xs text-gray-500 font-mono">
                       {task.id.slice(0, 8)}
                     </span>
-                    <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded font-medium">
-                      {task.ticket_id}
-                    </span>
+                    {task.ticket_id && (
+                      <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded font-medium">
+                        {task.ticket_id}
+                      </span>
+                    )}
+                    {task.available_tools && task.available_tools.length > 0 && (
+                      <span className="text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded font-medium">
+                        {task.available_tools.length} tool{task.available_tools.length !== 1 ? 's' : ''}
+                      </span>
+                    )}
                     {task.status === 'cancelling' && (
                       <LoadingSpinner size="sm" />
                     )}
@@ -677,6 +701,15 @@ const TaskList: React.FC<TaskListProps> = ({ onTaskSelect, selectedTaskId }) => 
                         </div>
                       </div>
                     </div>
+                  )}
+
+                  {/* Tool Offline Warning */}
+                  {toolsData && (
+                    <ToolOfflineWarning
+                      task={task}
+                      allTools={toolsData.tools}
+                      className="mb-2"
+                    />
                   )}
                   
                   <div className="flex items-center justify-between text-xs text-gray-500">

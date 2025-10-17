@@ -4,6 +4,7 @@ import Card from './ui/Card'
 import StatusBadge from './ui/StatusBadge'
 import LoadingSpinner from './ui/LoadingSpinner'
 import Button from './ui/Button'
+import AllowedToolsAccordion from './AllowedToolsAccordion'
 import { isRunningStatus, formatMessageTimestamp } from '../lib/utils'
 import { MessageSquare, AlertTriangle, Brain, Users, Send, CheckCircle, XCircle } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
@@ -145,7 +146,7 @@ const InteractiveTaskDetail: React.FC<InteractiveTaskDetailProps> = ({ taskId })
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-3 mb-2">
                 <StatusBadge status={task.status} />
-                <span className="text-xs text-gray-500 bg-green-100 text-green-700 px-2 py-1 rounded font-semibold">
+                <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded font-semibold">
                   INTERACTIVE
                 </span>
                 <span className="text-sm text-gray-500 font-mono">ID: {task.id}</span>
@@ -291,6 +292,9 @@ const InteractiveTaskDetail: React.FC<InteractiveTaskDetailProps> = ({ taskId })
               }}
             />
           </div>
+          
+          {/* Allowed Tools Accordion */}
+          <AllowedToolsAccordion task={task} />
         </div>
       </Card>
 
