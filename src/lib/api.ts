@@ -13,10 +13,10 @@ import type {
 } from '../types/api'
 
 //const API_URL = 'http://172.16.240.6:8082'
-const API_URL = 'http://localhost:8496'
+const API_URL = 'http://localhost:8082'
 
 // WebSocket configuration
-export const WEBSOCKET_URL = 'ws://localhost:8496/ws?client_id=webui'
+export const WEBSOCKET_URL = 'ws://localhost:8082/ws?client_id=webui'
 
 const api = axios.create({
   baseURL: API_URL,
