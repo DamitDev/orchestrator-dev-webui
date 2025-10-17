@@ -4,6 +4,7 @@ import Card from './ui/Card'
 import StatusBadge from './ui/StatusBadge'
 import LoadingSpinner from './ui/LoadingSpinner'
 import Button from './ui/Button'
+import AllowedToolsAccordion from './AllowedToolsAccordion'
 import { isRunningStatus, formatMessageTimestamp } from '../lib/utils'
 import { MessageSquare, AlertTriangle, Brain, MessageCircle, X, Ticket } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
@@ -111,7 +112,7 @@ const TicketTaskDetail: React.FC<TicketTaskDetailProps> = ({ taskId }) => {
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-3 mb-2">
                 <StatusBadge status={task.status} />
-                <span className="text-xs text-gray-500 bg-blue-100 text-blue-700 px-2 py-1 rounded font-semibold">
+                <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded font-semibold">
                   TICKET
                 </span>
                 {task.ticket_id && (
@@ -252,6 +253,9 @@ const TicketTaskDetail: React.FC<TicketTaskDetailProps> = ({ taskId }) => {
               }}
             />
           </div>
+          
+          {/* Allowed Tools Accordion */}
+          <AllowedToolsAccordion task={task} />
         </div>
       </Card>
 

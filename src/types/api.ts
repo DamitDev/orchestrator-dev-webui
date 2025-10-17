@@ -8,6 +8,7 @@ export interface Task {
   result: string
   approval_reason: string
   ticket_id?: string // Optional, only for ticket workflow
+  available_tools?: string[] // Optional, list of allowed tools for this task
   created_at: string
   updated_at: string
 }
@@ -55,6 +56,7 @@ export interface TaskCreateRequest {
   system_prompt?: string
   developer_prompt?: string
   reasoning_effort?: 'low' | 'medium' | 'high'
+  available_tools?: string[] // Optional, list of allowed tools for this task
   
   // Workflow-specific fields
   // For ticket workflow:
@@ -100,4 +102,16 @@ export interface TasksQueryParams {
   limit?: number
   order_by?: 'created_at' | 'updated_at'
   order_direction?: 'asc' | 'desc'
+}
+
+export interface ToolInfo {
+  name: string
+  description: string
+  server: string
+}
+
+export interface AllToolsResponse {
+  tools: ToolInfo[]
+  total_tools: number
+  servers: string[]
 }

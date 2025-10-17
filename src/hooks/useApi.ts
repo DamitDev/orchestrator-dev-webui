@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { tasksApi, configApi, healthApi } from '../lib/api'
+import { tasksApi, configApi, healthApi, toolsApi } from '../lib/api'
 import { toast } from 'react-hot-toast'
 import type { TaskCreateRequest, TaskActionRequest, TasksQueryParams } from '../types/api'
 
@@ -13,6 +13,7 @@ export const queryKeys = {
   llmBackends: ['llmBackends'] as const,
   mcpServers: ['mcpServers'] as const,
   taskHandler: ['taskHandler'] as const,
+  tools: ['tools'] as const,
 }
 
 // Tasks hooks
@@ -75,6 +76,17 @@ export const useHealth = () => {
     queryFn: healthApi.check,
     retry: 3,
     retryDelay: 1000,
+  })
+}
+
+// Tools hook
+export const useTools = () => {
+  return useQuery({
+    queryKey: queryKeys.tools,
+    queryFn: () => toolsApi.getAll(),
+    staleTime: 10000, // Cache for 10 seconds
+    refetchInterval: 30000, // Refetch every 30 seconds
+    refetchIntervalInBackground: true, // Continue refetching in background
   })
 }
 
@@ -285,6 +297,7 @@ export const useAddMCPServer = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.mcpServers })
       queryClient.invalidateQueries({ queryKey: queryKeys.config })
+      queryClient.invalidateQueries({ queryKey: queryKeys.tools })
       toast.success('MCP Server added successfully!')
     },
     onError: (error: any) => {
@@ -301,6 +314,7 @@ export const useRemoveMCPServer = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.mcpServers })
       queryClient.invalidateQueries({ queryKey: queryKeys.config })
+      queryClient.invalidateQueries({ queryKey: queryKeys.tools })
       toast.success('MCP Server removed successfully!')
     },
     onError: (error: any) => {
