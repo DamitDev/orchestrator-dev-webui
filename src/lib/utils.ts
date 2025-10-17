@@ -68,6 +68,7 @@ export function getStatusColor(status: string): string {
       return 'bg-blue-100 text-blue-800'
     case 'in_progress':
     case 'agent_turn':
+    case 'orchestrator_turn':
     case 'validation':
       return 'bg-yellow-100 text-yellow-800'
     case 'user_turn':
@@ -76,6 +77,7 @@ export function getStatusColor(status: string): string {
       return 'bg-purple-100 text-purple-800'
     case 'queued':
     case 'queued_for_function_execution':
+    case 'start':
       return 'bg-gray-100 text-gray-800'
     default:
       return 'bg-gray-100 text-gray-800'
@@ -99,6 +101,7 @@ export function getStatusIcon(status: string): string {
       return '💬'
     case 'in_progress':
     case 'agent_turn':
+    case 'orchestrator_turn':
       return '🔄'
     case 'user_turn':
       return '👤'
@@ -111,11 +114,13 @@ export function getStatusIcon(status: string): string {
       return '⏳'
     case 'queued_for_function_execution':
       return '📋'
+    case 'start':
+      return '🚀'
     default:
       return '❓'
   }
 }
 
 export function isRunningStatus(status: string): boolean {
-  return ['in_progress', 'agent_turn', 'user_turn', 'validation', 'validating'].includes(status)
+  return ['in_progress', 'agent_turn', 'orchestrator_turn', 'user_turn', 'validation', 'validating'].includes(status)
 }
