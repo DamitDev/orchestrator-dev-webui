@@ -63,6 +63,12 @@ export interface TaskResultUpdatedEvent extends TaskEvent {
   result: string
 }
 
+export interface TaskWorkflowDataChangedEvent extends TaskEvent {
+  event_type: 'task_workflow_data_changed'
+  workflow_id: string
+  changed_fields: Record<string, any>
+}
+
 // === CONVERSATION EVENTS ===
 
 export interface MessageAddedEvent extends ConversationEvent {
@@ -181,6 +187,7 @@ export type WebSocketEventUnion =
   | TaskDeletedEvent
   | TaskBulkDeletedEvent
   | TaskResultUpdatedEvent
+  | TaskWorkflowDataChangedEvent
   // Conversation
   | MessageAddedEvent
   | MessageStreamingEvent

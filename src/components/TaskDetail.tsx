@@ -5,6 +5,7 @@ import LoadingSpinner from './ui/LoadingSpinner'
 import ProactiveTaskDetail from './ProactiveTaskDetail'
 import TicketTaskDetail from './TicketTaskDetail'
 import InteractiveTaskDetail from './InteractiveTaskDetail'
+import MatrixTaskDetail from './MatrixTaskDetail'
 import { AlertTriangle } from 'lucide-react'
 
 interface TaskDetailProps {
@@ -46,6 +47,8 @@ const TaskDetail: React.FC<TaskDetailProps> = ({ taskId }) => {
       return <TicketTaskDetail taskId={taskId} />
     case 'interactive':
       return <InteractiveTaskDetail taskId={taskId} />
+    case 'matrix':
+      return <MatrixTaskDetail taskId={taskId} />
     default:
       return (
         <Card className="h-full">
