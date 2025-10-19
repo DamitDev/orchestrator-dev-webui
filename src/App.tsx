@@ -5,7 +5,8 @@ import Dashboard from './components/Dashboard'
 import TaskList from './components/TaskList'
 import TaskDetail from './components/TaskDetail'
 import Settings from './components/Settings'
-import { WebSocketProvider } from './components/WebSocketProvider'
+import { WebSocketProvider } from './contexts/WebSocketContext'
+import { WebSocketEventsInitializer } from './components/WebSocketEventsInitializer'
 import { ConnectionStatus } from './components/ConnectionStatus'
 import { LayoutDashboard, ListTodo, Settings as SettingsIcon, Cpu } from 'lucide-react'
 import type { Task } from './types/api'
@@ -80,6 +81,7 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <WebSocketProvider>
+        <WebSocketEventsInitializer />
         <div className="h-screen bg-gray-50 flex flex-col">
         {/* Navigation */}
         <nav className="bg-white shadow-sm border-b border-gray-200 flex-shrink-0">

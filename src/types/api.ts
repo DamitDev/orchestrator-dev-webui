@@ -19,6 +19,7 @@ export interface TaskConversation {
 }
 
 export interface ConversationMessage {
+  id: number
   role: string
   content: string
   reasoning?: string

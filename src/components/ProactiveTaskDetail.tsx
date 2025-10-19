@@ -1,10 +1,12 @@
 import React, { useEffect, useRef, useState } from 'react'
-import { useTask, useTaskConversation, useProactiveGuideTask } from '../hooks/useApi'
+import { useTask, useProactiveGuideTask } from '../hooks/useApi'
+import { useStreamingConversation } from '../hooks/useStreamingConversation'
 import Card from './ui/Card'
 import StatusBadge from './ui/StatusBadge'
 import LoadingSpinner from './ui/LoadingSpinner'
 import Button from './ui/Button'
 import AllowedToolsAccordion from './AllowedToolsAccordion'
+import StreamingMessage from './StreamingMessage'
 import { isRunningStatus, formatMessageTimestamp } from '../lib/utils'
 import { MessageSquare, AlertTriangle, Brain, MessageCircle, X } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
@@ -25,7 +27,7 @@ interface ProactiveTaskDetailProps {
 
 const ProactiveTaskDetail: React.FC<ProactiveTaskDetailProps> = ({ taskId }) => {
   const { data: task, isLoading: taskLoading } = useTask(taskId)
-  const { data: conversation, isLoading: conversationLoading } = useTaskConversation(taskId)
+  const { conversation, isLoading: conversationLoading } = useStreamingConversation(taskId)
   const guideTask = useProactiveGuideTask()
   
   const conversationEndRef = useRef<HTMLDivElement>(null)
@@ -38,7 +40,7 @@ const ProactiveTaskDetail: React.FC<ProactiveTaskDetailProps> = ({ taskId }) => 
 
   // Auto-scroll to bottom when conversation updates
   useEffect(() => {
-    if (conversation && scrollContainerRef.current && conversation.conversation.length > 0) {
+    if (scrollContainerRef.current && conversation.length > 0) {
       setTimeout(() => {
         if (scrollContainerRef.current) {
           scrollContainerRef.current.scrollTop = scrollContainerRef.current.scrollHeight
@@ -264,18 +266,39 @@ const ProactiveTaskDetail: React.FC<ProactiveTaskDetailProps> = ({ taskId }) => 
           style={{ minHeight: '400px' }}
         >
           <div className="space-y-4">
-            {conversation.conversation.length === 0 ? (
+            {conversation.length === 0 ? (
               <div className="text-center text-gray-500 py-8">
                 <MessageSquare className="h-8 w-8 mx-auto mb-2 text-gray-400" />
                 <p>No conversation yet</p>
               </div>
             ) : (
               <>
-                {conversation.conversation.map((message: ConversationMessage, index: number) => (
-                  <div
-                    key={index}
-                    className={`border rounded-lg p-4 ${getMessageBgColor(message.role)}`}
-                  >
+                {/* Unified conversation messages */}
+                {conversation.map((message: ConversationMessage, index: number) => {
+                  // Check if this is a streaming message
+                  const isStreaming = 'isStreaming' in message && message.isStreaming
+                  
+                  if (isStreaming) {
+                    // Render as streaming message
+                    return (
+                      <StreamingMessage
+                        key={`streaming-${(message as any).id || index}`}
+                        message={message as any}
+                        showTimestamp={true}
+                      />
+                    )
+                  }
+
+                  if (conversation.find((m: any) => m.id === (message as any).id && m.isStreaming)) {
+                    return <></>;
+                  }
+                  
+                  // Render as regular message
+                  return (
+                    <div
+                      key={index}
+                      className={`border rounded-lg p-4 ${getMessageBgColor(message.role)}`}
+                    >
                     <div className="flex items-center gap-2 mb-2">
                       {getMessageIcon(message.role)}
                       <span className="font-medium text-sm">
@@ -296,7 +319,19 @@ const ProactiveTaskDetail: React.FC<ProactiveTaskDetailProps> = ({ taskId }) => 
                     {/* Reasoning section - appears before content */}
                     {message.reasoning && renderReasoningSection(message.reasoning)}
                     
-                    {renderMessageContent(message.role, message.content)}
+                    {/* Show thinking indicator if message is completely empty */}
+                    {!message.content && !message.reasoning && (!message.tool_calls || message.tool_calls.length === 0) ? (
+                      <div className="flex items-center gap-2 text-gray-600 py-2">
+                        <div className="flex space-x-1">
+                          <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                          <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                          <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                        </div>
+                        <span className="text-sm font-medium">Thinking...</span>
+                      </div>
+                    ) : (
+                      renderMessageContent(message.role, message.content)
+                    )}
                     
                     {message.tool_calls && message.tool_calls.length > 0 && (
                       <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded">
@@ -335,7 +370,9 @@ const ProactiveTaskDetail: React.FC<ProactiveTaskDetailProps> = ({ taskId }) => 
                       </div>
                     )}
                   </div>
-                ))}
+                  )
+                })}
+                
                 {/* Invisible div to scroll to */}
                 <div ref={conversationEndRef} />
               </>
