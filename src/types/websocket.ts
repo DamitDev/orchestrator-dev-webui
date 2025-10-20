@@ -67,8 +67,24 @@ export interface TaskResultUpdatedEvent extends TaskEvent {
 
 export interface MessageAddedEvent extends ConversationEvent {
   event_type: 'message_added'
+  message_id: number
   role: string
   content?: string
+  name?: string
+  tool_calls?: any[]
+  tool_call_id?: string
+  reasoning?: string
+  has_tool_calls: boolean
+  tool_call_count: number
+}
+
+export interface MessageStreamingEvent extends ConversationEvent {
+  event_type: 'message_streaming'
+  message_id: number
+  role: string
+  content: string
+  is_complete: boolean
+  stream_index: number
   name?: string
   tool_calls?: any[]
   tool_call_id?: string
@@ -167,6 +183,7 @@ export type WebSocketEventUnion =
   | TaskResultUpdatedEvent
   // Conversation
   | MessageAddedEvent
+  | MessageStreamingEvent
   | IterationReminderAddedEvent
   // Human interaction
   | ApprovalRequestedEvent
