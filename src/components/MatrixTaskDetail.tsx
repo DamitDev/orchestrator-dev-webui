@@ -15,7 +15,6 @@ import {
   getMessageIcon,
   getRoleDisplayName,
   getMessageBgColor,
-  getStateDisplayName,
   getMatrixPhaseInfo,
 } from '../lib/taskUtils'
 
