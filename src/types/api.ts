@@ -45,9 +45,19 @@ export interface LLMBackendInfo {
   models: string[]
 }
 
+export interface LLMBackendConfig {
+  url: string
+  api_key: string
+}
+
 export interface MCPServerInfo {
   base_url: string
   tools: string[]
+}
+
+export interface MCPServerConfig {
+  url: string
+  api_key: string
 }
 
 export interface TaskCreateRequest {
