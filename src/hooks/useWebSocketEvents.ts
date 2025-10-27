@@ -93,7 +93,13 @@ export const useWebSocketEvents = () => {
           // For statuses that need additional data (like help/approval messages), invalidate to fetch fresh data
           if (['help_required', 'action_required'].includes(taskEvent.new_status)) {
             queryClient.invalidateQueries({ queryKey: queryKeys.task(taskEvent.task_id) })
+            queryClient.invalidateQueries({ queryKey: queryKeys.taskConversation(taskEvent.task_id) })
             queryClient.invalidateQueries({ queryKey: queryKeys.tasks() })
+          }
+          
+          // Also invalidate conversation when status changes to running states to catch new messages
+          if (['in_progress', 'validation', 'function_execution'].includes(taskEvent.new_status)) {
+            queryClient.invalidateQueries({ queryKey: queryKeys.taskConversation(taskEvent.task_id) })
           }
           
           // Show status change notifications for important changes
@@ -252,6 +258,7 @@ export const useWebSocketEvents = () => {
               if (!oldConversation) return oldConversation
               
               const newMessage: ConversationMessage = {
+                id: messageEvent.message_id,
                 role: messageEvent.role,
                 content: messageEvent.content || '',
                 created_at: event.timestamp,
