@@ -150,8 +150,7 @@ export const configApi = {
   // LLM Backend management
   addLLMBackend: async (host: string, apiKey: string): Promise<void> => {
     await api.post('/configuration/llmbackend/add', { 
-      hosts: [host], 
-      api_keys: [apiKey] 
+      backends: [{ url: host, api_key: apiKey }]
     })
   },
 
@@ -162,8 +161,7 @@ export const configApi = {
   // MCP Server management
   addMCPServer: async (host: string, apiKey: string): Promise<void> => {
     await api.post('/configuration/mcpserver/add', { 
-      hosts: [host], 
-      api_keys: [apiKey] 
+      servers: [{ url: host, api_key: apiKey }]
     })
   },
 
