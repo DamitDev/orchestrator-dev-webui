@@ -11,12 +11,10 @@ import type {
   TasksQueryParams,
   AllToolsResponse
 } from '../types/api'
+import { getToken, isKeycloakEnabled, login } from './keycloak'
+import { API_URL } from './config'
 
-//const API_URL = 'http://172.16.240.6:8082'
-const API_URL = 'http://localhost:8082'
-
-// WebSocket configuration
-export const WEBSOCKET_URL = 'ws://localhost:8082/ws?client_id=webui'
+export { API_URL, WEBSOCKET_URL } from './config'
 
 const api = axios.create({
   baseURL: API_URL,
@@ -25,6 +23,42 @@ const api = axios.create({
     'Content-Type': 'application/json',
   },
 })
+
+// Request interceptor to add Bearer token
+api.interceptors.request.use(
+  (config) => {
+    // Only add token if Keycloak is enabled
+    if (isKeycloakEnabled()) {
+      const token = getToken()
+      if (token) {
+        console.log('[API] Adding Bearer token to request:', config.url)
+        config.headers.Authorization = `Bearer ${token}`
+      } else {
+        console.warn('[API] Keycloak enabled but no token available for request:', config.url)
+      }
+    }
+    return config
+  },
+  (error) => {
+    console.error('[API] Request interceptor error:', error)
+    return Promise.reject(error)
+  }
+)
+
+// Response interceptor to handle 401 errors
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    // If we get a 401 and Keycloak is enabled, redirect to login
+    if (error.response?.status === 401 && isKeycloakEnabled()) {
+      console.error('[API] Got 401 Unauthorized for:', error.config?.url)
+      console.error('[API] Response:', error.response?.data)
+      console.error('[API] Redirecting to login...')
+      login()
+    }
+    return Promise.reject(error)
+  }
+)
 
 // Task API
 export const tasksApi = {

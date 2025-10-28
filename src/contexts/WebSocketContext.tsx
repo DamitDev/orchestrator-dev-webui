@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useRef, useEffect, useState, useCallback } from 'react'
 import { toast } from 'react-hot-toast'
-import { WEBSOCKET_URL } from '../lib/api'
+import { WEBSOCKET_URL } from '../lib/config'
+import { useAuth } from './AuthContext'
 import type {
   WebSocketMessage,
   WebSocketConnectionState,
@@ -36,6 +37,7 @@ interface WebSocketProviderProps {
 }
 
 export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }) => {
+  const { isAuthenticated, isLoading } = useAuth()
   const [connectionState, setConnectionState] = useState<WebSocketConnectionState>({
     connected: false,
     connecting: false,
@@ -230,14 +232,22 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
     subscriptionsRef.current.delete(subscriptionId)
   }, [])
 
-  // Auto-connect on mount
+  // Auto-connect only after authentication is complete
   useEffect(() => {
-    connect()
+    // Don't connect while authentication is loading
+    if (isLoading) {
+      return
+    }
+
+    // Only connect if authenticated
+    if (isAuthenticated) {
+      connect()
+    }
     
     return () => {
       disconnect()
     }
-  }, [connect, disconnect])
+  }, [isAuthenticated, isLoading, connect, disconnect])
 
   const contextValue: WebSocketContextType = {
     connectionState,
