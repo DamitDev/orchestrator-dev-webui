@@ -13,10 +13,10 @@ import type {
 } from '../types/api'
 
 //const API_URL = 'http://172.16.240.6:8082'
-const API_URL = 'http://localhost:8496'
+const API_URL = 'http://localhost:8082'
 
 // WebSocket configuration
-export const WEBSOCKET_URL = 'ws://localhost:8496/ws?client_id=webui'
+export const WEBSOCKET_URL = 'ws://localhost:8082/ws?client_id=webui'
 
 const api = axios.create({
   baseURL: API_URL,
@@ -113,6 +113,28 @@ export const tasksApi = {
 
     action: async (data: TaskActionRequest): Promise<void> => {
       await api.post('/task/ticket/action', data)
+    },
+  },
+
+  // Matrix workflow methods
+  matrix: {
+    sendMessage: async (taskId: string, message: string): Promise<{ success: boolean; message: string }> => {
+      const response = await api.post('/task/matrix/message', { task_id: taskId, message })
+      return response.data
+    },
+
+    markComplete: async (taskId: string): Promise<{ success: boolean; message: string }> => {
+      const response = await api.post('/task/matrix/mark_complete', { task_id: taskId })
+      return response.data
+    },
+
+    markFailed: async (taskId: string): Promise<{ success: boolean; message: string }> => {
+      const response = await api.post('/task/matrix/mark_failed', { task_id: taskId })
+      return response.data
+    },
+
+    action: async (data: TaskActionRequest): Promise<void> => {
+      await api.post('/task/matrix/action', data)
     },
   },
 }

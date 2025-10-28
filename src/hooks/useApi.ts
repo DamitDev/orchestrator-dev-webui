@@ -361,10 +361,10 @@ export const useSendInteractiveMessage = () => {
     mutationFn: ({ taskId, message }: { taskId: string; message: string }) => 
       tasksApi.interactive.sendMessage(taskId, message),
     onSuccess: (_, variables) => {
+      // Don't invalidate conversation - WebSocket will add the message in real-time
+      // Only invalidate task status and lists for updated_at timestamp
       queryClient.invalidateQueries({ queryKey: ['tasks'] })
       queryClient.invalidateQueries({ queryKey: queryKeys.task(variables.taskId) })
-      queryClient.invalidateQueries({ queryKey: queryKeys.taskConversation(variables.taskId) })
-      queryClient.invalidateQueries({ queryKey: queryKeys.config })
       toast.success('Message sent successfully!')
     },
     onError: (error: any) => {
@@ -403,6 +403,77 @@ export const useMarkTaskFailed = () => {
     },
     onError: (error: any) => {
       toast.error(`Failed to mark task failed: ${error.response?.data?.error || error.message}`)
+    },
+  })
+}
+
+// Matrix workflow hooks
+export const useSendMatrixMessage = () => {
+  const queryClient = useQueryClient()
+  
+  return useMutation({
+    mutationFn: ({ taskId, message }: { taskId: string; message: string }) => 
+      tasksApi.matrix.sendMessage(taskId, message),
+    onSuccess: (_, variables) => {
+      // Don't invalidate conversation - WebSocket will add the message in real-time
+      // Only invalidate task status and lists for updated_at timestamp
+      queryClient.invalidateQueries({ queryKey: ['tasks'] })
+      queryClient.invalidateQueries({ queryKey: queryKeys.task(variables.taskId) })
+      toast.success('Message sent successfully!')
+    },
+    onError: (error: any) => {
+      toast.error(`Failed to send message: ${error.response?.data?.error || error.message}`)
+    },
+  })
+}
+
+export const useMarkMatrixComplete = () => {
+  const queryClient = useQueryClient()
+  
+  return useMutation({
+    mutationFn: (taskId: string) => tasksApi.matrix.markComplete(taskId),
+    onSuccess: (_, taskId) => {
+      queryClient.invalidateQueries({ queryKey: ['tasks'] })
+      queryClient.invalidateQueries({ queryKey: queryKeys.task(taskId) })
+      queryClient.invalidateQueries({ queryKey: queryKeys.config })
+      toast.success('Phase marked as complete!')
+    },
+    onError: (error: any) => {
+      toast.error(`Failed to mark phase complete: ${error.response?.data?.error || error.message}`)
+    },
+  })
+}
+
+export const useMarkMatrixFailed = () => {
+  const queryClient = useQueryClient()
+  
+  return useMutation({
+    mutationFn: (taskId: string) => tasksApi.matrix.markFailed(taskId),
+    onSuccess: (_, taskId) => {
+      queryClient.invalidateQueries({ queryKey: ['tasks'] })
+      queryClient.invalidateQueries({ queryKey: queryKeys.task(taskId) })
+      queryClient.invalidateQueries({ queryKey: queryKeys.config })
+      toast.success('Task marked as failed!')
+    },
+    onError: (error: any) => {
+      toast.error(`Failed to mark task failed: ${error.response?.data?.error || error.message}`)
+    },
+  })
+}
+
+export const useMatrixTaskAction = () => {
+  const queryClient = useQueryClient()
+  
+  return useMutation({
+    mutationFn: (data: TaskActionRequest) => tasksApi.matrix.action(data),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['tasks'] })
+      queryClient.invalidateQueries({ queryKey: queryKeys.task(variables.task_id) })
+      queryClient.invalidateQueries({ queryKey: queryKeys.config })
+      toast.success(variables.approved ? 'Task approved!' : 'Task rejected!')
+    },
+    onError: (error: any) => {
+      toast.error(`Failed to perform task action: ${error.message}`)
     },
   })
 }

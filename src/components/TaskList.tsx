@@ -18,7 +18,7 @@ import Pagination from './ui/Pagination'
 import ToolSelector from './ToolSelector'
 import ToolOfflineWarning from './ToolOfflineWarning'
 import { formatMessageTimestamp } from '../lib/utils'
-import { Plus, Search, X, Check, XCircle, ChevronUp, ChevronDown, MessageCircle, Zap, Ticket, Users } from 'lucide-react'
+import { Plus, Search, X, Check, XCircle, ChevronUp, ChevronDown, MessageCircle, Zap, Ticket, Users, Grid } from 'lucide-react'
 import type { Task, TasksQueryParams } from '../types/api'
 
 interface TaskListProps {
@@ -26,7 +26,7 @@ interface TaskListProps {
   selectedTaskId?: string
 }
 
-type WorkflowType = 'proactive' | 'ticket' | 'interactive'
+type WorkflowType = 'proactive' | 'ticket' | 'interactive' | 'matrix'
 
 const TaskList: React.FC<TaskListProps> = ({ onTaskSelect, selectedTaskId }) => {
   const [showCreateForm, setShowCreateForm] = useState(false)
@@ -156,7 +156,7 @@ const TaskList: React.FC<TaskListProps> = ({ onTaskSelect, selectedTaskId }) => 
     e.preventDefault()
     
     // Validation based on workflow type
-    if (workflowType === 'proactive' || workflowType === 'interactive') {
+    if (workflowType === 'proactive' || workflowType === 'interactive' || workflowType === 'matrix') {
       if (!goalPrompt.trim()) return
     } else if (workflowType === 'ticket') {
       if (!ticketId.trim()) return
@@ -174,7 +174,7 @@ const TaskList: React.FC<TaskListProps> = ({ onTaskSelect, selectedTaskId }) => 
         requestData.available_tools = availableTools
       }
 
-      if (workflowType === 'proactive' || workflowType === 'interactive') {
+      if (workflowType === 'proactive' || workflowType === 'interactive' || workflowType === 'matrix') {
         requestData.goal_prompt = goalPrompt
       } else if (workflowType === 'ticket') {
         requestData.ticket_id = ticketId
@@ -352,7 +352,7 @@ const TaskList: React.FC<TaskListProps> = ({ onTaskSelect, selectedTaskId }) => 
                 <label className="block text-sm font-medium text-gray-700 mb-3">
                   Workflow Type <span className="text-red-500">*</span>
                 </label>
-                <div className="grid grid-cols-3 gap-3">
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
                   <button
                     type="button"
                     onClick={() => setWorkflowType('proactive')}
@@ -400,23 +400,48 @@ const TaskList: React.FC<TaskListProps> = ({ onTaskSelect, selectedTaskId }) => 
                     <div className="text-sm font-medium text-gray-900">Interactive</div>
                     <div className="text-xs text-gray-500 mt-1">User interaction</div>
                   </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setWorkflowType('matrix')}
+                    className={`p-4 border-2 rounded-lg transition-all ${
+                      workflowType === 'matrix'
+                        ? 'border-orange-500 bg-orange-50'
+                        : 'border-gray-200 hover:border-gray-300'
+                    }`}
+                  >
+                    <Grid className={`h-6 w-6 mx-auto mb-2 ${
+                      workflowType === 'matrix' ? 'text-orange-600' : 'text-gray-400'
+                    }`} />
+                    <div className="text-sm font-medium text-gray-900">Matrix</div>
+                    <div className="text-xs text-gray-500 mt-1">Multi-phase algorithm</div>
+                  </button>
                 </div>
               </div>
 
-              {/* Proactive/Interactive Fields */}
-              {(workflowType === 'proactive' || workflowType === 'interactive') && (
+              {/* Proactive/Interactive/Matrix Fields */}
+              {(workflowType === 'proactive' || workflowType === 'interactive' || workflowType === 'matrix') && (
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Goal Prompt <span className="text-red-500">*</span>
+                    {workflowType === 'matrix' ? 'Aspect Goal Description' : 'Goal Prompt'} <span className="text-red-500">*</span>
                   </label>
                   <textarea
                     value={goalPrompt}
                     onChange={(e) => setGoalPrompt(e.target.value)}
-                    placeholder="Describe what you want the agent to accomplish..."
+                    placeholder={
+                      workflowType === 'matrix' 
+                        ? 'Describe the aspect for the algorithm (e.g., "professional experience", "technical knowledge")...'
+                        : 'Describe what you want the agent to accomplish...'
+                    }
                     rows={4}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                     required
                   />
+                  {workflowType === 'matrix' && (
+                    <p className="mt-1 text-xs text-gray-500">
+                      This will be used to create a new algorithm for the IRIS Matrix Optimization system.
+                    </p>
+                  )}
                 </div>
               )}
 
@@ -553,6 +578,7 @@ const TaskList: React.FC<TaskListProps> = ({ onTaskSelect, selectedTaskId }) => 
                     createTaskMutation.isPending || 
                     (workflowType === 'proactive' && !goalPrompt.trim()) ||
                     (workflowType === 'interactive' && !goalPrompt.trim()) ||
+                    (workflowType === 'matrix' && !goalPrompt.trim()) ||
                     (workflowType === 'ticket' && !ticketId.trim())
                   }
                   className="flex items-center gap-2"

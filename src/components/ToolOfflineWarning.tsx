@@ -1,5 +1,5 @@
 import React from 'react'
-import { AlertTriangle, Wrench, X } from 'lucide-react'
+import { AlertTriangle, Wrench } from 'lucide-react'
 import type { Task, ToolInfo } from '../types/api'
 
 interface ToolOfflineWarningProps {

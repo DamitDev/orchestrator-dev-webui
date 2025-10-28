@@ -9,6 +9,13 @@ export interface Task {
   approval_reason: string
   ticket_id?: string // Optional, only for ticket workflow
   available_tools?: string[] // Optional, list of allowed tools for this task
+  workflow_data?: Record<string, any> & {
+    // Matrix workflow fields
+    phase?: number           // 0-4, current phase in matrix workflow
+    aspect_goal?: string     // from Phase 1 in matrix workflow
+    strategy?: string        // implementation_spec from Phase 3 in matrix workflow
+    // Other workflows can add their own fields here
+  }
   created_at: string
   updated_at: string
 }
