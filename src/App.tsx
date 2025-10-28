@@ -95,13 +95,20 @@ function AppContent() {
     )
   }
 
-  // If authentication is required but user is not authenticated, show message
-  if (!isAuthenticated) {
+  // If authentication is required but user is not authenticated
+  if (!isAuthenticated && keycloakEnabled) {
     return (
       <div className="h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <Cpu className="h-12 w-12 mx-auto mb-4 text-primary-600" />
-          <p className="text-lg font-medium text-gray-900">Redirecting to login...</p>
+        <div className="text-center max-w-md px-4">
+          <Cpu className="h-12 w-12 mx-auto mb-4 text-red-600" />
+          <p className="text-lg font-medium text-gray-900 mb-2">Authentication Failed</p>
+          <p className="text-sm text-gray-600 mb-4">
+            Cannot connect to the authentication server. Please check the browser console for details.
+          </p>
+          <p className="text-xs text-gray-500">
+            If you're a developer: Check if the Keycloak server is running and accessible,
+            or disable Keycloak authentication in the backend configuration.
+          </p>
         </div>
       </div>
     )

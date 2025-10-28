@@ -1,5 +1,6 @@
 import Keycloak from 'keycloak-js'
 import axios from 'axios'
+import { API_URL } from './config'
 
 // Auth configuration fetched from backend
 export interface AuthConfig {
@@ -22,10 +23,10 @@ export async function fetchAuthConfig(): Promise<AuthConfig> {
   }
 
   try {
-    // Get API URL from environment or use default
-    const apiUrl = import.meta.env.VITE_API_URL || 'http://oapi.iris.work/uat'
-    const response = await axios.get<AuthConfig>(`${apiUrl}/auth/config`)
+    // Use the same API URL as the rest of the application
+    const response = await axios.get<AuthConfig>(`${API_URL}/auth/config`)
     authConfig = response.data
+    console.log('Fetched auth config:', authConfig)
     return authConfig
   } catch (error) {
     console.error('Failed to fetch auth config:', error)
@@ -63,14 +64,28 @@ export async function initKeycloak(): Promise<{
   })
 
   try {
+    console.log('Initializing Keycloak with config:', {
+      url: config.keycloak_url,
+      realm: config.keycloak_realm,
+      clientId: config.keycloak_client_id,
+    })
+
     // Initialize Keycloak with login-required
     const authenticated = await keycloakInstance.init({
       onLoad: 'login-required', // Automatically redirect to login if not authenticated
       checkLoginIframe: false, // Disable iframe check for better compatibility
       pkceMethod: 'S256', // Use PKCE for security
+      enableLogging: true, // Enable Keycloak debug logging
     })
 
-    console.log('Keycloak initialized, authenticated:', authenticated)
+    console.log('Keycloak initialization complete')
+    console.log('Authenticated:', authenticated)
+    console.log('Token present:', !!keycloakInstance.token)
+    console.log('Token parsed:', !!keycloakInstance.tokenParsed)
+    
+    if (keycloakInstance.token) {
+      console.log('Token preview (first 50 chars):', keycloakInstance.token.substring(0, 50))
+    }
 
     // Setup token refresh
     if (authenticated) {
@@ -80,6 +95,19 @@ export async function initKeycloak(): Promise<{
     return { authenticated, keycloakInstance }
   } catch (error) {
     console.error('Keycloak initialization failed:', error)
+    console.error('Error type:', error instanceof Error ? error.constructor.name : typeof error)
+    console.error('Error message:', error instanceof Error ? error.message : String(error))
+    
+    // If it's a NetworkError, the Keycloak server is unreachable
+    if (error instanceof TypeError && error.message.includes('NetworkError')) {
+      console.error('❌ Cannot reach Keycloak server at:', config.keycloak_url)
+      console.error('Possible causes:')
+      console.error('1. Keycloak server is down or unreachable')
+      console.error('2. CORS not configured (check Keycloak "Web Origins")')
+      console.error('3. Wrong Keycloak URL (should end with /auth/)')
+      console.error('4. Network/firewall blocking the connection')
+    }
+    
     throw error
   }
 }

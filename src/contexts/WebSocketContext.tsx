@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useRef, useEffect, useState, useCallback } from 'react'
 import { toast } from 'react-hot-toast'
-import { WEBSOCKET_URL } from '../lib/api'
+import { WEBSOCKET_URL } from '../lib/config'
 import { useAuth } from './AuthContext'
 import type {
   WebSocketMessage,
