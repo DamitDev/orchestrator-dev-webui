@@ -8,7 +8,8 @@ import Settings from './components/Settings'
 import { WebSocketProvider } from './contexts/WebSocketContext'
 import { WebSocketEventsInitializer } from './components/WebSocketEventsInitializer'
 import { ConnectionStatus } from './components/ConnectionStatus'
-import { LayoutDashboard, ListTodo, Settings as SettingsIcon, Cpu } from 'lucide-react'
+import { AuthProvider, useAuth } from './contexts/AuthContext'
+import { LayoutDashboard, ListTodo, Settings as SettingsIcon, Cpu, LogOut, User } from 'lucide-react'
 import type { Task } from './types/api'
 
 const queryClient = new QueryClient({
@@ -22,9 +23,10 @@ const queryClient = new QueryClient({
 
 type Tab = 'dashboard' | 'tasks' | 'settings'
 
-function App() {
+function AppContent() {
   const [activeTab, setActiveTab] = useState<Tab>('dashboard')
   const [selectedTask, setSelectedTask] = useState<Task | null>(null)
+  const { isAuthenticated, isLoading, keycloakEnabled, userInfo, logout } = useAuth()
 
   const tabs = [
     { id: 'dashboard' as const, label: 'Dashboard', icon: LayoutDashboard },
@@ -78,11 +80,37 @@ function App() {
     }
   }
 
+  // Show loading screen while checking authentication
+  if (isLoading) {
+    return (
+      <div className="h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <Cpu className="h-12 w-12 mx-auto mb-4 text-primary-600 animate-pulse" />
+          <p className="text-lg font-medium text-gray-900">Loading...</p>
+          <p className="text-sm text-gray-500 mt-2">
+            {keycloakEnabled ? 'Checking authentication...' : 'Initializing application...'}
+          </p>
+        </div>
+      </div>
+    )
+  }
+
+  // If authentication is required but user is not authenticated, show message
+  if (!isAuthenticated) {
+    return (
+      <div className="h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <Cpu className="h-12 w-12 mx-auto mb-4 text-primary-600" />
+          <p className="text-lg font-medium text-gray-900">Redirecting to login...</p>
+        </div>
+      </div>
+    )
+  }
+
   return (
-    <QueryClientProvider client={queryClient}>
-      <WebSocketProvider>
-        <WebSocketEventsInitializer />
-        <div className="h-screen bg-gray-50 flex flex-col">
+    <WebSocketProvider>
+      <WebSocketEventsInitializer />
+      <div className="h-screen bg-gray-50 flex flex-col">
         {/* Navigation */}
         <nav className="bg-white shadow-sm border-b border-gray-200 flex-shrink-0">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -99,63 +127,89 @@ function App() {
               <div className="flex items-center space-x-4">
                 <ConnectionStatus />
                 <div className="flex items-center space-x-1">
-                {tabs.map((tab) => {
-                  const IconComponent = tab.icon
-                  return (
-                    <button
-                      key={tab.id}
-                      onClick={() => setActiveTab(tab.id)}
-                      className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                        activeTab === tab.id
-                          ? 'bg-primary-100 text-primary-700'
-                          : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-                      }`}
-                    >
-                      <IconComponent className="h-4 w-4" />
-                      {tab.label}
-                    </button>
-                  )
-                })}
+                  {tabs.map((tab) => {
+                    const IconComponent = tab.icon
+                    return (
+                      <button
+                        key={tab.id}
+                        onClick={() => setActiveTab(tab.id)}
+                        className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                          activeTab === tab.id
+                            ? 'bg-primary-100 text-primary-700'
+                            : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                        }`}
+                      >
+                        <IconComponent className="h-4 w-4" />
+                        {tab.label}
+                      </button>
+                    )
+                  })}
                 </div>
+                
+                {/* User info and logout button (only shown when Keycloak is enabled) */}
+                {keycloakEnabled && (
+                  <div className="flex items-center gap-2 ml-4 pl-4 border-l border-gray-200">
+                    <div className="flex items-center gap-2 text-sm text-gray-700">
+                      <User className="h-4 w-4" />
+                      <span>{userInfo.username || userInfo.email || 'User'}</span>
+                    </div>
+                    <button
+                      onClick={logout}
+                      className="flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-colors"
+                      title="Logout"
+                    >
+                      <LogOut className="h-4 w-4" />
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           </div>
         </nav>
 
-        {/* Main Content */}
-        <main className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 min-h-0">
-          <div className="h-full">
-            {renderContent()}
-          </div>
-        </main>
-
-        <Toaster
-          position="top-right"
-          toastOptions={{
-            duration: 4000,
-            style: {
-              background: '#ffffff',
-              color: '#1f2937',
-              border: '1px solid #e5e7eb',
-              borderRadius: '8px',
-              fontSize: '14px',
-            },
-            success: {
-              iconTheme: {
-                primary: '#22c55e',
-                secondary: '#ffffff',
-              },
-            },
-            error: {
-              iconTheme: {
-                primary: '#ef4444',
-                secondary: '#ffffff',
-              },
-            },
-          }}
-        />
+      {/* Main Content */}
+      <main className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 min-h-0">
+        <div className="h-full">
+          {renderContent()}
         </div>
-      </WebSocketProvider>
+      </main>
+
+      <Toaster
+        position="top-right"
+        toastOptions={{
+          duration: 4000,
+          style: {
+            background: '#ffffff',
+            color: '#1f2937',
+            border: '1px solid #e5e7eb',
+            borderRadius: '8px',
+            fontSize: '14px',
+          },
+          success: {
+            iconTheme: {
+              primary: '#22c55e',
+              secondary: '#ffffff',
+            },
+          },
+          error: {
+            iconTheme: {
+              primary: '#ef4444',
+              secondary: '#ffffff',
+            },
+          },
+        }}
+      />
+      </div>
+    </WebSocketProvider>
+  )
+}
+
+function App() {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>
+        <AppContent />
+      </AuthProvider>
     </QueryClientProvider>
   )
 }
