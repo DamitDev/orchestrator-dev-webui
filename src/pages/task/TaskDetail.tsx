@@ -675,14 +675,12 @@ function ChatInputPanel({ taskId, workflowId, status, approvalReason }: { taskId
         </div>
       )}
 
-      {status === 'help_required' && (
-        <div className="p-4 bg-nord8/20 border-b-2 border-nord8/40 dark:bg-nord8/10 dark:border-nord8/30">
-          <div className="text-sm text-nord0 dark:text-nord6 font-semibold mb-2">Agent needs help</div>
-          {approvalReason && (
-            <div className="text-xs text-nord0 dark:text-nord6 mb-3 p-2 bg-nord6/50 rounded dark:bg-nord2/50">
-              {approvalReason}
-            </div>
-          )}
+      {status === 'help_required' && approvalReason && (
+        <div className="p-4 bg-nord13/20 border-b-2 border-nord13/40 dark:bg-nord13/10 dark:border-nord13/30">
+          <div className="text-xs text-nord13 dark:text-nord13 font-semibold mb-2 uppercase tracking-wide">Agent needs help</div>
+          <div className="text-sm text-nord0 dark:text-nord6 mb-3 p-3 bg-nord6/70 rounded-lg border border-nord13/30 dark:bg-nord2/70 dark:border-nord13/20">
+            <MessageContent role="user" content={approvalReason} isLatestTool={false} />
+          </div>
         </div>
       )}
 
@@ -716,36 +714,44 @@ function ChatInputPanel({ taskId, workflowId, status, approvalReason }: { taskId
         </div>
       )}
 
-      {/* Proactive/Ticket guide box (always visible) */}
+      {/* Proactive/Ticket input box - dynamically show Guide or Help based on status */}
       {(workflowId === 'proactive' || workflowId === 'ticket') && (
         <div className="p-4">
-          <div className="text-sm text-nord0 dark:text-nord6 font-semibold mb-2">Guide Task</div>
-          <div className="flex gap-2">
-            <textarea
-              value={guide}
-              onChange={e => setGuide(e.target.value)}
-              onKeyDown={e => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); onGuide() } }}
-              rows={3}
-              className="textarea flex-1"
-              placeholder="Provide guidance message… (Ctrl/Cmd+Enter to send)"
-            />
-            <button onClick={onGuide} disabled={!guide.trim() || busy} className="btn-primary disabled:opacity-50">
-              <Send className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Proactive/Ticket help box when needed */}
-      {(workflowId === 'proactive' || workflowId === 'ticket') && status === 'help_required' && (
-        <div className="p-4 border-t border-nord4 dark:border-nord3">
-          <div className="text-sm text-nord0 dark:text-nord6 font-semibold mb-2">Provide Help</div>
-          <div className="flex gap-2">
-            <textarea value={help} onChange={e => setHelp(e.target.value)} rows={3} className="textarea flex-1" placeholder="Type your help response..." />
-            <button onClick={onHelp} disabled={!help.trim() || busy} className="btn-primary disabled:opacity-50">
-              <Send className="w-4 h-4" />
-            </button>
-          </div>
+          {status === 'help_required' ? (
+            <>
+              <div className="text-sm text-nord0 dark:text-nord6 font-semibold mb-2">Provide Help</div>
+              <div className="flex gap-2">
+                <textarea 
+                  value={help} 
+                  onChange={e => setHelp(e.target.value)} 
+                  onKeyDown={e => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); onHelp() } }}
+                  rows={3} 
+                  className="textarea flex-1" 
+                  placeholder="Type your help response... (Ctrl/Cmd+Enter to send)" 
+                />
+                <button onClick={onHelp} disabled={!help.trim() || busy} className="btn-primary disabled:opacity-50">
+                  <Send className="w-4 h-4" />
+                </button>
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="text-sm text-nord0 dark:text-nord6 font-semibold mb-2">Guide Task</div>
+              <div className="flex gap-2">
+                <textarea
+                  value={guide}
+                  onChange={e => setGuide(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); onGuide() } }}
+                  rows={3}
+                  className="textarea flex-1"
+                  placeholder="Provide guidance message… (Ctrl/Cmd+Enter to send)"
+                />
+                <button onClick={onGuide} disabled={!guide.trim() || busy} className="btn-primary disabled:opacity-50">
+                  <Send className="w-4 h-4" />
+                </button>
+              </div>
+            </>
+          )}
         </div>
       )}
     </div>
