@@ -4,6 +4,8 @@ import { useQueryClient } from '@tanstack/react-query'
 import { useTasks, groupTasksForInbox, tasksKeys } from '../hooks/useTasks'
 import type { Task } from '../types/api'
 import { useWebSocket } from '../ws/WebSocketProvider'
+import { TaskIdBadge } from '../components/TaskIdBadge'
+import { CheckCircle2, AlertCircle, MessageCircle, Play } from 'lucide-react'
 
 const sectionIcons = {
   'Pending Approvals': '●',
@@ -57,9 +59,7 @@ function Section({ title, tasks }: { title: string; tasks: Task[] }) {
                   <div className="font-medium text-sm text-nord0 dark:text-nord6 truncate group-hover:text-nord10 transition-colors">
                     {t.ticket_id || t.goal_prompt || t.id}
                   </div>
-                  <div className="text-xs font-mono text-nord3 dark:text-nord4 bg-nord5/50 px-2 py-0.5 rounded dark:bg-nord2">
-                    {t.id.slice(0,8)}
-                  </div>
+                  <TaskIdBadge taskId={t.id} />
                 </div>
                 <div className="flex items-center gap-2 text-xs">
                   <span className="px-2 py-0.5 rounded-full bg-nord8/20 text-nord10 font-medium dark:bg-nord8/10 dark:text-nord8">

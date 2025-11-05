@@ -7,6 +7,7 @@ import type { Task, TasksQueryParams } from '../types/api'
 import { useWebSocket } from '../ws/WebSocketProvider'
 import { tasksApi } from '../lib/api'
 import { formatTimestamp } from '../lib/time'
+import { TaskIdBadge } from '../components/TaskIdBadge'
 import toast from 'react-hot-toast'
 import { XCircle } from 'lucide-react'
 
@@ -32,9 +33,7 @@ function TaskCard({ task, selected, onToggle, onCancel }: { task: Task; selected
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-2 flex-wrap">
             <StatusBadge status={task.status} />
-            <span className="text-xs font-mono bg-nord5/50 px-2 py-0.5 rounded text-nord3 dark:bg-nord2 dark:text-nord4">
-              {task.id.slice(0,8)}
-            </span>
+            <TaskIdBadge taskId={task.id} />
             <span className="badge bg-nord8/20 text-nord10 border-nord8/30 dark:bg-nord8/10 dark:text-nord8">
               {task.workflow_id}
             </span>
@@ -116,9 +115,7 @@ function TasksTable({ tasks, selected, onToggle, onCancel }: { tasks: Task[]; se
                 />
               </td>
               <td className="px-4 py-3">
-                <span className="font-mono text-xs bg-nord5/50 px-2 py-0.5 rounded text-nord3 dark:bg-nord2 dark:text-nord4">
-                  {t.id.slice(0,8)}
-                </span>
+                <TaskIdBadge taskId={t.id} />
               </td>
               <td className="px-4 py-3">
                 <span className="badge bg-nord8/20 text-nord10 border-nord8/30 dark:bg-nord8/10 dark:text-nord8">
