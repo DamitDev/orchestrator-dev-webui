@@ -1,47 +1,28 @@
 export interface RuntimeConfig {
   apiBaseUrl: string
   wsUrl: string
-  rootPath: string
 }
 
 let config: RuntimeConfig | null = null
 
 export async function loadRuntimeConfig(): Promise<RuntimeConfig> {
   if (config) return config
-  try {
-    const res = await fetch('/config.json', { cache: 'no-store' })
-    if (res.ok) {
-      const json = await res.json()
-      config = normalizeConfig(json)
-      return config
-    }
-  } catch {
-    // ignore and fall back
-  }
-  // Fallback defaults
-  const host = window.location.hostname
-  const apiPort = '8080'
+  
+  // Get config from Vite environment variables
+  const apiBaseUrl = (import.meta.env.VITE_ORCHESTRATOR_API_URL || 'http://localhost:8080').replace(/\/$/, '')
+  const wsUrl = import.meta.env.VITE_ORCHESTRATOR_WS_URL || 'ws://localhost:8080/ws?client_id=webui'
+  
   config = {
-    apiBaseUrl: `http://${host}:${apiPort}`,
-    wsUrl: `ws://${host}:${apiPort}/ws?client_id=webui`,
-    rootPath: ''
+    apiBaseUrl,
+    wsUrl
   }
+  
   return config
 }
 
 export function getRuntimeConfig(): RuntimeConfig {
   if (!config) throw new Error('Runtime config not loaded. Call loadRuntimeConfig() first.')
   return config
-}
-
-function normalizeConfig(input: any): RuntimeConfig {
-  const apiBaseUrl = String(input?.apiBaseUrl || '').replace(/\/$/, '')
-  const wsUrl = String(input?.wsUrl || '')
-  return {
-    apiBaseUrl: apiBaseUrl || 'http://localhost:8080',
-    wsUrl: wsUrl || 'ws://localhost:8080/ws?client_id=webui',
-    rootPath: String(input?.rootPath || '')
-  }
 }
 
 

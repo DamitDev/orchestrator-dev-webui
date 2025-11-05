@@ -23,5 +23,8 @@ dist-ssr
 *.sln
 *.sw?
 
-
-public/config.json
+# Environment files
+.env
+.env.local
+.env.production
+.env.development

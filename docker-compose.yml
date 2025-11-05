@@ -1,0 +1,16 @@
+services:
+  orchestrator-webui:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        VITE_ORCHESTRATOR_API_URL: ${VITE_ORCHESTRATOR_API_URL:-http://host.docker.internal:8080}
+        VITE_ORCHESTRATOR_WS_URL: ${VITE_ORCHESTRATOR_WS_URL:-ws://host.docker.internal:8080/ws?client_id=webui}
+        PORT: ${PORT:-5173}
+    container_name: orchestrator-webui
+    ports:
+      - "${PORT:-5173}:${PORT:-5173}"
+    restart: unless-stopped
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
