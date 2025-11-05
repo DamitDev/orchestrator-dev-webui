@@ -18,21 +18,24 @@ const queryClient = new QueryClient({
   }
 })
 
-await loadRuntimeConfig()
+async function bootstrap() {
+  await loadRuntimeConfig()
+  createRoot(document.getElementById('root')!).render(
+    <StrictMode>
+      <QueryClientProvider client={queryClient}>
+        <ModeProvider>
+          <WebSocketProvider>
+            <BrowserRouter>
+              <App />
+              <Toaster position="top-right" />
+            </BrowserRouter>
+          </WebSocketProvider>
+        </ModeProvider>
+      </QueryClientProvider>
+    </StrictMode>
+  )
+}
 
-createRoot(document.getElementById('root')!).render(
-  <StrictMode>
-    <QueryClientProvider client={queryClient}>
-      <ModeProvider>
-        <WebSocketProvider>
-          <BrowserRouter>
-            <App />
-            <Toaster position="top-right" />
-          </BrowserRouter>
-        </WebSocketProvider>
-      </ModeProvider>
-    </QueryClientProvider>
-  </StrictMode>
-)
+bootstrap()
 
 
