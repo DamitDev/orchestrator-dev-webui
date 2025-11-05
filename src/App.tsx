@@ -1,224 +1,197 @@
-import { useState } from 'react'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { Toaster } from 'react-hot-toast'
-import Dashboard from './components/Dashboard'
-import TaskList from './components/TaskList'
-import TaskDetail from './components/TaskDetail'
-import Settings from './components/Settings'
-import { WebSocketProvider } from './contexts/WebSocketContext'
-import { WebSocketEventsInitializer } from './components/WebSocketEventsInitializer'
-import { ConnectionStatus } from './components/ConnectionStatus'
-import { AuthProvider, useAuth } from './contexts/AuthContext'
-import { LayoutDashboard, ListTodo, Settings as SettingsIcon, Cpu, LogOut, User } from 'lucide-react'
-import type { Task } from './types/api'
+import { Link, NavLink, Outlet, Route, Routes, useLocation } from 'react-router-dom'
+import { useEffect, useRef, useState } from 'react'
+import { useMode } from './state/ModeContext'
+import Inbox from './pages/Inbox'
+import Tasks from './pages/Tasks'
+import CreateTask from './pages/CreateTask'
+import WorkflowTickets from './pages/workflows/Tickets'
+import WorkflowMatrix from './pages/workflows/Matrix'
+import WorkflowProactive from './pages/workflows/Proactive'
+import WorkflowInteractive from './pages/workflows/Interactive'
+import TaskDetail from './pages/task/TaskDetail'
+import ConfigModels from './pages/config/Models'
+import ConfigLLM from './pages/config/LLMBackends'
+import ConfigMCP from './pages/config/MCPServers'
+import ConfigTaskHandler from './pages/config/TaskHandler'
+import ConfigTools from './pages/config/ToolsExplorer'
+import ConfigSystem from './pages/config/System'
+import ConfigAuth from './pages/config/Auth'
+import Events from './pages/Events'
+import Preferences from './pages/Preferences'
+import GlobalShortcuts from './components/GlobalShortcuts'
 
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: 1000 * 60 * 5, // 5 minutes
-      retry: 3,
-    },
-  },
-})
-
-type Tab = 'dashboard' | 'tasks' | 'settings'
-
-function AppContent() {
-  const [activeTab, setActiveTab] = useState<Tab>('dashboard')
-  const [selectedTask, setSelectedTask] = useState<Task | null>(null)
-  const { isAuthenticated, isLoading, keycloakEnabled, userInfo, logout } = useAuth()
-
-  const tabs = [
-    { id: 'dashboard' as const, label: 'Dashboard', icon: LayoutDashboard },
-    { id: 'tasks' as const, label: 'Tasks', icon: ListTodo },
-    { id: 'settings' as const, label: 'Settings', icon: SettingsIcon },
-  ]
-
-  const handleTaskSelect = (task: Task) => {
-    setSelectedTask(task)
-    if (activeTab !== 'tasks') {
-      setActiveTab('tasks')
-    }
+function Header() {
+  const { mode, toggle } = useMode()
+  const location = useLocation()
+  const [wfOpen, setWfOpen] = useState(false)
+  const [settingsOpen, setSettingsOpen] = useState(false)
+  const [isDark, setIsDark] = useState(false)
+  const wfCloseTimeout = useRef<number | null>(null)
+  const settingsCloseTimeout = useRef<number | null>(null)
+  const scheduleClose = (which: 'wf'|'settings') => {
+    const ref = which === 'wf' ? wfCloseTimeout : settingsCloseTimeout
+    if (ref.current) clearTimeout(ref.current)
+    ref.current = window.setTimeout(() => {
+      if (which === 'wf') setWfOpen(false); else setSettingsOpen(false)
+      ref.current = null
+    }, 200)
   }
-
-  const renderContent = () => {
-    switch (activeTab) {
-      case 'dashboard':
-        return <Dashboard />
-      case 'tasks':
-        return (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-full">
-            <div className="flex flex-col min-h-0">
-              <TaskList
-                onTaskSelect={handleTaskSelect}
-                selectedTaskId={selectedTask?.id}
-              />
-            </div>
-            <div className="lg:col-span-2 flex flex-col min-h-0">
-              {selectedTask ? (
-                <TaskDetail
-                  taskId={selectedTask.id}
-                />
-              ) : (
-                <div className="bg-white rounded-lg shadow-sm border border-gray-200 h-full flex items-center justify-center">
-                  <div className="text-center text-gray-500">
-                    <ListTodo className="h-12 w-12 mx-auto mb-4 text-gray-400" />
-                    <p className="text-lg font-medium">Select a task</p>
-                    <p className="text-sm">Choose a task from the list to view its details</p>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        )
-      case 'settings':
-        return (
-          <Settings />
-        )
-      default:
-        return <Dashboard />
-    }
+  const cancelClose = (which: 'wf'|'settings') => {
+    const ref = which === 'wf' ? wfCloseTimeout : settingsCloseTimeout
+    if (ref.current) { clearTimeout(ref.current); ref.current = null }
   }
-
-  // Show loading screen while checking authentication
-  if (isLoading) {
-    return (
-      <div className="h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <Cpu className="h-12 w-12 mx-auto mb-4 text-primary-600 animate-pulse" />
-          <p className="text-lg font-medium text-gray-900">Loading...</p>
-          <p className="text-sm text-gray-500 mt-2">
-            {keycloakEnabled ? 'Checking authentication...' : 'Initializing application...'}
-          </p>
-        </div>
-      </div>
-    )
+  useEffect(() => {
+    const stored = localStorage.getItem('theme')
+    const initialDark = stored ? stored === 'dark' : document.documentElement.classList.contains('dark')
+    setIsDark(initialDark)
+    document.documentElement.classList.toggle('dark', initialDark)
+  }, [])
+  const toggleTheme = () => {
+    const next = !isDark
+    setIsDark(next)
+    document.documentElement.classList.toggle('dark', next)
+    localStorage.setItem('theme', next ? 'dark' : 'light')
   }
-
-  // If authentication is required but user is not authenticated
-  if (!isAuthenticated && keycloakEnabled) {
-    return (
-      <div className="h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center max-w-md px-4">
-          <Cpu className="h-12 w-12 mx-auto mb-4 text-red-600" />
-          <p className="text-lg font-medium text-gray-900 mb-2">Authentication Failed</p>
-          <p className="text-sm text-gray-600 mb-4">
-            Cannot connect to the authentication server. Please check the browser console for details.
-          </p>
-          <p className="text-xs text-gray-500">
-            If you're a developer: Check if the Keycloak server is running and accessible,
-            or disable Keycloak authentication in the backend configuration.
-          </p>
-        </div>
-      </div>
-    )
-  }
-
+  const navItem = (to: string, label: string) => (
+    <NavLink to={to} className={({ isActive }) => `${'nav-link'} ${isActive ? 'nav-link-active' : ''}`}>
+      {label}
+    </NavLink>
+  )
   return (
-    <WebSocketProvider>
-      <WebSocketEventsInitializer />
-      <div className="h-screen bg-gray-50 flex flex-col">
-        {/* Navigation */}
-        <nav className="bg-white shadow-sm border-b border-gray-200 flex-shrink-0">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex justify-between h-16">
-              <div className="flex items-center">
-                <div className="flex items-center gap-2">
-                  <Cpu className="h-8 w-8 text-primary-600" />
-                  <h1 className="text-xl font-bold text-gray-900">
-                    Orchestrator
-                  </h1>
-                </div>
+    <header className="bg-nord6/80 backdrop-blur-md border-b border-nord4 shadow-nord dark:bg-nord0/80 dark:border-nord2 sticky top-0 z-50">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="h-16 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-6">
+            <Link to="/" className="flex items-center gap-2 group">
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-nord8 to-nord10 flex items-center justify-center shadow-md group-hover:shadow-lg transition-all group-hover:scale-105">
+                <svg className="w-5 h-5 text-nord0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
+                </svg>
               </div>
-              
-              <div className="flex items-center space-x-4">
-                <ConnectionStatus />
-                <div className="flex items-center space-x-1">
-                  {tabs.map((tab) => {
-                    const IconComponent = tab.icon
-                    return (
-                      <button
-                        key={tab.id}
-                        onClick={() => setActiveTab(tab.id)}
-                        className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                          activeTab === tab.id
-                            ? 'bg-primary-100 text-primary-700'
-                            : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-                        }`}
-                      >
-                        <IconComponent className="h-4 w-4" />
-                        {tab.label}
-                      </button>
-                    )
-                  })}
-                </div>
-                
-                {/* User info and logout button (only shown when Keycloak is enabled) */}
-                {keycloakEnabled && (
-                  <div className="flex items-center gap-2 ml-4 pl-4 border-l border-gray-200">
-                    <div className="flex items-center gap-2 text-sm text-gray-700">
-                      <User className="h-4 w-4" />
-                      <span>{userInfo.username || userInfo.email || 'User'}</span>
+              <span className="text-xl font-bold bg-gradient-to-r from-nord10 to-nord8 bg-clip-text text-transparent">
+                Orchestrator
+              </span>
+            </Link>
+            <nav className="hidden md:flex items-center gap-1">
+              {navItem('/', 'Inbox')}
+              <div className="relative" onMouseEnter={() => cancelClose('wf')} onMouseLeave={() => scheduleClose('wf')}>
+                <button onClick={() => setWfOpen(o => !o)} className={`nav-link ${wfOpen ? 'nav-link-active' : ''}`}>
+                  Workflows
+                  <svg className={`w-4 h-4 ml-1 inline transition-transform ${wfOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+                {wfOpen && (
+                  <div className={`dropdown-menu w-44`} onMouseEnter={() => cancelClose('wf')} onMouseLeave={() => scheduleClose('wf')}>
+                    <div className="py-1">
+                      <NavLink to="/workflows/tickets" className={({isActive}) => `${'dropdown-item'} ${isActive ? 'dropdown-item-active' : ''}`} onClick={() => setWfOpen(false)}>Tickets</NavLink>
+                      <NavLink to="/workflows/matrix" className={({isActive}) => `${'dropdown-item'} ${isActive ? 'dropdown-item-active' : ''}`} onClick={() => setWfOpen(false)}>Matrix</NavLink>
+                      <NavLink to="/workflows/proactive" className={({isActive}) => `${'dropdown-item'} ${isActive ? 'dropdown-item-active' : ''}`} onClick={() => setWfOpen(false)}>Proactive</NavLink>
+                      <NavLink to="/workflows/interactive" className={({isActive}) => `${'dropdown-item'} ${isActive ? 'dropdown-item-active' : ''}`} onClick={() => setWfOpen(false)}>Interactive</NavLink>
                     </div>
-                    <button
-                      onClick={logout}
-                      className="flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-colors"
-                      title="Logout"
-                    >
-                      <LogOut className="h-4 w-4" />
-                    </button>
                   </div>
                 )}
               </div>
-            </div>
+              {navItem('/tasks', 'Tasks')}
+              {navItem('/create', 'Create')}
+              <div className="relative" onMouseEnter={() => cancelClose('settings')} onMouseLeave={() => scheduleClose('settings')}>
+                <button onClick={() => setSettingsOpen(o => !o)} className={`nav-link ${settingsOpen ? 'nav-link-active' : ''}`}>
+                  Settings
+                  <svg className={`w-4 h-4 ml-1 inline transition-transform ${settingsOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+                {settingsOpen && (
+                  <div className={`dropdown-menu w-52`} onMouseEnter={() => cancelClose('settings')} onMouseLeave={() => scheduleClose('settings')}>
+                    <div className="py-1">
+                      <NavLink to="/config/models" className={({isActive}) => `${'dropdown-item'} ${isActive ? 'dropdown-item-active' : ''}`} onClick={() => setSettingsOpen(false)}>Models</NavLink>
+                      <NavLink to="/config/llm-backends" className={({isActive}) => `${'dropdown-item'} ${isActive ? 'dropdown-item-active' : ''}`} onClick={() => setSettingsOpen(false)}>LLM Backends</NavLink>
+                      <NavLink to="/config/mcp-servers" className={({isActive}) => `${'dropdown-item'} ${isActive ? 'dropdown-item-active' : ''}`} onClick={() => setSettingsOpen(false)}>MCP Servers</NavLink>
+                      <NavLink to="/config/task-handler" className={({isActive}) => `${'dropdown-item'} ${isActive ? 'dropdown-item-active' : ''}`} onClick={() => setSettingsOpen(false)}>Task Handler</NavLink>
+                      <NavLink to="/config/tools" className={({isActive}) => `${'dropdown-item'} ${isActive ? 'dropdown-item-active' : ''}`} onClick={() => setSettingsOpen(false)}>Tools Explorer</NavLink>
+                      <NavLink to="/config/system" className={({isActive}) => `${'dropdown-item'} ${isActive ? 'dropdown-item-active' : ''}`} onClick={() => setSettingsOpen(false)}>System</NavLink>
+                      <NavLink to="/config/auth" className={({isActive}) => `${'dropdown-item'} ${isActive ? 'dropdown-item-active' : ''}`} onClick={() => setSettingsOpen(false)}>Auth</NavLink>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </nav>
           </div>
-        </nav>
+          <div className="flex items-center gap-2">
+            <span className="text-xs px-2 py-1 rounded-md bg-nord5/50 text-nord3 font-mono hidden sm:inline dark:bg-nord2 dark:text-nord4">
+              {location.pathname}
+            </span>
+            <button onClick={toggleTheme} className="btn-outline" title="Toggle theme">
+              {isDark ? 'Light' : 'Dark'}
+            </button>
+            <button onClick={toggle} className="btn-outline hidden sm:inline-flex">
+              {mode === 'simple' ? 'Simple' : 'Expert'}
+            </button>
+          </div>
+        </div>
+      </div>
+    </header>
+  )
+}
 
-      {/* Main Content */}
-      <main className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 min-h-0">
-        <div className="h-full">
-          {renderContent()}
+function ConfigLayout() {
+  const tab = (to: string, label: string) => (
+    <NavLink to={to} className={({ isActive }) => `${'nav-link'} ${isActive ? 'nav-link-active' : ''}`}>
+      {label}
+    </NavLink>
+  )
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-wrap gap-2">
+        {tab('/config/models', 'Models')}
+        {tab('/config/llm-backends', 'LLM Backends')}
+        {tab('/config/mcp-servers', 'MCP Servers')}
+        {tab('/config/task-handler', 'Task Handler')}
+        {tab('/config/tools', 'Tools Explorer')}
+        {tab('/config/system', 'System')}
+        {tab('/config/auth', 'Auth')}
+      </div>
+      <Outlet />
+    </div>
+  )
+}
+
+export default function App() {
+  return (
+    <div className="min-h-full flex flex-col">
+      <GlobalShortcuts />
+      <Header />
+      <main className="flex-1">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <Routes>
+            <Route path="/" element={<Inbox />} />
+            <Route path="/tasks" element={<Tasks />} />
+            <Route path="/create" element={<CreateTask />} />
+
+            <Route path="/workflows/tickets" element={<WorkflowTickets />} />
+            <Route path="/workflows/matrix" element={<WorkflowMatrix />} />
+            <Route path="/workflows/proactive" element={<WorkflowProactive />} />
+            <Route path="/workflows/interactive" element={<WorkflowInteractive />} />
+
+            <Route path="/task/:id" element={<TaskDetail />} />
+
+            <Route path="/config" element={<ConfigLayout />}>
+              <Route path="models" element={<ConfigModels />} />
+              <Route path="llm-backends" element={<ConfigLLM />} />
+              <Route path="mcp-servers" element={<ConfigMCP />} />
+              <Route path="task-handler" element={<ConfigTaskHandler />} />
+              <Route path="tools" element={<ConfigTools />} />
+              <Route path="system" element={<ConfigSystem />} />
+              <Route path="auth" element={<ConfigAuth />} />
+            </Route>
+
+            <Route path="/events" element={<Events />} />
+            <Route path="/preferences" element={<Preferences />} />
+          </Routes>
         </div>
       </main>
-
-      <Toaster
-        position="top-right"
-        toastOptions={{
-          duration: 4000,
-          style: {
-            background: '#ffffff',
-            color: '#1f2937',
-            border: '1px solid #e5e7eb',
-            borderRadius: '8px',
-            fontSize: '14px',
-          },
-          success: {
-            iconTheme: {
-              primary: '#22c55e',
-              secondary: '#ffffff',
-            },
-          },
-          error: {
-            iconTheme: {
-              primary: '#ef4444',
-              secondary: '#ffffff',
-            },
-          },
-        }}
-      />
-      </div>
-    </WebSocketProvider>
+    </div>
   )
 }
 
-function App() {
-  return (
-    <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <AppContent />
-      </AuthProvider>
-    </QueryClientProvider>
-  )
-}
 
-export default App

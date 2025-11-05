@@ -1,245 +1,182 @@
-import axios from 'axios'
-import type { 
-  Task, 
-  TaskConversation, 
-  ConfigurationStatus, 
-  TaskCreateRequest, 
-  TaskActionRequest,
-  LLMBackendInfo,
-  MCPServerInfo,
-  TasksResponse,
-  TasksQueryParams,
-  AllToolsResponse
-} from '../types/api'
-import { getToken, isKeycloakEnabled, login } from './keycloak'
-import { API_URL } from './config'
+import axios, { AxiosInstance } from 'axios'
+import { getRuntimeConfig } from './runtimeConfig'
+import type { TasksQueryParams, TasksResponse, TaskCreateRequest, TaskCreateResponse, Task } from '../types/api'
 
-export { API_URL, WEBSOCKET_URL } from './config'
+let apiClient: AxiosInstance | null = null
 
-const api = axios.create({
-  baseURL: API_URL,
-  timeout: 30000,
-  headers: {
-    'Content-Type': 'application/json',
+function getApi(): AxiosInstance {
+  if (apiClient) return apiClient
+  const baseURL = getRuntimeConfig().apiBaseUrl
+  apiClient = axios.create({ baseURL, timeout: 30000, headers: { 'Content-Type': 'application/json' } })
+  return apiClient
+}
+
+export const tasksApi = {
+  async getAll(params?: TasksQueryParams): Promise<TasksResponse> {
+    const search = new URLSearchParams()
+    if (params?.page) search.append('page', String(params.page))
+    if (params?.limit) search.append('limit', String(params.limit))
+    if (params?.order_by) search.append('order_by', params.order_by)
+    if (params?.order_direction) search.append('order_direction', params.order_direction)
+    if (params?.workflow_id) search.append('workflow_id', params.workflow_id)
+    const url = `/tasks${search.toString() ? `?${search.toString()}` : ''}`
+    const { data } = await getApi().get(url)
+    return data
   },
-})
 
-// Request interceptor to add Bearer token
-api.interceptors.request.use(
-  (config) => {
-    // Only add token if Keycloak is enabled
-    if (isKeycloakEnabled()) {
-      const token = getToken()
-      if (token) {
-        console.log('[API] Adding Bearer token to request:', config.url)
-        config.headers.Authorization = `Bearer ${token}`
-      } else {
-        console.warn('[API] Keycloak enabled but no token available for request:', config.url)
+  async cancel(taskId: string): Promise<void> {
+    await getApi().post('/task/cancel', { task_id: taskId })
+  },
+
+  async delete(taskId: string): Promise<void> {
+    await getApi().post('/task/delete', { task_id: taskId })
+  },
+
+  async deleteMultiple(taskIds: string[]): Promise<{ deleted_tasks: string[]; failed_tasks: string[] }> {
+    const { data } = await getApi().post('/task/delete/multiple', { task_ids: taskIds })
+    return data
+  },
+
+  async create(body: TaskCreateRequest): Promise<TaskCreateResponse> {
+    const { data } = await getApi().post('/task/create', body)
+    return data
+  },
+
+  async getById(taskId: string): Promise<Task> {
+    const { data } = await getApi().get(`/task/status`, { params: { task_id: taskId } })
+    return data
+  },
+
+  async getConversation(taskId: string): Promise<{ task_id: string; conversation: any[] }> {
+    const { data } = await getApi().get(`/task/conversation`, { params: { task_id: taskId } })
+    return data
+  },
+
+  async getMatrixConversationByPhase(taskId: string, phase: number): Promise<{ task_id: string; conversation: any[] }> {
+    const { data } = await getApi().get(`/task/matrix/conversation`, { params: { task_id: taskId, phase } })
+    return data
+  },
+
+  workflows: {
+    interactive: {
+      async sendMessage(taskId: string, message: string): Promise<{ message: string }> {
+        const { data } = await getApi().post('/task/interactive/message', { task_id: taskId, message })
+        return data
+      },
+      async markComplete(taskId: string): Promise<{ message: string }> {
+        const { data } = await getApi().post('/task/interactive/mark_complete', { task_id: taskId })
+        return data
+      },
+      async markFailed(taskId: string): Promise<{ message: string }> {
+        const { data } = await getApi().post('/task/interactive/mark_failed', { task_id: taskId })
+        return data
+      },
+      async action(taskId: string, approved: boolean): Promise<{ message: string }> {
+        const { data } = await getApi().post('/task/interactive/action', { task_id: taskId, approved })
+        return data
+      }
+    },
+    proactive: {
+      async guide(taskId: string, message: string): Promise<{ message: string }> {
+        const { data } = await getApi().post('/task/proactive/guide', { task_id: taskId, message })
+        return data
+      },
+      async help(taskId: string, response: string): Promise<{ message: string }> {
+        const { data } = await getApi().post('/task/proactive/help', { task_id: taskId, response })
+        return data
+      },
+      async action(taskId: string, approved: boolean): Promise<{ message: string }> {
+        const { data } = await getApi().post('/task/proactive/action', { task_id: taskId, approved })
+        return data
+      }
+    },
+    ticket: {
+      async guide(taskId: string, message: string): Promise<{ message: string }> {
+        const { data } = await getApi().post('/task/ticket/guide', { task_id: taskId, message })
+        return data
+      },
+      async help(taskId: string, response: string): Promise<{ message: string }> {
+        const { data } = await getApi().post('/task/ticket/help', { task_id: taskId, response })
+        return data
+      },
+      async action(taskId: string, approved: boolean): Promise<{ message: string }> {
+        const { data } = await getApi().post('/task/ticket/action', { task_id: taskId, approved })
+        return data
+      }
+    },
+    matrix: {
+      async sendMessage(taskId: string, message: string): Promise<{ message: string }> {
+        const { data } = await getApi().post('/task/matrix/message', { task_id: taskId, message })
+        return data
+      },
+      async markComplete(taskId: string): Promise<{ message: string }> {
+        const { data } = await getApi().post('/task/matrix/mark_complete', { task_id: taskId })
+        return data
+      },
+      async markFailed(taskId: string): Promise<{ message: string }> {
+        const { data } = await getApi().post('/task/matrix/mark_failed', { task_id: taskId })
+        return data
+      },
+      async action(taskId: string, approved: boolean): Promise<{ message: string }> {
+        const { data } = await getApi().post('/task/matrix/action', { task_id: taskId, approved })
+        return data
       }
     }
-    return config
-  },
-  (error) => {
-    console.error('[API] Request interceptor error:', error)
-    return Promise.reject(error)
   }
-)
-
-// Response interceptor to handle 401 errors
-api.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    // If we get a 401 and Keycloak is enabled, redirect to login
-    if (error.response?.status === 401 && isKeycloakEnabled()) {
-      console.error('[API] Got 401 Unauthorized for:', error.config?.url)
-      console.error('[API] Response:', error.response?.data)
-      console.error('[API] Redirecting to login...')
-      login()
-    }
-    return Promise.reject(error)
-  }
-)
-
-// Task API
-export const tasksApi = {
-  getAll: async (params?: TasksQueryParams): Promise<TasksResponse> => {
-    const queryParams = new URLSearchParams()
-    
-    if (params?.page) queryParams.append('page', params.page.toString())
-    if (params?.limit) queryParams.append('limit', params.limit.toString())
-    if (params?.order_by) queryParams.append('order_by', params.order_by)
-    if (params?.order_direction) queryParams.append('order_direction', params.order_direction)
-    
-    const url = `/tasks${queryParams.toString() ? `?${queryParams.toString()}` : ''}`
-    const response = await api.get(url)
-    return response.data
-  },
-
-  getById: async (id: string): Promise<Task> => {
-    const response = await api.get(`/task/status?task_id=${id}`)
-    return response.data
-  },
-
-  getConversation: async (id: string): Promise<TaskConversation> => {
-    const response = await api.get(`/task/conversation?task_id=${id}`)
-    return response.data
-  },
-
-  create: async (data: TaskCreateRequest): Promise<{ task_id: string; status: string }> => {
-    const response = await api.post('/task/create', data)
-    return response.data
-  },
-
-  cancel: async (taskId: string): Promise<void> => {
-    await api.post('/task/cancel', { task_id: taskId })
-  },
-
-  // Proactive workflow methods
-  proactive: {
-    guide: async (taskId: string, message: string): Promise<{ success: boolean; message: string }> => {
-      const response = await api.post('/task/proactive/guide', { task_id: taskId, message })
-      return response.data
-    },
-
-    help: async (taskId: string, response: string): Promise<{ success: boolean; message: string }> => {
-      const response_data = await api.post('/task/proactive/help', { task_id: taskId, response })
-      return response_data.data
-    },
-
-    action: async (data: TaskActionRequest): Promise<void> => {
-      await api.post('/task/proactive/action', data)
-    },
-  },
-
-  // Interactive workflow methods
-  interactive: {
-    sendMessage: async (taskId: string, message: string): Promise<{ success: boolean; message: string }> => {
-      const response = await api.post('/task/interactive/message', { task_id: taskId, message })
-      return response.data
-    },
-
-    markComplete: async (taskId: string): Promise<{ success: boolean; message: string }> => {
-      const response = await api.post('/task/interactive/mark_complete', { task_id: taskId })
-      return response.data
-    },
-
-    markFailed: async (taskId: string): Promise<{ success: boolean; message: string }> => {
-      const response = await api.post('/task/interactive/mark_failed', { task_id: taskId })
-      return response.data
-    },
-
-    action: async (data: TaskActionRequest): Promise<void> => {
-      await api.post('/task/interactive/action', data)
-    },
-  },
-
-  // Ticket workflow methods
-  ticket: {
-    guide: async (taskId: string, message: string): Promise<{ success: boolean; message: string }> => {
-      const response = await api.post('/task/ticket/guide', { task_id: taskId, message })
-      return response.data
-    },
-
-    help: async (taskId: string, response: string): Promise<{ success: boolean; message: string }> => {
-      const response_data = await api.post('/task/ticket/help', { task_id: taskId, response })
-      return response_data.data
-    },
-
-    action: async (data: TaskActionRequest): Promise<void> => {
-      await api.post('/task/ticket/action', data)
-    },
-  },
-
-  // Matrix workflow methods
-  matrix: {
-    sendMessage: async (taskId: string, message: string): Promise<{ success: boolean; message: string }> => {
-      const response = await api.post('/task/matrix/message', { task_id: taskId, message })
-      return response.data
-    },
-
-    markComplete: async (taskId: string): Promise<{ success: boolean; message: string }> => {
-      const response = await api.post('/task/matrix/mark_complete', { task_id: taskId })
-      return response.data
-    },
-
-    markFailed: async (taskId: string): Promise<{ success: boolean; message: string }> => {
-      const response = await api.post('/task/matrix/mark_failed', { task_id: taskId })
-      return response.data
-    },
-
-    action: async (data: TaskActionRequest): Promise<void> => {
-      await api.post('/task/matrix/action', data)
-    },
-  },
 }
 
-// Configuration API
 export const configApi = {
-  getStatus: async (): Promise<ConfigurationStatus> => {
-    const response = await api.get('/configuration/status')
-    return response.data
+  async getStatus(): Promise<any> {
+    const { data } = await getApi().get('/configuration/status')
+    return data
   },
-
-  setAgent: async (modelName: string): Promise<void> => {
-    await api.post('/configuration/agent', { model_name: modelName })
+  async setAgent(modelName: string): Promise<void> {
+    await getApi().post('/configuration/agent', { model_name: modelName })
   },
-
-  setOrchestrator: async (modelName: string): Promise<void> => {
-    await api.post('/configuration/orchestrator', { model_name: modelName })
+  async setOrchestrator(modelName: string): Promise<void> {
+    await getApi().post('/configuration/orchestrator', { model_name: modelName })
   },
-
-  getLLMBackends: async (): Promise<{ backends: LLMBackendInfo[]; total_backends: number; all_available_models: string[] }> => {
-    const response = await api.get('/configuration/llmbackend/status')
-    return response.data
+  async getLLMBackends(): Promise<any> {
+    const { data } = await getApi().get('/configuration/llmbackend/status')
+    return data
   },
-
-  getMCPServers: async (): Promise<{ servers: MCPServerInfo[]; total_servers: number; all_available_tools: string[] }> => {
-    const response = await api.get('/configuration/mcpserver/status')
-    return response.data
+  async addLLMBackend(host: string, apiKey: string): Promise<void> {
+    await getApi().post('/configuration/llmbackend/add', { backends: [{ url: host, api_key: apiKey }] })
   },
-
-  getTaskHandlerStatus: async (): Promise<any> => {
-    const response = await api.get('/configuration/taskhandler/status')
-    return response.data
+  async removeLLMBackend(host: string): Promise<void> {
+    await getApi().post('/configuration/llmbackend/remove', { host })
   },
-
-  // LLM Backend management
-  addLLMBackend: async (host: string, apiKey: string): Promise<void> => {
-    await api.post('/configuration/llmbackend/add', { 
-      backends: [{ url: host, api_key: apiKey }]
-    })
+  async getMCPServers(): Promise<any> {
+    const { data } = await getApi().get('/configuration/mcpserver/status')
+    return data
   },
-
-  removeLLMBackend: async (host: string): Promise<void> => {
-    await api.post('/configuration/llmbackend/remove', { host })
+  async addMCPServer(host: string, apiKey: string): Promise<void> {
+    await getApi().post('/configuration/mcpserver/add', { servers: [{ url: host, api_key: apiKey }] })
   },
-
-  // MCP Server management
-  addMCPServer: async (host: string, apiKey: string): Promise<void> => {
-    await api.post('/configuration/mcpserver/add', { 
-      servers: [{ url: host, api_key: apiKey }]
-    })
+  async removeMCPServer(host: string): Promise<void> {
+    await getApi().post('/configuration/mcpserver/remove', { host })
   },
-
-  removeMCPServer: async (host: string): Promise<void> => {
-    await api.post('/configuration/mcpserver/remove', { host })
+  async getTaskHandlerStatus(): Promise<any> {
+    const { data } = await getApi().get('/configuration/taskhandler/status')
+    return data
   },
+  async setMaxConcurrentTasks(max: number): Promise<void> {
+    await getApi().post('/configuration/taskhandler/concurrent', undefined, { params: { max_tasks: max } })
+  },
+  async getTools(): Promise<any> {
+    const { data } = await getApi().get('/tools/all')
+    return data
+  },
+  async getAuthConfig(): Promise<any> {
+    const { data } = await getApi().get('/auth/config')
+    return data
+  },
+  async getHealth(): Promise<any> {
+    const { data } = await getApi().get('/health')
+    return data
+  },
+  async getWebSocketStatus(): Promise<any> {
+    const { data } = await getApi().get('/websocket/status')
+    return data
+  }
 }
-
-// Tools API
-export const toolsApi = {
-  getAll: async (): Promise<AllToolsResponse> => {
-    const response = await api.get('/tools/all')
-    return response.data
-  },
-}
-
-// Health check
-export const healthApi = {
-  check: async (): Promise<{ status: string }> => {
-    const response = await api.get('/health')
-    return response.data
-  },
-}
-
-export default api

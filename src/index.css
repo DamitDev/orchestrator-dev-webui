@@ -1,27 +1,84 @@
+@import './styles/components.css';
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Custom scrollbar styling */
-.conversation-scroll {
-  scrollbar-width: thin;
-  scrollbar-color: #d1d5db #f3f4f6;
+/* App base styles with Nord theme */
+html, body, #root {
+  height: 100%;
 }
 
-.conversation-scroll::-webkit-scrollbar {
-  width: 8px;
+body {
+  @apply bg-gradient-nord-light text-nord0;
+  background-attachment: fixed;
 }
 
-.conversation-scroll::-webkit-scrollbar-track {
-  background: #f3f4f6;
-  border-radius: 4px;
+.dark body {
+  @apply bg-gradient-nord-dark text-nord6;
+  background-attachment: fixed;
 }
 
-.conversation-scroll::-webkit-scrollbar-thumb {
-  background: #d1d5db;
-  border-radius: 4px;
+/* Custom scrollbar with Nord colors */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
 }
 
-.conversation-scroll::-webkit-scrollbar-thumb:hover {
-  background: #9ca3af;
+::-webkit-scrollbar-track {
+  @apply bg-nord5 dark:bg-nord1;
 }
+
+::-webkit-scrollbar-thumb {
+  @apply bg-nord4 dark:bg-nord3 rounded-full;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-nord8 dark:bg-nord8;
+}
+
+/* Selection styling */
+::selection {
+  @apply bg-nord8/30 text-nord0 dark:text-nord6;
+}
+
+/* Density modes */
+.density-compact .btn, .density-compact input, .density-compact select, .density-compact textarea {
+  @apply py-1 text-sm;
+}
+
+/* Smooth transitions */
+* {
+  @apply transition-colors duration-150;
+}
+
+/* Smooth animations for details/summary elements */
+.details-animated summary {
+  cursor: pointer;
+  list-style: none;
+}
+
+.details-animated summary::-webkit-details-marker {
+  display: none;
+}
+
+.details-animated summary::marker {
+  display: none;
+}
+
+/* Animate the content when opening */
+.details-animated[open] > *:not(summary) {
+  animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+

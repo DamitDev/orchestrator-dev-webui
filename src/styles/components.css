@@ -1,0 +1,206 @@
+@layer components {
+  /* Cards with Nord styling */
+  .card {
+    @apply bg-nord6 border border-nord4 rounded-lg shadow-nord 
+           dark:bg-nord1 dark:border-nord2 transition-all duration-200;
+  }
+  
+  .card:hover {
+    @apply shadow-nord-lg;
+  }
+  
+  .toolbar {
+    @apply bg-nord6 border border-nord4 rounded-lg p-3 shadow-nord
+           dark:bg-nord1 dark:border-nord2;
+  }
+  
+  /* Buttons with Nord styling */
+  .btn {
+    @apply inline-flex items-center justify-center px-4 py-2 border rounded-lg text-sm 
+           font-medium transition-all duration-200 shadow-sm;
+  }
+  
+  .btn-primary {
+    @apply btn bg-gradient-to-br from-nord8 to-nord10 text-nord0 border-transparent 
+           hover:from-nord7 hover:to-nord9 hover:shadow-md active:scale-95;
+  }
+  
+  .btn-outline {
+    @apply btn bg-nord6 text-nord0 border-nord4 hover:bg-nord5 hover:border-nord8
+           dark:bg-nord2 dark:text-nord6 dark:border-nord3 dark:hover:bg-nord3 dark:hover:border-nord8;
+  }
+  
+  .btn-danger {
+    @apply btn text-nord11 border-nord11/30 bg-nord11/5 hover:bg-nord11/10 
+           dark:bg-nord11/10 dark:hover:bg-nord11/20;
+  }
+  
+  /* Input fields with Nord styling */
+  .input {
+    @apply px-3 py-2 border rounded-lg bg-nord6 text-nord0 border-nord4
+           focus:outline-none focus:ring-1 focus:ring-offset-0 focus:ring-nord8 focus:border-nord8
+           dark:bg-nord2 dark:text-nord6 dark:border-nord3 dark:focus:ring-nord8 dark:focus:border-nord8;
+  }
+  
+  .textarea {
+    @apply px-3 py-2 border rounded-lg bg-nord6 text-nord0 border-nord4
+           focus:outline-none focus:ring-1 focus:ring-offset-0 focus:ring-nord8 focus:border-nord8
+           dark:bg-nord2 dark:text-nord6 dark:border-nord3 dark:focus:ring-nord8 dark:focus:border-nord8
+           w-full resize-y;
+  }
+  
+  .select {
+    @apply px-3 py-2 border rounded-lg text-sm bg-nord6 text-nord0 border-nord4
+           focus:outline-none focus:ring-1 focus:ring-offset-0 focus:ring-nord8 focus:border-nord8
+           dark:bg-nord2 dark:text-nord6 dark:border-nord3 dark:focus:ring-nord8 dark:focus:border-nord8;
+  }
+  
+  .textarea {
+    @apply w-full px-3 py-2 border rounded-lg font-sans bg-nord6 text-nord0 border-nord4
+           focus:outline-none focus:ring-1 focus:ring-offset-0 focus:ring-nord8 focus:border-nord8
+           dark:bg-nord2 dark:text-nord6 dark:border-nord3 dark:focus:ring-nord8 dark:focus:border-nord8;
+  }
+  
+  /* Links */
+  .link-muted {
+    @apply underline decoration-dotted text-nord10 hover:text-nord8 transition-colors
+           dark:text-nord8 dark:hover:text-nord7;
+  }
+  
+  .small-muted {
+    @apply text-xs text-nord3 dark:text-nord4;
+  }
+  
+  /* Badges with Nord styling */
+  .badge {
+    @apply text-xs px-2 py-0.5 rounded-full bg-nord5 text-nord0 border border-nord4
+           dark:bg-nord2 dark:text-nord6 dark:border-nord3;
+  }
+
+  /* Navigation with Nord styling */
+  .nav-link {
+    @apply px-4 py-2 rounded-lg text-sm font-medium text-nord0 hover:bg-nord5/50
+           transition-all duration-150
+           dark:text-nord5 dark:hover:bg-nord2;
+  }
+  
+  .nav-link-active {
+    @apply bg-gradient-to-r from-nord8/20 to-nord9/20 text-nord10 font-semibold
+           shadow-sm border border-nord8/30
+           dark:from-nord8/10 dark:to-nord9/10 dark:text-nord8 dark:border-nord8/20;
+  }
+
+  /* Dropdown with Nord styling */
+  .dropdown-menu {
+    @apply absolute z-10 left-0 top-full mt-1 bg-nord6 border border-nord4 
+           rounded-lg shadow-nord-lg backdrop-blur-sm
+           dark:bg-nord1 dark:border-nord2;
+  }
+  
+  .dropdown-item {
+    @apply block px-4 py-2 text-sm text-nord0 hover:bg-nord8/10 
+           transition-colors first:rounded-t-lg last:rounded-b-lg
+           dark:text-nord5 dark:hover:bg-nord2;
+  }
+  
+  .dropdown-item-active {
+    @apply bg-nord8/20 text-nord10 font-medium
+           dark:bg-nord8/10 dark:text-nord8;
+  }
+
+  /* Messages with Nord styling - Enhanced Contrast */
+  .message {
+    @apply border-2 rounded-lg p-4 shadow-md transition-all
+           dark:border-2;
+  }
+  
+  .message--assistant { 
+    @apply bg-white border-nord8/40 shadow-nord
+           dark:bg-nord2 dark:border-nord8/30; 
+  }
+  
+  .message--user { 
+    @apply bg-nord8/5 border-nord8/50
+           dark:bg-nord8/10 dark:border-nord8/40; 
+  }
+  
+  .message--system { 
+    @apply bg-nord13/15 border-nord13/50
+           dark:bg-nord13/10 dark:border-nord13/40; 
+  }
+  
+  .message--tool { 
+    @apply bg-nord15/15 border-nord15/50
+           dark:bg-nord15/10 dark:border-nord15/40; 
+  }
+  
+  .message-header { 
+    @apply text-xs text-nord3 dark:text-nord4 flex items-center justify-between gap-2 font-bold; 
+  }
+  
+  .reasoning {
+    @apply text-xs text-nord0 whitespace-pre-wrap bg-nord5 rounded-lg p-3 mt-2 
+           border border-nord4 shadow-sm
+           dark:text-nord6 dark:bg-nord2 dark:border-nord3;
+  }
+
+  /* Status badges with Nord Aurora colors */
+  .status-badge { 
+    @apply px-2.5 py-1 rounded-full text-xs font-semibold shadow-sm; 
+  }
+  
+  .status--completed { 
+    @apply bg-nord14/20 text-nord14 border border-nord14/40
+           dark:bg-nord14/10 dark:border-nord14/30; 
+  }
+  
+  .status--failed { 
+    @apply bg-nord11/20 text-nord11 border border-nord11/40
+           dark:bg-nord11/10 dark:border-nord11/30; 
+  }
+  
+  .status--action_required { 
+    @apply bg-nord13/20 text-amber-800 border border-nord13/40
+           dark:bg-nord13/10 dark:text-nord13 dark:border-nord13/30; 
+  }
+  
+  .status--help_required { 
+    @apply bg-nord8/20 text-nord10 border border-nord8/40
+           dark:bg-nord8/10 dark:text-nord8 dark:border-nord8/30; 
+  }
+  
+  .status--running { 
+    @apply bg-gradient-to-r from-nord8/20 to-nord9/20 text-nord10 border border-nord8/40
+           dark:from-nord8/10 dark:to-nord9/10 dark:text-nord8 dark:border-nord8/30
+           animate-pulse; 
+  }
+
+  /* Progress bars with Nord styling */
+  .progress {
+    @apply w-full bg-nord4 rounded-full h-2.5 overflow-hidden
+           dark:bg-nord2;
+  }
+  
+  .progress-bar-primary { 
+    @apply h-2.5 rounded-full bg-gradient-to-r from-nord8 to-nord10 
+           transition-all duration-300 shadow-sm; 
+  }
+  
+  .progress-bar-green { 
+    @apply h-2.5 rounded-full bg-nord14 transition-all duration-300 shadow-sm; 
+  }
+  
+  .progress-bar-red { 
+    @apply h-2.5 rounded-full bg-nord11 transition-all duration-300 shadow-sm; 
+  }
+
+  /* Selectable cards */
+  .select-card { 
+    @apply card border-2 hover:border-nord8 cursor-pointer; 
+  }
+  
+  .select-card-active { 
+    @apply border-nord8 bg-nord8/5 ring-2 ring-nord8/20
+           dark:bg-nord8/5; 
+  }
+}
