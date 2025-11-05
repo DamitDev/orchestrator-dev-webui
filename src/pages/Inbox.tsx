@@ -6,10 +6,10 @@ import type { Task } from '../types/api'
 import { useWebSocket } from '../ws/WebSocketProvider'
 
 const sectionIcons = {
-  'Pending Approvals': '⏳',
-  'Help Required': '🆘',
-  'User Turn': '👤',
-  'Running': '⚡'
+  'Pending Approvals': '●',
+  'Help Required': '●',
+  'User Turn': '●',
+  'Running': '●'
 }
 
 const sectionColors = {
@@ -41,7 +41,6 @@ function Section({ title, tasks }: { title: string; tasks: Task[] }) {
       </div>
       {top.length === 0 ? (
         <div className="text-center py-8 text-nord3 dark:text-nord4">
-          <div className="text-3xl mb-2">✨</div>
           <p className="text-sm">No items</p>
         </div>
       ) : (
@@ -137,7 +136,6 @@ export default function Inbox() {
       
       {error && (
         <div className="card p-6 bg-nord11/10 border border-nord11/30 text-center">
-          <div className="text-4xl mb-2">⚠️</div>
           <div className="text-nord11 font-semibold">Failed to load tasks</div>
         </div>
       )}

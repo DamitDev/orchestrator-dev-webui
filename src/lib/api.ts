@@ -18,6 +18,7 @@ export const tasksApi = {
     if (params?.limit) search.append('limit', String(params.limit))
     if (params?.order_by) search.append('order_by', params.order_by)
     if (params?.order_direction) search.append('order_direction', params.order_direction)
+    if (params?.workflow_id) search.append('workflow_id', params.workflow_id)
     const url = `/tasks${search.toString() ? `?${search.toString()}` : ''}`
     const { data } = await getApi().get(url)
     return data

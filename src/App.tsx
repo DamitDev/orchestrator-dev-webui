@@ -84,10 +84,10 @@ function Header() {
                 {wfOpen && (
                   <div className={`dropdown-menu w-44`} onMouseEnter={() => cancelClose('wf')} onMouseLeave={() => scheduleClose('wf')}>
                     <div className="py-1">
-                      <NavLink to="/workflows/tickets" className={({isActive}) => `${'dropdown-item'} ${isActive ? 'dropdown-item-active' : ''}`} onClick={() => setWfOpen(false)}>🎫 Tickets</NavLink>
-                      <NavLink to="/workflows/matrix" className={({isActive}) => `${'dropdown-item'} ${isActive ? 'dropdown-item-active' : ''}`} onClick={() => setWfOpen(false)}>🔢 Matrix</NavLink>
-                      <NavLink to="/workflows/proactive" className={({isActive}) => `${'dropdown-item'} ${isActive ? 'dropdown-item-active' : ''}`} onClick={() => setWfOpen(false)}>⚡ Proactive</NavLink>
-                      <NavLink to="/workflows/interactive" className={({isActive}) => `${'dropdown-item'} ${isActive ? 'dropdown-item-active' : ''}`} onClick={() => setWfOpen(false)}>💬 Interactive</NavLink>
+                      <NavLink to="/workflows/tickets" className={({isActive}) => `${'dropdown-item'} ${isActive ? 'dropdown-item-active' : ''}`} onClick={() => setWfOpen(false)}>Tickets</NavLink>
+                      <NavLink to="/workflows/matrix" className={({isActive}) => `${'dropdown-item'} ${isActive ? 'dropdown-item-active' : ''}`} onClick={() => setWfOpen(false)}>Matrix</NavLink>
+                      <NavLink to="/workflows/proactive" className={({isActive}) => `${'dropdown-item'} ${isActive ? 'dropdown-item-active' : ''}`} onClick={() => setWfOpen(false)}>Proactive</NavLink>
+                      <NavLink to="/workflows/interactive" className={({isActive}) => `${'dropdown-item'} ${isActive ? 'dropdown-item-active' : ''}`} onClick={() => setWfOpen(false)}>Interactive</NavLink>
                     </div>
                   </div>
                 )}
@@ -104,13 +104,13 @@ function Header() {
                 {settingsOpen && (
                   <div className={`dropdown-menu w-52`} onMouseEnter={() => cancelClose('settings')} onMouseLeave={() => scheduleClose('settings')}>
                     <div className="py-1">
-                      <NavLink to="/config/models" className={({isActive}) => `${'dropdown-item'} ${isActive ? 'dropdown-item-active' : ''}`} onClick={() => setSettingsOpen(false)}>🤖 Models</NavLink>
-                      <NavLink to="/config/llm-backends" className={({isActive}) => `${'dropdown-item'} ${isActive ? 'dropdown-item-active' : ''}`} onClick={() => setSettingsOpen(false)}>🔌 LLM Backends</NavLink>
-                      <NavLink to="/config/mcp-servers" className={({isActive}) => `${'dropdown-item'} ${isActive ? 'dropdown-item-active' : ''}`} onClick={() => setSettingsOpen(false)}>🖥️ MCP Servers</NavLink>
-                      <NavLink to="/config/task-handler" className={({isActive}) => `${'dropdown-item'} ${isActive ? 'dropdown-item-active' : ''}`} onClick={() => setSettingsOpen(false)}>⚙️ Task Handler</NavLink>
-                      <NavLink to="/config/tools" className={({isActive}) => `${'dropdown-item'} ${isActive ? 'dropdown-item-active' : ''}`} onClick={() => setSettingsOpen(false)}>🛠️ Tools Explorer</NavLink>
-                      <NavLink to="/config/system" className={({isActive}) => `${'dropdown-item'} ${isActive ? 'dropdown-item-active' : ''}`} onClick={() => setSettingsOpen(false)}>💻 System</NavLink>
-                      <NavLink to="/config/auth" className={({isActive}) => `${'dropdown-item'} ${isActive ? 'dropdown-item-active' : ''}`} onClick={() => setSettingsOpen(false)}>🔐 Auth</NavLink>
+                      <NavLink to="/config/models" className={({isActive}) => `${'dropdown-item'} ${isActive ? 'dropdown-item-active' : ''}`} onClick={() => setSettingsOpen(false)}>Models</NavLink>
+                      <NavLink to="/config/llm-backends" className={({isActive}) => `${'dropdown-item'} ${isActive ? 'dropdown-item-active' : ''}`} onClick={() => setSettingsOpen(false)}>LLM Backends</NavLink>
+                      <NavLink to="/config/mcp-servers" className={({isActive}) => `${'dropdown-item'} ${isActive ? 'dropdown-item-active' : ''}`} onClick={() => setSettingsOpen(false)}>MCP Servers</NavLink>
+                      <NavLink to="/config/task-handler" className={({isActive}) => `${'dropdown-item'} ${isActive ? 'dropdown-item-active' : ''}`} onClick={() => setSettingsOpen(false)}>Task Handler</NavLink>
+                      <NavLink to="/config/tools" className={({isActive}) => `${'dropdown-item'} ${isActive ? 'dropdown-item-active' : ''}`} onClick={() => setSettingsOpen(false)}>Tools Explorer</NavLink>
+                      <NavLink to="/config/system" className={({isActive}) => `${'dropdown-item'} ${isActive ? 'dropdown-item-active' : ''}`} onClick={() => setSettingsOpen(false)}>System</NavLink>
+                      <NavLink to="/config/auth" className={({isActive}) => `${'dropdown-item'} ${isActive ? 'dropdown-item-active' : ''}`} onClick={() => setSettingsOpen(false)}>Auth</NavLink>
                     </div>
                   </div>
                 )}
@@ -122,10 +122,10 @@ function Header() {
               {location.pathname}
             </span>
             <button onClick={toggleTheme} className="btn-outline" title="Toggle theme">
-              {isDark ? '☀️' : '🌙'}
+              {isDark ? 'Light' : 'Dark'}
             </button>
             <button onClick={toggle} className="btn-outline hidden sm:inline-flex">
-              {mode === 'simple' ? '📱 Simple' : '🔧 Expert'}
+              {mode === 'simple' ? 'Simple' : 'Expert'}
             </button>
           </div>
         </div>

@@ -10,11 +10,18 @@ type Workflow = TaskCreateRequest['workflow_id']
 type ToolPreset = 'all' | 'none' | 'custom'
 
 function WorkflowCard({ id, title, desc, active, onClick }: { id: Workflow; title: string; desc: string; active: boolean; onClick: () => void }) {
-  const border = active ? 'border-primary-500 bg-primary-50' : 'border-gray-200 hover:border-gray-300'
   return (
-    <button type="button" onClick={onClick} className={`p-4 border-2 rounded-lg text-left transition-all ${border}`}>
-      <div className="font-medium text-gray-900">{title}</div>
-      <div className="text-sm text-gray-600">{desc}</div>
+    <button 
+      type="button" 
+      onClick={onClick} 
+      className={`p-4 border-2 rounded-lg text-left transition-all ${
+        active 
+          ? 'border-nord8 bg-nord8/10 shadow-md dark:border-nord8 dark:bg-nord8/20' 
+          : 'border-nord4 hover:border-nord8/50 bg-nord6 dark:border-nord3 dark:bg-nord2 dark:hover:border-nord8/50'
+      }`}
+    >
+      <div className={`font-medium ${active ? 'text-nord10 dark:text-nord8' : 'text-nord0 dark:text-nord6'}`}>{title}</div>
+      <div className={`text-sm ${active ? 'text-nord10/80 dark:text-nord8/80' : 'text-nord3 dark:text-nord4'}`}>{desc}</div>
     </button>
   )
 }
@@ -101,40 +108,40 @@ export default function CreateTask() {
       <div className="space-y-4">
         {workflow !== 'ticket' ? (
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">{workflow==='matrix' ? 'Aspect Goal' : 'Goal Prompt'} <span className="text-red-600">*</span></label>
-            <textarea value={goalPrompt} onChange={e => setGoalPrompt(e.target.value)} rows={4} className="w-full px-3 py-2 border rounded" placeholder="Describe the task goal..." />
+            <label className="block text-sm font-medium text-nord0 dark:text-nord6 mb-1">{workflow==='matrix' ? 'Aspect Goal' : 'Goal Prompt'} <span className="text-nord11">*</span></label>
+            <textarea value={goalPrompt} onChange={e => setGoalPrompt(e.target.value)} rows={4} className="textarea" placeholder="Describe the task goal..." />
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Ticket ID <span className="text-red-600">*</span></label>
-              <input value={ticketId} onChange={e => setTicketId(e.target.value)} className="w-full px-3 py-2 border rounded" placeholder="IRIS-1234" />
+              <label className="block text-sm font-medium text-nord0 dark:text-nord6 mb-1">Ticket ID <span className="text-nord11">*</span></label>
+              <input value={ticketId} onChange={e => setTicketId(e.target.value)} className="input w-full" placeholder="IRIS-1234" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Summary</label>
-              <input value={summary} onChange={e => setSummary(e.target.value)} className="w-full px-3 py-2 border rounded" placeholder="Short summary" />
+              <label className="block text-sm font-medium text-nord0 dark:text-nord6 mb-1">Summary</label>
+              <input value={summary} onChange={e => setSummary(e.target.value)} className="input w-full" placeholder="Short summary" />
             </div>
             <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Ticket Text</label>
-              <textarea value={ticketText} onChange={e => setTicketText(e.target.value)} rows={3} className="w-full px-3 py-2 border rounded" placeholder="Full ticket text..." />
+              <label className="block text-sm font-medium text-nord0 dark:text-nord6 mb-1">Ticket Text</label>
+              <textarea value={ticketText} onChange={e => setTicketText(e.target.value)} rows={3} className="textarea" placeholder="Full ticket text..." />
             </div>
             <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Problem Summary</label>
-              <textarea value={problemSummary} onChange={e => setProblemSummary(e.target.value)} rows={3} className="w-full px-3 py-2 border rounded" placeholder="Describe the problem..." />
+              <label className="block text-sm font-medium text-nord0 dark:text-nord6 mb-1">Problem Summary</label>
+              <textarea value={problemSummary} onChange={e => setProblemSummary(e.target.value)} rows={3} className="textarea" placeholder="Describe the problem..." />
             </div>
             <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Solution Strategy</label>
-              <textarea value={solutionStrategy} onChange={e => setSolutionStrategy(e.target.value)} rows={3} className="w-full px-3 py-2 border rounded" placeholder="Proposed approach..." />
+              <label className="block text-sm font-medium text-nord0 dark:text-nord6 mb-1">Solution Strategy</label>
+              <textarea value={solutionStrategy} onChange={e => setSolutionStrategy(e.target.value)} rows={3} className="textarea" placeholder="Proposed approach..." />
             </div>
           </div>
         )}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Max Iterations</label>
+            <label className="block text-sm font-medium text-nord0 dark:text-nord6 mb-1">Max Iterations</label>
             <input type="number" min={1} max={200} value={maxIterations} onChange={e => setMaxIterations(parseInt(e.target.value) || 50)} className="input w-full" />
           </div>
           <div className="md:col-span-2">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Reasoning Effort</label>
+            <label className="block text-sm font-medium text-nord0 dark:text-nord6 mb-1">Reasoning Effort</label>
             <div className="flex gap-2">
               {(['low','medium','high'] as ReasoningEffort[]).map(r => (
                 <button key={r} type="button" onClick={() => setReasoning(r)} className={`${reasoning===r ? 'btn-primary' : 'btn-outline'}`}>{r}</button>
@@ -147,7 +154,7 @@ export default function CreateTask() {
       {/* Tools */}
       <div className="space-y-3">
         <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Tool Preset</label>
+          <label className="block text-sm font-medium text-nord0 dark:text-nord6 mb-1">Tool Preset</label>
           <div className="flex flex-wrap gap-2">
             <button type="button" onClick={() => setToolPreset('all')} className={`${toolPreset==='all' ? 'btn-primary' : 'btn-outline'}`}>All tools</button>
             <button type="button" onClick={() => setToolPreset('none')} className={`${toolPreset==='none' ? 'btn-primary' : 'btn-outline'}`}>No tools</button>
@@ -156,9 +163,9 @@ export default function CreateTask() {
         </div>
         {toolPreset === 'custom' && (
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Tool names (comma-separated)</label>
+            <label className="block text-sm font-medium text-nord0 dark:text-nord6 mb-1">Tool names (comma-separated)</label>
             <input value={customTools} onChange={e => setCustomTools(e.target.value)} className="input w-full" placeholder="read_file, list_directory" />
-            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Leave empty to allow none. Tool names are case-sensitive.</p>
+            <p className="text-xs text-nord3 dark:text-nord4 mt-1">Leave empty to allow none. Tool names are case-sensitive.</p>
           </div>
         )}
       </div>

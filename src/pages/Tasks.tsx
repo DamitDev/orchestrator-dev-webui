@@ -37,7 +37,7 @@ function TaskCard({ task, selected, onToggle }: { task: Task; selected: boolean;
             </span>
             {task.ticket_id && (
               <span className="badge bg-nord15/20 text-nord15 border-nord15/30">
-                🎫 {task.ticket_id}
+                {task.ticket_id}
               </span>
             )}
           </div>
@@ -47,12 +47,12 @@ function TaskCard({ task, selected, onToggle }: { task: Task; selected: boolean;
           <div className="flex items-center gap-3 mt-2 text-xs">
             {(['ticket','proactive'].includes(task.workflow_id)) && (
               <div className="text-nord3 dark:text-nord4">
-                📊 Iteration <span className="font-semibold text-nord10 dark:text-nord8">{task.iteration}/{task.max_iterations}</span>
+                Iteration <span className="font-semibold text-nord10 dark:text-nord8">{task.iteration}/{task.max_iterations}</span>
               </div>
             )}
             {task.workflow_id === 'matrix' && (
               <div className="text-nord3 dark:text-nord4">
-                🔢 Phase <span className="font-semibold text-nord10 dark:text-nord8">{(task.workflow_data?.phase ?? 0)}/4</span>
+                Phase <span className="font-semibold text-nord10 dark:text-nord8">{(task.workflow_data?.phase ?? 0)}/4</span>
               </div>
             )}
           </div>
@@ -109,7 +109,6 @@ function TasksTable({ tasks, selected, onToggle }: { tasks: Task[]; selected: Se
               <td className="px-4 py-3"><StatusBadge status={t.status} /></td>
               <td className="px-4 py-3 max-w-[420px]">
                 <Link to={`/task/${t.id}`} className="link-muted truncate inline-block max-w-full align-top hover:text-nord8 font-medium">
-                  {t.ticket_id && <span className="mr-1">🎫</span>}
                   {t.ticket_id || t.goal_prompt || t.id}
                 </Link>
               </td>
@@ -162,7 +161,13 @@ export default function Tasks() {
   const [orderBy, setOrderBy] = useState<TasksQueryParams['order_by']>('updated_at')
   const [orderDirection, setOrderDirection] = useState<TasksQueryParams['order_direction']>('desc')
 
-  const params: TasksQueryParams = { page, limit, order_by: orderBy, order_direction: orderDirection }
+  const params: TasksQueryParams = { 
+    page, 
+    limit, 
+    order_by: orderBy, 
+    order_direction: orderDirection,
+    workflow_id: workflow === 'all' ? undefined : workflow
+  }
   const { data, isLoading, error, refetch } = useTasks(params)
 
   useEffect(() => {
@@ -181,14 +186,13 @@ export default function Tasks() {
     }
     const isRunning = (s: string) => ['in_progress','validation','function_execution','agent_turn'].includes(s)
     return tasks.filter(t => (
-      (workflow === 'all' || t.workflow_id === workflow) &&
       matchesSearch(t) &&
       ((showApprovals || t.status !== 'action_required')) &&
       ((showHelp || t.status !== 'help_required')) &&
       ((showUserTurn || t.status !== 'user_turn')) &&
       ((showRunning || !isRunning(t.status)))
     ))
-  }, [tasks, workflow, search, showApprovals, showHelp, showUserTurn, showRunning])
+  }, [tasks, search, showApprovals, showHelp, showUserTurn, showRunning])
 
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const toggleSelected = (id: string, checked: boolean) => {
@@ -246,21 +250,21 @@ export default function Tasks() {
       {/* Controls */}
       <div className="card p-5 space-y-4 shadow-nord-lg">
         <div className="flex flex-wrap items-center gap-3">
-          <select value={workflow} onChange={e => setWorkflow(e.target.value as WorkflowFilter)} className="select">
-            <option value="all">📋 All workflows</option>
-            <option value="ticket">🎫 Ticket</option>
-            <option value="matrix">🔢 Matrix</option>
-            <option value="proactive">⚡ Proactive</option>
-            <option value="interactive">💬 Interactive</option>
+          <select value={workflow} onChange={e => { setWorkflow(e.target.value as WorkflowFilter); setPage(1) }} className="select">
+            <option value="all">All workflows</option>
+            <option value="ticket">Ticket</option>
+            <option value="matrix">Matrix</option>
+            <option value="proactive">Proactive</option>
+            <option value="interactive">Interactive</option>
           </select>
           <div className="flex-1 min-w-[240px]">
-            <input 
-              id="tasks-search" 
-              aria-label="Search tasks" 
-              value={search} 
-              onChange={e => setSearch(e.target.value)} 
-              placeholder="🔍 Search (ID, goal, ticket)" 
-              className="input text-sm w-full" 
+              <input 
+                id="tasks-search" 
+                aria-label="Search tasks" 
+                value={search} 
+                onChange={e => setSearch(e.target.value)} 
+                placeholder="🔍 Search by ID, goal, or ticket" 
+                className="input text-sm w-full font-normal"
             />
           </div>
           <div className="flex items-center gap-2 ml-auto">
@@ -331,7 +335,6 @@ export default function Tasks() {
       
       {error && (
         <div className="card p-6 bg-nord11/10 border border-nord11/30 text-center">
-          <div className="text-4xl mb-2">⚠️</div>
           <div className="text-nord11 font-semibold">Failed to load tasks</div>
         </div>
       )}

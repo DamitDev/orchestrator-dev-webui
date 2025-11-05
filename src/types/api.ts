@@ -36,6 +36,7 @@ export interface TasksQueryParams {
   limit?: number
   order_by?: OrderBy
   order_direction?: OrderDirection
+  workflow_id?: string
 }
 
 export type ReasoningEffort = 'low' | 'medium' | 'high'

@@ -51,4 +51,34 @@ body {
   @apply transition-colors duration-150;
 }
 
+/* Smooth animations for details/summary elements */
+.details-animated summary {
+  cursor: pointer;
+  list-style: none;
+}
+
+.details-animated summary::-webkit-details-marker {
+  display: none;
+}
+
+.details-animated summary::marker {
+  display: none;
+}
+
+/* Animate the content when opening */
+.details-animated[open] > *:not(summary) {
+  animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 

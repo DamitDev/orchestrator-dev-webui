@@ -19,6 +19,191 @@ function StatusBadge({ status }: { status: string }) {
   return <span className={cls}>{status.replace(/_/g,' ')}</span>
 }
 
+// Group messages: assistant messages with their tool calls/responses
+// Continue grouping through multiple assistant turns until we hit content
+function groupMessages(messages: any[]) {
+  const groups: any[] = []
+  let i = 0
+  
+  while (i < messages.length) {
+    const msg = messages[i]
+    
+    // For assistant messages, group everything until we get content
+    if (msg.role === 'assistant') {
+      const group: any = {
+        type: 'assistant',
+        assistantMessages: [], // Track all assistant messages in this turn
+        toolInteractions: [],
+        finalContent: null,
+        finalReasoning: null
+      }
+      
+      let j = i
+      let keepGoing = true
+      
+      // Keep going through assistant + tool sequences until we hit content or a different role
+      while (j < messages.length && keepGoing) {
+        const current = messages[j]
+        
+        if (current.role === 'assistant') {
+          group.assistantMessages.push(current)
+          
+          // If this assistant has content, this is the end of the turn
+          if (current.content && current.content.trim()) {
+            group.finalContent = current.content
+            group.finalReasoning = current.reasoning
+            j++
+            keepGoing = false
+          } else if (current.tool_calls && Array.isArray(current.tool_calls) && current.tool_calls.length > 0) {
+            // This assistant has tool calls, collect them and their responses
+            const toolCallIds = new Set(current.tool_calls.map((tc: any) => tc.id))
+            
+            // Add tool calls with their reasoning
+            for (const tc of current.tool_calls) {
+              group.toolInteractions.push({
+                reasoning: current.reasoning, // Reasoning before this tool call
+                toolCall: tc,
+                toolResponse: null
+              })
+            }
+            
+            j++
+            
+            // Now collect matching tool responses
+            while (j < messages.length && messages[j].role === 'tool') {
+              const toolMsg = messages[j]
+              if (toolCallIds.has(toolMsg.tool_call_id)) {
+                // Find the interaction to attach this response to
+                const interaction = group.toolInteractions.find((ti: any) => ti.toolCall.id === toolMsg.tool_call_id)
+                if (interaction) {
+                  interaction.toolResponse = toolMsg
+                }
+              }
+              j++
+            }
+          } else {
+            // Assistant with no content and no tool calls - shouldn't happen but move on
+            j++
+          }
+        } else {
+          // Hit a non-assistant message, stop grouping
+          keepGoing = false
+        }
+      }
+      
+      i = j
+      groups.push(group)
+    } else {
+      // Non-assistant messages stay as single messages
+      groups.push({
+        type: msg.role,
+        message: msg
+      })
+      i++
+    }
+  }
+  
+  return groups
+}
+
+// Render a grouped assistant turn
+function AssistantTurn({ group, mode }: { group: any; mode: string }) {
+  const hasContent = group.finalContent && group.finalContent.trim()
+  const hasToolCalls = group.toolInteractions && group.toolInteractions.length > 0
+  const firstMsg = group.assistantMessages[0]
+  
+  return (
+    <div className="message message--assistant">
+      <div className="message-header mb-3">
+        <span className="uppercase font-bold text-xs tracking-wide">ASSISTANT</span>
+        {firstMsg?.created_at && (
+          <span className="text-xs bg-nord5/70 px-2 py-0.5 rounded dark:bg-nord2">
+            {formatMessageTimestamp(firstMsg.created_at)}
+          </span>
+        )}
+      </div>
+      
+      <div className="space-y-2">
+        {/* Tool interactions */}
+        {hasToolCalls && group.toolInteractions.map((interaction: any, idx: number) => {
+          const toolCall = interaction.toolCall
+          const toolResponse = interaction.toolResponse
+          const reasoning = interaction.reasoning
+          const toolName = toolCall?.function?.name || 'unknown'
+          
+          // Try to get a short summary from tool response
+          const responseSummary = toolResponse?.content 
+            ? (toolResponse.content.length > 80 ? toolResponse.content.slice(0, 80) + '...' : toolResponse.content)
+            : 'No response'
+          
+          return (
+            <div key={idx}>
+              {/* Show reasoning before this tool call if it exists */}
+              {reasoning && mode === 'expert' && (
+                <details className="text-xs details-animated mb-2">
+                  <summary className="cursor-pointer text-nord3 dark:text-nord4 hover:text-nord10 dark:hover:text-nord8 select-none">
+                    ▸ Thought
+                  </summary>
+                  <div className="reasoning mt-2">{reasoning}</div>
+                </details>
+              )}
+              
+              {/* Tool call + response in one collapsible */}
+              {/* Only keep last tool open if there's no final content yet (still streaming) */}
+              <details className="text-xs details-animated mb-2" open={!hasContent && idx === group.toolInteractions.length - 1}>
+                <summary className="cursor-pointer text-nord3 dark:text-nord4 hover:text-nord10 dark:hover:text-nord8 select-none">
+                  ▸ Using tool: <code className="text-nord10 dark:text-nord8 font-medium">{toolName}</code>
+                </summary>
+                
+                <div className="mt-2 ml-4 space-y-2">
+                  {/* Tool call parameters */}
+                  {mode === 'expert' && toolCall?.function?.arguments && (
+                    <details className="text-xs details-animated">
+                      <summary className="cursor-pointer text-nord3 dark:text-nord4 hover:text-nord10 dark:hover:text-nord8 select-none">
+                        Parameters
+                      </summary>
+                      <pre className="mt-1 overflow-auto bg-nord5 rounded-lg p-2 text-nord0 dark:bg-nord2 dark:text-nord6 text-xs">
+                        {toolCall.function.arguments}
+                      </pre>
+                    </details>
+                  )}
+                  
+                  {/* Tool response - just show the box, no collapsible */}
+                  {toolResponse && (
+                    <div className="mt-2">
+                      <div className="text-xs text-nord3 dark:text-nord4 mb-1">Response:</div>
+                      <div className="p-3 bg-nord5/30 rounded-lg border border-nord4/50 dark:bg-nord2/30 dark:border-nord3/50 text-xs">
+                        <MessageContent role="tool" content={toolResponse.content} isLatestTool={false} />
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </details>
+            </div>
+          )
+        })}
+        
+        {/* Final reasoning before the response */}
+        {hasContent && group.finalReasoning && mode === 'expert' && (
+          <details className="text-xs details-animated mb-2">
+            <summary className="cursor-pointer text-nord3 dark:text-nord4 hover:text-nord10 dark:hover:text-nord8 select-none">
+              ▸ Thought
+            </summary>
+            <div className="reasoning mt-2">{group.finalReasoning}</div>
+          </details>
+        )}
+        
+        {/* Main content */}
+        {hasContent && (
+          <div className="text-sm leading-relaxed mt-2">
+            <MessageContent role="assistant" content={group.finalContent} isLatestTool={false} />
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
 function ProgressBar({ value, max, status }: { value: number; max: number; status: string }) {
   const pct = (status === 'completed' || status === 'failed')
     ? 100
@@ -95,191 +280,299 @@ export default function TaskDetail() {
       
       {error && (
         <div className="card p-6 bg-nord11/10 border border-nord11/30 text-center">
-          <div className="text-4xl mb-2">⚠️</div>
           <div className="text-nord11 font-semibold">Failed to load task</div>
         </div>
       )}
 
       {task && (
-        <div className="space-y-6">
-          <div className="card p-6 bg-gradient-to-br from-nord6 to-nord5 dark:from-nord1 dark:to-nord2 border-2">
-            <div className="flex items-start justify-between gap-4">
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-3 flex-wrap">
-                  <StatusBadge status={task.status} />
-                  <span className="badge bg-nord8/20 text-nord10 border-nord8/30 dark:bg-nord8/10 dark:text-nord8">{task.workflow_id.toUpperCase()}</span>
-                  {task.ticket_id && (
-                    <span className="badge bg-nord15/20 text-nord15 border-nord15/30">🎫 {task.ticket_id}</span>
-                  )}
-                </div>
-                <div className="text-xl font-semibold text-nord0 dark:text-nord6 mb-3" title={task.goal_prompt}>{task.goal_prompt || task.ticket_id || task.id}</div>
-                <div className="grid grid-cols-2 gap-4 text-sm mt-2">
-                  {(['ticket','proactive'].includes(task.workflow_id)) && (
-                    <div className="small-muted">Iteration <span className="font-medium text-gray-900 dark:text-gray-100">{task.iteration}/{task.max_iterations}</span></div>
-                  )}
-                  {task.workflow_id === 'matrix' && (
-                    <div className="small-muted">Phase <span className="font-medium text-gray-900 dark:text-gray-100">{(task.workflow_data?.phase ?? 0)}/4</span></div>
-                  )}
-                  <div className="small-muted">Updated <span className="font-medium text-gray-900 dark:text-gray-100">{formatTimestamp(task.updated_at)}</span></div>
-                </div>
-                <div className="mt-2 text-xs text-gray-600 dark:text-gray-300 flex items-center gap-2 flex-wrap">
-                  <span className="">Available tools:</span>
-                  {task.available_tools === null && <span className="px-2 py-0.5 rounded bg-green-50 text-green-700 border border-green-200">All</span>}
-                  {Array.isArray(task.available_tools) && task.available_tools.length === 0 && (
-                    <span className="px-2 py-0.5 rounded bg-red-50 text-red-700 border border-red-200">None</span>
-                  )}
-                  {Array.isArray(task.available_tools) && task.available_tools.length > 0 && (
-                    <>
-                      {task.available_tools.slice(0, 5).map((tname, i) => (
-                        <span key={i} className="px-2 py-0.5 rounded bg-gray-100 text-gray-800 border border-gray-200 dark:bg-gray-900 dark:text-gray-200 dark:border-gray-700">{tname}</span>
-                      ))}
-                      {task.available_tools.length > 5 && (
-                        <span className="text-gray-500">+{task.available_tools.length - 5} more</span>
-                      )}
-                    </>
-                  )}
-                  <Link to="/config/tools" className="ml-2 underline decoration-dotted">Tools Explorer</Link>
-                </div>
+        <div className="flex gap-6 h-[calc(100vh-180px)]">
+          {/* LEFT COLUMN: Task Info */}
+          <div className="flex-1 space-y-6 overflow-auto pr-2">
+            {/* Main Task Info Card */}
+            <div className="card p-6 bg-gradient-to-br from-nord6 to-nord5 dark:from-nord1 dark:to-nord2 border-2 space-y-4">
+              {/* Header with badges */}
+              <div className="flex items-center gap-2 flex-wrap">
+                <StatusBadge status={task.status} />
+                <span className="badge bg-nord8/20 text-nord10 border-nord8/30 dark:bg-nord8/10 dark:text-nord8">{task.workflow_id.toUpperCase()}</span>
+                {task.ticket_id && (
+                  <span className="badge bg-nord15/20 text-nord15 border-nord15/30">🎫 {task.ticket_id}</span>
+                )}
               </div>
-            </div>
-            <div className="mt-4">
-              {(['ticket','proactive'].includes(task.workflow_id)) && (
-                <ProgressBar value={task.iteration} max={task.max_iterations} status={task.status} />
-              )}
-              {task.workflow_id === 'matrix' && (
-                <PhaseProgressBar phase={(task.workflow_data?.phase ?? 0)} status={task.status} />
-              )}
-            </div>
-          </div>
 
-          {/* Critical banners */}
-          {task.status === 'action_required' && (
-            <div className="card p-5 bg-gradient-to-r from-nord13/20 to-nord13/10 border-2 border-nord13/40">
-              <div className="flex items-center gap-2 mb-2">
-                <span className="text-2xl">⏳</span>
-                <div className="text-base text-nord0 dark:text-nord6 font-semibold">Supervisor action required</div>
-              </div>
-              {task.approval_reason && (
-                <div className="text-sm text-nord0 dark:text-nord6 whitespace-pre-wrap bg-nord6/50 p-3 rounded-lg border border-nord13/20 dark:bg-nord2/50">
-                  {task.approval_reason}
+              {/* Task Result for completed/failed tasks */}
+              {(task.status === 'completed' || task.status === 'failed') && task.result && (
+                <div className="p-4 bg-nord14/10 border-2 border-nord14/30 rounded-lg dark:bg-nord14/5">
+                  <div className="text-xs font-semibold text-nord14 uppercase tracking-wide mb-2">
+                    Task Result
+                  </div>
+                  <div className="text-base font-medium text-nord0 dark:text-nord6">
+                    {task.result}
+                  </div>
                 </div>
               )}
-            </div>
-          )}
-          {task.status === 'help_required' && (
-            <div className="card p-5 bg-gradient-to-r from-nord8/20 to-nord8/10 border-2 border-nord8/40">
-              <div className="flex items-center gap-2 mb-2">
-                <span className="text-2xl">🆘</span>
-                <div className="text-base text-nord0 dark:text-nord6 font-semibold">Agent needs help</div>
-              </div>
-              {task.approval_reason && (
-                <div className="text-sm text-nord0 dark:text-nord6 whitespace-pre-wrap bg-nord6/50 p-3 rounded-lg border border-nord8/20 dark:bg-nord2/50">
-                  {task.approval_reason}
-                </div>
-              )}
-            </div>
-          )}
 
-          {/* Conversation: hidden for matrix, shown otherwise */}
-          {task.workflow_id !== 'matrix' && (
-            <div className="card p-6 space-y-4">
-              <div className="flex items-center justify-between pb-3 border-b border-nord4 dark:border-nord2">
-                <div className="flex items-center gap-2">
-                  <svg className="w-5 h-5 text-nord8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                  </svg>
-                  <h2 className="text-lg font-semibold text-nord0 dark:text-nord6">Conversation</h2>
-                  <span className="badge bg-nord8/20 text-nord10 dark:bg-nord8/10 dark:text-nord8">
-                    {conv?.conversation?.length ?? 0}
-                  </span>
+              {/* Structured Information Grid */}
+              <div className="space-y-3">
+                {/* Status */}
+                <div className="grid grid-cols-[120px_1fr] gap-2 items-start">
+                  <div className="text-xs font-semibold text-nord3 dark:text-nord4 uppercase tracking-wide">
+                    Status
+                  </div>
+                  <div className="text-sm text-nord0 dark:text-nord6">
+                    <StatusBadge status={task.status} />
+                  </div>
                 </div>
-                <label className="flex items-center gap-2 text-sm text-nord3 dark:text-nord4 cursor-pointer hover:text-nord10 transition-colors">
-                  <input type="checkbox" checked={autoScroll} onChange={e => setAutoScroll(e.target.checked)} className="rounded" /> 
-                  Auto-scroll
-                </label>
-              </div>
-              <div ref={convRef} className="space-y-4 max-h-[500px] overflow-auto pr-2">
-                {(() => {
-                  const msgs = (conv?.conversation || []).filter((m: any) => mode === 'expert' ? true : (m.role !== 'system' && m.role !== 'developer'))
-                  let lastToolIndex = -1
-                  for (let i = msgs.length - 1; i >= 0; i--) { if (msgs[i].role === 'tool') { lastToolIndex = i; break } }
-                  
-                  const roleIcons = {
-                    assistant: '🤖',
-                    user: '👤',
-                    system: '⚙️',
-                    tool: '🔧'
-                  }
-                  
-                  return msgs.map((m: any, idx: number) => (
-                    <div key={idx} className={`message group ${m.role==='assistant' ? 'message--assistant' : m.role==='user' ? 'message--user' : m.role==='system' ? 'message--system' : 'message--tool'}`}>
-                      <div className="message-header mb-2">
-                        <span className="flex items-center gap-1.5">
-                          <span className="text-base">{roleIcons[m.role as keyof typeof roleIcons]}</span>
-                          <span className="uppercase font-semibold">{m.role}</span>
-                        </span>
-                        {m.created_at && (
-                          <span className="text-xs bg-nord5/50 px-2 py-0.5 rounded dark:bg-nord2">
-                            {formatMessageTimestamp(m.created_at)}
-                          </span>
-                        )}
+
+                {/* Type */}
+                <div className="grid grid-cols-[120px_1fr] gap-2 items-start">
+                  <div className="text-xs font-semibold text-nord3 dark:text-nord4 uppercase tracking-wide">
+                    Type
+                  </div>
+                  <div className="text-sm text-nord0 dark:text-nord6 font-medium">
+                    {task.workflow_id === 'ticket' ? '🎫 Ticket' : 
+                     task.workflow_id === 'matrix' ? '🔢 Matrix' : 
+                     task.workflow_id === 'proactive' ? '⚡ Proactive' : 
+                     '💬 Interactive'}
+                  </div>
+                </div>
+
+                {/* Progress */}
+                {task.workflow_id === 'ticket' || task.workflow_id === 'proactive' ? (
+                  <div className="grid grid-cols-[120px_1fr] gap-2 items-start">
+                    <div className="text-xs font-semibold text-nord3 dark:text-nord4 uppercase tracking-wide">
+                      Iteration
+                    </div>
+                    <div className="text-sm text-nord0 dark:text-nord6">
+                      <span className="font-bold text-nord10 dark:text-nord8">{task.iteration}</span> / {task.max_iterations}
+                    </div>
+                  </div>
+                ) : task.workflow_id === 'matrix' ? (
+                  <div className="grid grid-cols-[120px_1fr] gap-2 items-start">
+                    <div className="text-xs font-semibold text-nord3 dark:text-nord4 uppercase tracking-wide">
+                      Phase
+                    </div>
+                    <div className="text-sm text-nord0 dark:text-nord6">
+                      <span className="font-bold text-nord12 dark:text-nord12">{task.workflow_data?.phase ?? 0}</span> / 4
+                    </div>
+                  </div>
+                ) : null}
+
+                {/* Timestamps */}
+                <div className="grid grid-cols-[120px_1fr] gap-2 items-start">
+                  <div className="text-xs font-semibold text-nord3 dark:text-nord4 uppercase tracking-wide">
+                    Created
+                  </div>
+                  <div className="text-sm text-nord0 dark:text-nord6">
+                    {formatTimestamp(task.created_at)}
+                  </div>
+                </div>
+                <div className="grid grid-cols-[120px_1fr] gap-2 items-start">
+                  <div className="text-xs font-semibold text-nord3 dark:text-nord4 uppercase tracking-wide">
+                    Updated
+                  </div>
+                  <div className="text-sm text-nord0 dark:text-nord6">
+                    {formatTimestamp(task.updated_at)}
+                  </div>
+                </div>
+
+                {/* Ticket-specific fields */}
+                {task.workflow_id === 'ticket' && (
+                  <>
+                    {task.ticket_id && (
+                      <div className="grid grid-cols-[120px_1fr] gap-2 items-start pt-2 border-t border-nord4 dark:border-nord3">
+                        <div className="text-xs font-semibold text-nord3 dark:text-nord4 uppercase tracking-wide">
+                          Ticket ID
+                        </div>
+                        <div className="text-sm text-nord0 dark:text-nord6 font-mono">
+                          {task.ticket_id}
+                        </div>
                       </div>
-                      {/* Reasoning should appear above assistant content */}
-                      {m.role === 'assistant' && mode === 'expert' && m.reasoning && (
-                        <details className="mb-3">
-                          <summary className="text-xs text-nord10 dark:text-nord8 cursor-pointer hover:underline font-medium">
-                            💭 Reasoning
+                    )}
+                    
+                    {task.workflow_data?.ticket_text && (
+                      <div className="grid grid-cols-[120px_1fr] gap-2 items-start">
+                        <div className="text-xs font-semibold text-nord3 dark:text-nord4 uppercase tracking-wide">
+                          Ticket
+                        </div>
+                        <div className="text-sm text-nord0 dark:text-nord6 bg-nord5/50 p-3 rounded-lg border border-nord4 dark:bg-nord2/50 dark:border-nord3">
+                          {task.workflow_data.ticket_text}
+                        </div>
+                      </div>
+                    )}
+                    
+                    {task.workflow_data?.summary && (
+                      <div className="grid grid-cols-[120px_1fr] gap-2 items-start">
+                        <div className="text-xs font-semibold text-nord3 dark:text-nord4 uppercase tracking-wide">
+                          Summary
+                        </div>
+                        <div className="text-sm text-nord0 dark:text-nord6">
+                          {task.workflow_data.summary}
+                        </div>
+                      </div>
+                    )}
+                    
+                    {task.workflow_data?.problem_summary && (
+                      <div className="grid grid-cols-[120px_1fr] gap-2 items-start">
+                        <div className="text-xs font-semibold text-nord3 dark:text-nord4 uppercase tracking-wide">
+                          Problem
+                        </div>
+                        <div className="text-sm text-nord0 dark:text-nord6 bg-nord11/5 p-3 rounded-lg border border-nord11/20 dark:bg-nord11/5">
+                          {task.workflow_data.problem_summary}
+                        </div>
+                      </div>
+                    )}
+                    
+                    {task.workflow_data?.solution_strategy && (
+                      <div className="grid grid-cols-[120px_1fr] gap-2 items-start">
+                        <div className="text-xs font-semibold text-nord3 dark:text-nord4 uppercase tracking-wide">
+                          Strategy
+                        </div>
+                        <div className="text-sm text-nord0 dark:text-nord6 bg-nord8/5 p-3 rounded-lg border border-nord8/20 dark:bg-nord8/5">
+                          {task.workflow_data.solution_strategy}
+                        </div>
+                      </div>
+                    )}
+                  </>
+                )}
+
+                {/* Goal prompt for non-ticket workflows or if no ticket-specific data */}
+                {(task.workflow_id !== 'ticket' || !task.workflow_data?.ticket_text) && task.goal_prompt && (
+                  <div className="grid grid-cols-[120px_1fr] gap-2 items-start pt-2 border-t border-nord4 dark:border-nord3">
+                    <div className="text-xs font-semibold text-nord3 dark:text-nord4 uppercase tracking-wide">
+                      Goal
+                    </div>
+                    <div className="text-sm text-nord0 dark:text-nord6">
+                      {task.goal_prompt.length > 200 ? (
+                        <details>
+                          <summary className="cursor-pointer hover:text-nord10 dark:hover:text-nord8">
+                            {task.goal_prompt.slice(0, 200)}...
                           </summary>
-                          <div className="reasoning">{m.reasoning}</div>
-                        </details>
-                      )}
-                      {m.content && <MessageContent role={m.role} content={m.content} isLatestTool={idx === lastToolIndex} />}
-                      {/* For non-assistant roles, keep reasoning below content */}
-                      {m.role !== 'assistant' && mode === 'expert' && m.reasoning && (
-                        <details className="mt-3">
-                          <summary className="text-xs text-nord10 dark:text-nord8 cursor-pointer hover:underline font-medium">
-                            💭 Reasoning
-                          </summary>
-                          <div className="reasoning">{m.reasoning}</div>
-                        </details>
-                      )}
-                      {mode === 'expert' && m.tool_calls && Array.isArray(m.tool_calls) && m.tool_calls.length > 0 && (
-                        <details className="mt-3">
-                          <summary className="text-xs text-nord15 dark:text-nord15 cursor-pointer hover:underline font-medium">
-                            🛠️ Tool calls ({m.tool_calls.length})
-                          </summary>
-                          <div className="mt-2 space-y-2">
-                            {m.tool_calls.map((tc: any, i: number) => (
-                              <div key={i} className="text-xs bg-nord15/10 border border-nord15/30 rounded-lg p-3 dark:bg-nord15/5">
-                                <div className="font-semibold text-nord15 mb-1">{tc.function?.name || tc.type}</div>
-                                {tc.function?.arguments && (
-                                  <pre className="overflow-auto bg-nord5 rounded-lg p-2 mt-1 text-nord0 dark:bg-nord2 dark:text-nord6">{tc.function.arguments}</pre>
-                                )}
-                              </div>
-                            ))}
+                          <div className="mt-2 p-3 bg-nord5/50 rounded-lg border border-nord4 dark:bg-nord2/50 dark:border-nord3">
+                            {task.goal_prompt}
                           </div>
                         </details>
+                      ) : (
+                        task.goal_prompt
                       )}
                     </div>
-                  ))
+                  </div>
+                )}
+
+                {/* Available Tools */}
+                <div className="grid grid-cols-[120px_1fr] gap-2 items-start pt-2 border-t border-nord4 dark:border-nord3">
+                  <div className="text-xs font-semibold text-nord3 dark:text-nord4 uppercase tracking-wide">
+                    Tools
+                  </div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    {task.available_tools === null ? (
+                      <span className="badge bg-nord14/20 text-nord14 border-nord14/40">All</span>
+                    ) : Array.isArray(task.available_tools) && task.available_tools.length === 0 ? (
+                      <span className="badge bg-nord11/20 text-nord11 border-nord11/40">None</span>
+                    ) : Array.isArray(task.available_tools) ? (
+                      <>
+                        {task.available_tools.slice(0, 5).map((tname, i) => (
+                          <span key={i} className="badge">{tname}</span>
+                        ))}
+                        {task.available_tools.length > 5 && (
+                          <span className="text-xs text-nord3 dark:text-nord4">+{task.available_tools.length - 5} more</span>
+                        )}
+                      </>
+                    ) : null}
+                    <Link to="/config/tools" className="link-muted text-xs">Explorer</Link>
+                  </div>
+                </div>
+              </div>
+
+              {/* Progress Bar */}
+              {(task.workflow_id === 'ticket' || task.workflow_id === 'proactive') && (
+                <div className="pt-3 border-t border-nord4 dark:border-nord3">
+                  <ProgressBar value={task.iteration} max={task.max_iterations} status={task.status} />
+                </div>
+              )}
+              {task.workflow_id === 'matrix' && (
+                <div className="pt-3 border-t border-nord4 dark:border-nord3">
+                  <PhaseProgressBar phase={(task.workflow_data?.phase ?? 0)} status={task.status} />
+                </div>
+              )}
+            </div>
+
+            {task.workflow_id === 'ticket' && <TicketTodoPanel conv={conv?.conversation || []} taskId={task.id} />}
+
+            {/* Action buttons for non-conversational tasks */}
+            {!['interactive', 'matrix', 'ticket', 'proactive'].includes(task.workflow_id) && (
+              <ActionPanel taskId={id!} workflowId={task.workflow_id} status={task.status} />
+            )}
+          </div>
+
+          {/* RIGHT COLUMN: Chat Panel or Matrix Phase Panel */}
+          {task.workflow_id === 'matrix' ? (
+            <MatrixPhasePanel taskId={task.id} currentPhase={task.workflow_data?.phase ?? 0} status={task.status} />
+          ) : (
+            <div className="w-[480px] flex flex-col card border-2 border-nord8/30 dark:border-nord8/20 bg-nord6 dark:bg-nord1 shadow-nord-xl">
+              {/* Chat Header */}
+              <div className="px-6 py-4 border-b-2 border-nord8/30 dark:border-nord8/20 bg-gradient-to-r from-nord8/10 to-nord9/10 dark:from-nord8/5 dark:to-nord9/5">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <svg className="w-6 h-6 text-nord8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                    </svg>
+                    <h2 className="text-lg font-bold text-nord0 dark:text-nord6">Conversation</h2>
+                    <span className="badge bg-nord8/30 text-nord10 border-nord8/40 dark:bg-nord8/20 dark:text-nord8 font-semibold">
+                      {conv?.conversation?.length ?? 0}
+                    </span>
+                  </div>
+                  <label className="flex items-center gap-2 text-sm text-nord3 dark:text-nord4 cursor-pointer hover:text-nord10 transition-colors">
+                    <input type="checkbox" checked={autoScroll} onChange={e => setAutoScroll(e.target.checked)} className="rounded" /> 
+                    Auto-scroll
+                  </label>
+                </div>
+              </div>
+              
+              {/* Chat Messages */}
+              <div ref={convRef} className="flex-1 overflow-auto p-4 space-y-4 bg-nord5/30 dark:bg-nord0/50">
+                {(() => {
+                  const msgs = (conv?.conversation || []).filter((m: any) => mode === 'expert' ? true : (m.role !== 'system' && m.role !== 'developer'))
+                  const groups = groupMessages(msgs)
+                  
+                  return groups.map((group: any, idx: number) => {
+                    // Render assistant turns with grouped tool calls
+                    if (group.type === 'assistant') {
+                      return <AssistantTurn key={idx} group={group} mode={mode} />
+                    }
+                    
+                    // Render other message types normally
+                    const m = group.message
+                    return (
+                      <div key={idx} className={`message ${m.role==='user' ? 'message--user' : m.role==='system' ? 'message--system' : 'message--tool'}`}>
+                        <div className="message-header mb-2">
+                          <span className="uppercase font-bold text-xs tracking-wide">
+                            {m.role === 'user' ? 'USER' : m.role === 'system' ? 'SYSTEM' : 'TOOL'}
+                          </span>
+                          {m.created_at && (
+                            <span className="text-xs bg-nord5/70 px-2 py-0.5 rounded dark:bg-nord2">
+                              {formatMessageTimestamp(m.created_at)}
+                            </span>
+                          )}
+                        </div>
+                        {m.content && <MessageContent role={m.role} content={m.content} isLatestTool={false} />}
+                      </div>
+                    )
+                  })
                 })()}
               </div>
+              
+              {/* Chat Input Area */}
+              <ChatInputPanel taskId={id!} workflowId={task.workflow_id} status={task.status} approvalReason={task.approval_reason} />
             </div>
           )}
-
-          {task.workflow_id === 'matrix' && <MatrixPhasePanel taskId={task.id} />}
-          {task.workflow_id === 'ticket' && <TicketTodoPanel conv={conv?.conversation || []} taskId={task.id} />}
-
-          <ActionPanel taskId={id!} workflowId={task.workflow_id} status={task.status} />
         </div>
       )}
     </div>
   )
 }
 
-function ActionPanel({ taskId, workflowId, status }: { taskId: string; workflowId: string; status: string }) {
+function ChatInputPanel({ taskId, workflowId, status, approvalReason }: { taskId: string; workflowId: string; status: string; approvalReason?: string | null }) {
   const queryClient = useQueryClient()
-  const { mode } = useMode()
   const [message, setMessage] = useState('')
   const [guide, setGuide] = useState('')
   const [help, setHelp] = useState('')
@@ -331,6 +624,7 @@ function ActionPanel({ taskId, workflowId, status }: { taskId: string; workflowI
     else if (workflowId === 'matrix') await tasksApi.workflows.matrix.markComplete(taskId)
     invalidate()
   }
+  
   const onMarkFailed = async () => {
     if (workflowId === 'interactive') await tasksApi.workflows.interactive.markFailed(taskId)
     else if (workflowId === 'matrix') await tasksApi.workflows.matrix.markFailed(taskId)
@@ -338,22 +632,41 @@ function ActionPanel({ taskId, workflowId, status }: { taskId: string; workflowI
   }
 
   return (
-    <div className="space-y-4">
-      {/* Approvals */}
+    <div className="border-t-2 border-nord8/30 dark:border-nord8/20 bg-nord6 dark:bg-nord1">
+      {/* Critical banners */}
       {status === 'action_required' && (
-        <div className="bg-amber-50 border border-amber-200 rounded p-3 flex items-center gap-2">
-          <span className="text-sm text-amber-900 font-medium">Approval required</span>
-          <div className="ml-auto flex items-center gap-2">
-            <button onClick={() => onApprove(true)} className="px-3 py-1.5 border rounded text-sm text-green-700 hover:bg-green-50">Approve</button>
-            <button onClick={() => onApprove(false)} className="px-3 py-1.5 border rounded text-sm text-red-700 hover:bg-red-50">Reject</button>
+        <div className="p-4 bg-nord13/20 border-b-2 border-nord13/40 dark:bg-nord13/10 dark:border-nord13/30">
+          <div className="text-sm text-nord0 dark:text-nord6 font-semibold mb-2">Supervisor action required</div>
+          {approvalReason && (
+            <div className="text-xs text-nord0 dark:text-nord6 mb-3 p-2 bg-nord6/50 rounded dark:bg-nord2/50">
+              {approvalReason}
+            </div>
+          )}
+          <div className="flex items-center gap-2">
+            <button onClick={() => onApprove(true)} disabled={busy} className="btn-primary disabled:opacity-50 flex-1">
+              <CheckCircle2 className="w-4 h-4 inline mr-1" /> Approve
+            </button>
+            <button onClick={() => onApprove(false)} disabled={busy} className="btn-danger disabled:opacity-50 flex-1">
+              <XCircle className="w-4 h-4 inline mr-1" /> Reject
+            </button>
           </div>
+        </div>
+      )}
+
+      {status === 'help_required' && (
+        <div className="p-4 bg-nord8/20 border-b-2 border-nord8/40 dark:bg-nord8/10 dark:border-nord8/30">
+          <div className="text-sm text-nord0 dark:text-nord6 font-semibold mb-2">Agent needs help</div>
+          {approvalReason && (
+            <div className="text-xs text-nord0 dark:text-nord6 mb-3 p-2 bg-nord6/50 rounded dark:bg-nord2/50">
+              {approvalReason}
+            </div>
+          )}
         </div>
       )}
 
       {/* Interactive/Matrix user_turn message input */}
       {(workflowId === 'interactive' || workflowId === 'matrix') && status === 'user_turn' && (
-        <div className="toolbar">
-          <div className="text-sm text-blue-900 font-medium mb-2">Your Message</div>
+        <div className="p-4 space-y-2">
           <div className="flex gap-2">
             <textarea
               value={message}
@@ -362,20 +675,20 @@ function ActionPanel({ taskId, workflowId, status }: { taskId: string; workflowI
                 if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); onSendMessage() }
                 else if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); onSendMessage() }
               }}
-              rows={2}
-              className="textarea"
+              rows={3}
+              className="textarea flex-1"
               placeholder="Type your message… (Enter to send, Shift+Enter newline)"
             />
-            <button onClick={onSendMessage} disabled={!message.trim() || busy} className="btn-primary disabled:opacity-50 flex items-center gap-1">
-              <Send className="w-4 h-4" /> Send
+            <button onClick={onSendMessage} disabled={!message.trim() || busy} className="btn-primary disabled:opacity-50">
+              <Send className="w-4 h-4" />
             </button>
           </div>
-          <div className="mt-2 flex items-center gap-2">
-            <button onClick={onMarkComplete} disabled={busy} className="btn-outline disabled:opacity-50 flex items-center gap-1">
-              <CheckCircle2 className="w-4 h-4" /> Mark Complete
+          <div className="flex items-center gap-2">
+            <button onClick={onMarkComplete} disabled={busy} className="btn-outline disabled:opacity-50 text-xs flex items-center gap-1">
+              <CheckCircle2 className="w-3 h-3" /> Complete
             </button>
-            <button onClick={onMarkFailed} disabled={busy} className="btn-danger disabled:opacity-50 flex items-center gap-1">
-              <XCircle className="w-4 h-4" /> Mark Failed
+            <button onClick={onMarkFailed} disabled={busy} className="btn-danger disabled:opacity-50 text-xs flex items-center gap-1">
+              <XCircle className="w-3 h-3" /> Failed
             </button>
           </div>
         </div>
@@ -383,33 +696,50 @@ function ActionPanel({ taskId, workflowId, status }: { taskId: string; workflowI
 
       {/* Proactive/Ticket guide box (always visible) */}
       {(workflowId === 'proactive' || workflowId === 'ticket') && (
-        <div className="toolbar">
-          <div className="text-sm text-gray-900 font-medium mb-2 dark:text-gray-100">Guide Task</div>
+        <div className="p-4">
+          <div className="text-sm text-nord0 dark:text-nord6 font-semibold mb-2">Guide Task</div>
           <div className="flex gap-2">
             <textarea
               value={guide}
               onChange={e => setGuide(e.target.value)}
               onKeyDown={e => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); onGuide() } }}
-              rows={2}
-              className="textarea"
+              rows={3}
+              className="textarea flex-1"
               placeholder="Provide guidance message… (Ctrl/Cmd+Enter to send)"
             />
-            <button onClick={onGuide} disabled={!guide.trim() || busy} className="btn-outline disabled:opacity-50">Send Guidance</button>
+            <button onClick={onGuide} disabled={!guide.trim() || busy} className="btn-primary disabled:opacity-50">
+              <Send className="w-4 h-4" />
+            </button>
           </div>
         </div>
       )}
 
       {/* Proactive/Ticket help box when needed */}
       {(workflowId === 'proactive' || workflowId === 'ticket') && status === 'help_required' && (
-        <div className="toolbar">
-          <div className="text-sm text-blue-900 font-medium mb-2">Provide Help</div>
+        <div className="p-4 border-t border-nord4 dark:border-nord3">
+          <div className="text-sm text-nord0 dark:text-nord6 font-semibold mb-2">Provide Help</div>
           <div className="flex gap-2">
-            <textarea value={help} onChange={e => setHelp(e.target.value)} rows={2} className="textarea" placeholder="Type your help response..." />
-            <button onClick={onHelp} disabled={!help.trim() || busy} className="btn-primary disabled:opacity-50">Send Help</button>
+            <textarea value={help} onChange={e => setHelp(e.target.value)} rows={3} className="textarea flex-1" placeholder="Type your help response..." />
+            <button onClick={onHelp} disabled={!help.trim() || busy} className="btn-primary disabled:opacity-50">
+              <Send className="w-4 h-4" />
+            </button>
           </div>
         </div>
       )}
+    </div>
+  )
+}
 
+function ActionPanel({ taskId, workflowId, status }: { taskId: string; workflowId: string; status: string }) {
+  const queryClient = useQueryClient()
+  const [busy, setBusy] = useState(false)
+
+  const invalidate = () => {
+    queryClient.invalidateQueries()
+  }
+
+  return (
+    <div className="space-y-4">
       {/* Cancel Task */}
       {!['completed','failed','canceled','cancelled'].includes(status) && (
         <div className="flex items-center">
@@ -420,37 +750,119 @@ function ActionPanel({ taskId, workflowId, status }: { taskId: string; workflowI
   )
 }
 
-function MatrixPhasePanel({ taskId }: { taskId: string }) {
-  const [phase, setPhase] = useState<number>(1)
-  const { data, isLoading, error } = useMatrixConversation(taskId, phase)
+function MatrixPhasePanel({ taskId, currentPhase, status }: { taskId: string; currentPhase: number; status: string }) {
+  const { mode } = useMode()
+  const [phase, setPhase] = useState<number>(Math.max(1, currentPhase || 1))
+  const { data, isLoading, error} = useMatrixConversation(taskId, phase)
+  const convRef = useRef<HTMLDivElement | null>(null)
+  const previousPhaseRef = useRef<number>(currentPhase)
+  
+  // Auto-advance to next phase when current phase changes (but not when user manually selects a phase)
+  useEffect(() => {
+    if (currentPhase > 0 && currentPhase > previousPhaseRef.current) {
+      setPhase(currentPhase)
+      previousPhaseRef.current = currentPhase
+    } else if (currentPhase > 0) {
+      previousPhaseRef.current = currentPhase
+    }
+  }, [currentPhase])
+  
+  // Determine if we're viewing a past phase
+  const isViewingPastPhase = phase < currentPhase && currentPhase > 0
+  
   return (
-    <div className="bg-white border rounded-lg p-4 space-y-3 dark:bg-gray-800 dark:border-gray-700">
-      <div className="flex items-center justify-between">
-        <h2 className="text-lg font-medium">Matrix Phases</h2>
-        <div className="flex items-center gap-2">
-          {[1,2,3,4].map(p => (
-            <button key={p} onClick={() => setPhase(p)} className={`px-2 py-1 rounded border text-sm ${phase===p ? 'bg-orange-600 text-white border-orange-600' : 'hover:bg-orange-50'}`}>Phase {p}</button>
-          ))}
+    <div className="w-[480px] flex flex-col card border-2 border-nord8/30 dark:border-nord8/20 bg-nord6 dark:bg-nord1 shadow-nord-xl">
+      {/* Phase Header */}
+      <div className="px-6 py-4 border-b-2 border-nord8/30 dark:border-nord8/20 bg-gradient-to-r from-nord12/10 to-nord13/10 dark:from-nord12/5 dark:to-nord13/5">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-3">
+            <svg className="w-6 h-6 text-nord12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+            </svg>
+            <h2 className="text-lg font-bold text-nord0 dark:text-nord6">Matrix Phase {phase}</h2>
+            <span className="badge bg-nord12/30 text-nord12 border-nord12/40 font-semibold">
+              {data?.conversation?.length ?? 0}
+            </span>
+          </div>
         </div>
+        <div className="flex items-center gap-2">
+          {[1,2,3,4].map(p => {
+            const isAccessible = p <= currentPhase || currentPhase === 0
+            const isActive = phase === p
+            return (
+              <button 
+                key={p} 
+                onClick={() => isAccessible && setPhase(p)} 
+                disabled={!isAccessible}
+                className={`px-3 py-1.5 rounded-lg border text-sm font-medium transition-all ${
+                  isActive 
+                    ? 'bg-gradient-to-r from-nord12 to-nord13 text-nord0 border-transparent shadow-md' 
+                    : isAccessible 
+                      ? 'bg-nord6 text-nord0 border-nord4 hover:bg-nord5 hover:border-nord12 dark:bg-nord2 dark:text-nord6 dark:border-nord3 dark:hover:bg-nord3' 
+                      : 'bg-nord5/50 text-nord3 border-nord4 cursor-not-allowed opacity-50 dark:bg-nord2/50 dark:text-nord4 dark:border-nord3'
+                }`}
+              >
+                Phase {p}
+              </button>
+            )
+          })}
+        </div>
+        {isViewingPastPhase && (
+          <div className="mt-3 text-xs text-nord13 dark:text-nord13 bg-nord13/10 px-3 py-1.5 rounded-lg border border-nord13/30">
+            📜 Viewing past phase (read-only)
+          </div>
+        )}
       </div>
-      {isLoading && <div className="text-sm text-gray-500">Loading phase {phase}…</div>}
-      {error && <div className="text-sm text-red-600">Failed to load phase</div>}
-      <div className="space-y-2 max-h-[320px] overflow-auto">
-        {(() => {
-          const msgs = (data?.conversation || [])
-          let lastToolIndex = -1
-          for (let i = msgs.length - 1; i >= 0; i--) { if (msgs[i].role === 'tool') { lastToolIndex = i; break } }
-          return msgs.map((m: any, idx: number) => (
-            <div key={idx} className={`border rounded p-2 ${m.role==='assistant' ? 'bg-gray-50 dark:bg-gray-900' : 'bg-white dark:bg-gray-800'} dark:border-gray-700`}>
-              <div className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-2">
-                <span className="uppercase">{m.role}</span>
-                {m.created_at && <span>{formatMessageTimestamp(m.created_at)}</span>}
+      
+      {/* Phase Messages */}
+      <div ref={convRef} className="flex-1 overflow-auto p-4 space-y-3 bg-nord5/30 dark:bg-nord0/50">
+        {isLoading && (
+          <div className="text-center py-8">
+            <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-nord12 border-t-transparent"></div>
+            <p className="mt-2 text-sm text-nord3 dark:text-nord4">Loading phase {phase}…</p>
+          </div>
+        )}
+        {error && (
+          <div className="text-center py-8 text-nord11">
+            <div className="text-2xl mb-2">⚠️</div>
+            <div className="text-sm font-semibold">Failed to load phase</div>
+          </div>
+        )}
+        {!isLoading && !error && (() => {
+          const msgs = (data?.conversation || []).filter((m: any) => mode === 'expert' ? true : (m.role !== 'system' && m.role !== 'developer'))
+          const groups = groupMessages(msgs)
+          
+          return groups.map((group: any, idx: number) => {
+            // Render assistant turns with grouped tool calls
+            if (group.type === 'assistant') {
+              return <AssistantTurn key={idx} group={group} mode={mode} />
+            }
+            
+            // Render other message types normally
+            const m = group.message
+            return (
+              <div key={idx} className={`message ${m.role==='user' ? 'message--user' : m.role==='system' ? 'message--system' : 'message--tool'}`}>
+                <div className="message-header mb-2">
+                  <span className="uppercase font-bold text-xs tracking-wide">
+                    {m.role === 'user' ? 'USER' : m.role === 'system' ? 'SYSTEM' : 'TOOL'}
+                  </span>
+                  {m.created_at && (
+                    <span className="text-xs bg-nord5/70 px-2 py-0.5 rounded dark:bg-nord2">
+                      {formatMessageTimestamp(m.created_at)}
+                    </span>
+                  )}
+                </div>
+                {m.content && <MessageContent role={m.role} content={m.content} isLatestTool={false} />}
               </div>
-              {m.content && <MessageContent role={m.role} content={m.content} isLatestTool={idx === lastToolIndex} />}
-            </div>
-          ))
+            )
+          })
         })()}
       </div>
+      
+      {/* Chat Input Area - only show for current phase */}
+      {!isViewingPastPhase && (
+        <ChatInputPanel taskId={taskId} workflowId="matrix" status={status} approvalReason={null} />
+      )}
     </div>
   )
 }
@@ -477,23 +889,150 @@ function extractTicketTodoFromConversation(conversation: any[]): string {
   return content
 }
 
+function renderMarkdownTodo(markdown: string) {
+  if (!markdown || !markdown.trim()) return null
+  
+  const lines = markdown.split('\n')
+  const elements: JSX.Element[] = []
+  
+  lines.forEach((line, idx) => {
+    // Count leading spaces for indentation
+    const match = line.match(/^(\s*)(.*)$/)
+    if (!match) return
+    const indent = match[1].length
+    const content = match[2]
+    
+    // Todo item: - [ ] or - [x]
+    const todoMatch = content.match(/^-\s*\[([ xX])\]\s*(.+)$/)
+    if (todoMatch) {
+      const checked = todoMatch[1].toLowerCase() === 'x'
+      const text = todoMatch[2]
+      elements.push(
+        <div key={idx} className="flex items-start gap-2 py-1" style={{ paddingLeft: `${indent * 8}px` }}>
+          <input 
+            type="checkbox" 
+            checked={checked} 
+            readOnly 
+            className="mt-1 rounded border-nord4 text-nord8 cursor-default dark:border-nord3"
+          />
+          <span className={`text-sm ${checked ? 'line-through text-nord3 dark:text-nord4' : 'text-nord0 dark:text-nord6'}`}>
+            {text}
+          </span>
+        </div>
+      )
+      return
+    }
+    
+    // Regular list item: - text
+    const listMatch = content.match(/^-\s+(.+)$/)
+    if (listMatch) {
+      elements.push(
+        <div key={idx} className="flex items-start gap-2 py-1" style={{ paddingLeft: `${indent * 8}px` }}>
+          <span className="text-nord8 dark:text-nord8 mt-0.5">•</span>
+          <span className="text-sm text-nord0 dark:text-nord6">{listMatch[1]}</span>
+        </div>
+      )
+      return
+    }
+    
+    // Heading: # text
+    const headingMatch = content.match(/^(#{1,6})\s+(.+)$/)
+    if (headingMatch) {
+      const level = headingMatch[1].length
+      const text = headingMatch[2]
+      const sizes = ['text-xl', 'text-lg', 'text-base', 'text-sm', 'text-sm', 'text-xs']
+      const className = `${sizes[level - 1]} font-semibold text-nord0 dark:text-nord6 mt-3 mb-2`
+      elements.push(
+        <div key={idx} className={className} style={{ paddingLeft: `${indent * 8}px` }}>
+          {text}
+        </div>
+      )
+      return
+    }
+    
+    // Empty line
+    if (!content.trim()) {
+      elements.push(<div key={idx} className="h-2" />)
+      return
+    }
+    
+    // Regular text
+    elements.push(
+      <div key={idx} className="text-sm text-nord0 dark:text-nord6 py-0.5" style={{ paddingLeft: `${indent * 8}px` }}>
+        {content}
+      </div>
+    )
+  })
+  
+  return <div className="space-y-0.5">{elements}</div>
+}
+
 function TicketTodoPanel({ conv, taskId }: { conv: any[]; taskId: string }) {
   const [value, setValue] = useState<string>(() => extractTicketTodoFromConversation(conv))
+  const [isEditing, setIsEditing] = useState(false)
+  
   useEffect(() => {
     setValue(extractTicketTodoFromConversation(conv))
   }, [conv])
+  
   const onSend = async () => {
     const msg = `Update the ticket_todo to the following Markdown exactly:\n\n${value}`
     await tasksApi.workflows.ticket.guide(taskId, msg)
+    setIsEditing(false)
   }
+  
   return (
-    <div className="bg-white border rounded-lg p-4 space-y-2 dark:bg-gray-800 dark:border-gray-700">
+    <div className="card p-5 space-y-3">
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-medium">Ticket TODO</h2>
-        <button onClick={onSend} className="px-3 py-1.5 border rounded text-sm">Send Update</button>
+        <h2 className="text-lg font-semibold text-nord0 dark:text-nord6 flex items-center gap-2">
+          <svg className="w-5 h-5 text-nord8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+          </svg>
+          Ticket TODO
+        </h2>
+        <div className="flex items-center gap-2">
+          {isEditing ? (
+            <>
+              <button onClick={() => setIsEditing(false)} className="btn-outline text-sm">
+                Cancel
+              </button>
+              <button onClick={onSend} className="btn-primary text-sm">
+                Send Update
+              </button>
+            </>
+          ) : (
+            <button onClick={() => setIsEditing(true)} className="btn-outline text-sm">
+              ✏️ Edit
+            </button>
+          )}
+        </div>
       </div>
-      <textarea aria-label="Ticket todo content" value={value} onChange={e => setValue(e.target.value)} rows={8} className="w-full px-3 py-2 border rounded font-mono dark:bg-gray-900 dark:border-gray-700 dark:text-gray-100" placeholder="# TODO\n- [ ] item" />
-      <div className="text-xs text-gray-500 dark:text-gray-400">This updates the TODO by sending guidance to the agent, which will apply it using the built-in ticket_todo tool.</div>
+      
+      {isEditing ? (
+        <>
+          <textarea 
+            aria-label="Ticket todo content" 
+            value={value} 
+            onChange={e => setValue(e.target.value)} 
+            rows={12} 
+            className="textarea font-mono text-sm w-full" 
+            placeholder="# TODO&#10;- [ ] Unchecked item&#10;- [x] Checked item&#10;  - [ ] Nested item"
+          />
+          <div className="text-xs text-nord3 dark:text-nord4">
+            This updates the TODO by sending guidance to the agent, which will apply it using the built-in ticket_todo tool.
+          </div>
+        </>
+      ) : (
+        <div className="bg-nord5/30 dark:bg-nord0/30 rounded-lg p-4 border border-nord4 dark:border-nord3">
+          {value && value.trim() ? (
+            renderMarkdownTodo(value)
+          ) : (
+            <div className="text-sm text-nord3 dark:text-nord4 italic text-center py-4">
+              No TODO items yet
+            </div>
+          )}
+        </div>
+      )}
     </div>
   )
 }
