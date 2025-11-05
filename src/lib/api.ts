@@ -1,6 +1,6 @@
 import axios, { AxiosInstance } from 'axios'
 import { getRuntimeConfig } from './runtimeConfig'
-import type { TasksQueryParams, TasksResponse, TaskCreateRequest, TaskCreateResponse } from '../types/api'
+import type { TasksQueryParams, TasksResponse, TaskCreateRequest, TaskCreateResponse, Task } from '../types/api'
 
 let apiClient: AxiosInstance | null = null
 
@@ -38,6 +38,16 @@ export const tasksApi = {
 
   async create(body: TaskCreateRequest): Promise<TaskCreateResponse> {
     const { data } = await getApi().post('/task/create', body)
+    return data
+  },
+
+  async getById(taskId: string): Promise<Task> {
+    const { data } = await getApi().get(`/task/status`, { params: { task_id: taskId } })
+    return data
+  },
+
+  async getConversation(taskId: string): Promise<{ task_id: string; conversation: any[] }> {
+    const { data } = await getApi().get(`/task/conversation`, { params: { task_id: taskId } })
     return data
   }
 }
