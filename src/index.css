@@ -1,8 +1,7 @@
+@import './styles/components.css';
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
-@import './styles/components.css';
 
 /* App base styles */
 html, body, #root {

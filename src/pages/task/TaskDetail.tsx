@@ -10,23 +10,23 @@ import { tasksApi } from '../../lib/api'
 import { Send, CheckCircle2, XCircle } from 'lucide-react'
 
 function StatusBadge({ status }: { status: string }) {
-  const color = status === 'completed' ? 'bg-green-100 text-green-800'
-    : status === 'failed' ? 'bg-red-100 text-red-800'
-    : status === 'action_required' ? 'bg-amber-100 text-amber-800'
-    : status === 'help_required' ? 'bg-blue-100 text-blue-800'
-    : ['in_progress','validation','function_execution','agent_turn'].includes(status) ? 'bg-primary-100 text-primary-800'
-    : 'bg-gray-100 text-gray-700'
-  return <span className={`px-2 py-0.5 rounded text-xs font-medium ${color}`}>{status.replace(/_/g,' ')}</span>
+  const cls = status === 'completed' ? 'status-badge status--completed'
+    : status === 'failed' ? 'status-badge status--failed'
+    : status === 'action_required' ? 'status-badge status--action_required'
+    : status === 'help_required' ? 'status-badge status--help_required'
+    : ['in_progress','validation','function_execution','agent_turn'].includes(status) ? 'status-badge status--running'
+    : 'badge'
+  return <span className={cls}>{status.replace(/_/g,' ')}</span>
 }
 
 function ProgressBar({ value, max, status }: { value: number; max: number; status: string }) {
   const pct = (status === 'completed' || status === 'failed')
     ? 100
     : Math.min(100, Math.round((value / Math.max(1, max)) * 100))
-  const bar = status === 'completed' ? 'bg-green-600' : status === 'failed' ? 'bg-red-600' : 'bg-primary-600'
+  const bar = status === 'completed' ? 'progress-bar-green' : status === 'failed' ? 'progress-bar-red' : 'progress-bar-primary'
   return (
-    <div className="w-full bg-gray-200 rounded h-2">
-      <div className={`h-2 rounded ${bar}`} style={{ width: `${pct}%` }} />
+    <div className="progress">
+      <div className={bar} style={{ width: `${pct}%` }} />
     </div>
   )
 }
@@ -34,10 +34,10 @@ function ProgressBar({ value, max, status }: { value: number; max: number; statu
 function PhaseProgressBar({ phase, total = 4, status }: { phase: number; total?: number; status: string }) {
   const clamped = Math.max(0, Math.min(total, phase))
   const pct = (status === 'completed' || status === 'failed') ? 100 : Math.round((clamped / total) * 100)
-  const bar = status === 'completed' ? 'bg-green-600' : status === 'failed' ? 'bg-red-600' : 'bg-orange-600'
+  const bar = status === 'completed' ? 'progress-bar-green' : status === 'failed' ? 'progress-bar-red' : 'progress-bar-primary'
   return (
-    <div className="w-full bg-gray-200 rounded h-2">
-      <div className={`h-2 rounded ${bar}`} style={{ width: `${pct}%` }} />
+    <div className="progress">
+      <div className={bar} style={{ width: `${pct}%` }} />
     </div>
   )
 }
@@ -85,7 +85,7 @@ export default function TaskDetail() {
 
       {task && (
         <div className="space-y-4">
-          <div className="bg-white border rounded-lg p-4 dark:bg-gray-800 dark:border-gray-700">
+          <div className="card p-4">
             <div className="flex items-start justify-between gap-4">
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-2">
@@ -95,15 +95,15 @@ export default function TaskDetail() {
                     <span className="text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded">{task.ticket_id}</span>
                   )}
                 </div>
-                <div className="text-lg text-gray-900 truncate dark:text-gray-100" title={task.goal_prompt}>{task.goal_prompt || task.ticket_id || task.id}</div>
+                <div className="text-lg truncate text-gray-900 dark:text-gray-100" title={task.goal_prompt}>{task.goal_prompt || task.ticket_id || task.id}</div>
                 <div className="grid grid-cols-2 gap-4 text-sm mt-2">
                   {(['ticket','proactive'].includes(task.workflow_id)) && (
-                    <div className="text-gray-600 dark:text-gray-300">Iteration <span className="font-medium text-gray-900 dark:text-gray-100">{task.iteration}/{task.max_iterations}</span></div>
+                    <div className="small-muted">Iteration <span className="font-medium text-gray-900 dark:text-gray-100">{task.iteration}/{task.max_iterations}</span></div>
                   )}
                   {task.workflow_id === 'matrix' && (
-                    <div className="text-gray-600 dark:text-gray-300">Phase <span className="font-medium text-gray-900 dark:text-gray-100">{(task.workflow_data?.phase ?? 0)}/4</span></div>
+                    <div className="small-muted">Phase <span className="font-medium text-gray-900 dark:text-gray-100">{(task.workflow_data?.phase ?? 0)}/4</span></div>
                   )}
-                  <div className="text-gray-600 dark:text-gray-300">Updated <span className="font-medium text-gray-900 dark:text-gray-100">{formatTimestamp(task.updated_at)}</span></div>
+                  <div className="small-muted">Updated <span className="font-medium text-gray-900 dark:text-gray-100">{formatTimestamp(task.updated_at)}</span></div>
                 </div>
                 <div className="mt-2 text-xs text-gray-600 dark:text-gray-300 flex items-center gap-2 flex-wrap">
                   <span className="">Available tools:</span>
@@ -151,14 +151,14 @@ export default function TaskDetail() {
 
           {/* Conversation: hidden for matrix, shown otherwise */}
           {task.workflow_id !== 'matrix' && (
-            <div className="bg-white border rounded-lg p-4 space-y-3 dark:bg-gray-800 dark:border-gray-700">
+            <div className="card p-4 space-y-3">
               <div className="flex items-center justify-between">
-                <h2 className="text-lg font-medium dark:text-gray-100">Conversation</h2>
+                <h2 className="text-lg font-medium text-gray-900 dark:text-gray-100">Conversation</h2>
                 <div className="flex items-center gap-3">
-                  <label className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1">
+                  <label className="small-muted flex items-center gap-1">
                     <input type="checkbox" checked={autoScroll} onChange={e => setAutoScroll(e.target.checked)} /> Auto-scroll
                   </label>
-                  <span className="text-xs text-gray-500 dark:text-gray-400">{conv?.conversation?.length ?? 0} messages</span>
+                  <span className="small-muted">{conv?.conversation?.length ?? 0} messages</span>
                 </div>
               </div>
               <div ref={convRef} className="space-y-2 max-h-[420px] overflow-auto">
@@ -167,8 +167,8 @@ export default function TaskDetail() {
                   let lastToolIndex = -1
                   for (let i = msgs.length - 1; i >= 0; i--) { if (msgs[i].role === 'tool') { lastToolIndex = i; break } }
                   return msgs.map((m: any, idx: number) => (
-                    <div key={idx} className={`border rounded p-2 ${m.role==='assistant' ? 'bg-gray-50 dark:bg-gray-900' : 'bg-white dark:bg-gray-800'} dark:border-gray-700`}>
-                      <div className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-2">
+                    <div key={idx} className={`message ${m.role==='assistant' ? 'message--assistant' : m.role==='user' ? 'message--user' : m.role==='system' ? 'message--system' : 'message--tool'}`}>
+                      <div className="message-header">
                         <span className="uppercase">{m.role}</span>
                         {m.created_at && <span>{formatMessageTimestamp(m.created_at)}</span>}
                       </div>
@@ -176,7 +176,7 @@ export default function TaskDetail() {
                       {m.role === 'assistant' && mode === 'expert' && m.reasoning && (
                         <details className="mt-2">
                           <summary className="text-xs text-gray-700 cursor-pointer">Reasoning</summary>
-                          <div className="text-xs text-gray-900 whitespace-pre-wrap bg-gray-100 rounded p-2 mt-1">{m.reasoning}</div>
+                          <div className="reasoning">{m.reasoning}</div>
                         </details>
                       )}
                       {m.content && <MessageContent role={m.role} content={m.content} isLatestTool={idx === lastToolIndex} />}
@@ -184,7 +184,7 @@ export default function TaskDetail() {
                       {m.role !== 'assistant' && mode === 'expert' && m.reasoning && (
                         <details className="mt-2">
                           <summary className="text-xs text-gray-700 cursor-pointer">Reasoning</summary>
-                          <div className="text-xs text-gray-900 whitespace-pre-wrap bg-gray-100 rounded p-2 mt-1">{m.reasoning}</div>
+                          <div className="reasoning">{m.reasoning}</div>
                         </details>
                       )}
                       {mode === 'expert' && m.tool_calls && Array.isArray(m.tool_calls) && m.tool_calls.length > 0 && (
@@ -294,7 +294,7 @@ function ActionPanel({ taskId, workflowId, status }: { taskId: string; workflowI
 
       {/* Interactive/Matrix user_turn message input */}
       {(workflowId === 'interactive' || workflowId === 'matrix') && status === 'user_turn' && (
-        <div className="bg-blue-50 border border-blue-200 rounded p-3">
+        <div className="toolbar">
           <div className="text-sm text-blue-900 font-medium mb-2">Your Message</div>
           <div className="flex gap-2">
             <textarea
@@ -305,18 +305,18 @@ function ActionPanel({ taskId, workflowId, status }: { taskId: string; workflowI
                 else if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); onSendMessage() }
               }}
               rows={2}
-              className="flex-1 px-3 py-2 border rounded"
+              className="textarea"
               placeholder="Type your message… (Enter to send, Shift+Enter newline)"
             />
-            <button onClick={onSendMessage} disabled={!message.trim() || busy} className="px-3 py-2 border rounded bg-blue-600 text-white border-blue-600 disabled:opacity-50 flex items-center gap-1">
+            <button onClick={onSendMessage} disabled={!message.trim() || busy} className="btn-primary disabled:opacity-50 flex items-center gap-1">
               <Send className="w-4 h-4" /> Send
             </button>
           </div>
           <div className="mt-2 flex items-center gap-2">
-            <button onClick={onMarkComplete} disabled={busy} className="px-3 py-1.5 border rounded text-sm text-green-700 hover:bg-green-50 disabled:opacity-50 flex items-center gap-1">
+            <button onClick={onMarkComplete} disabled={busy} className="btn-outline disabled:opacity-50 flex items-center gap-1">
               <CheckCircle2 className="w-4 h-4" /> Mark Complete
             </button>
-            <button onClick={onMarkFailed} disabled={busy} className="px-3 py-1.5 border rounded text-sm text-red-700 hover:bg-red-50 disabled:opacity-50 flex items-center gap-1">
+            <button onClick={onMarkFailed} disabled={busy} className="btn-danger disabled:opacity-50 flex items-center gap-1">
               <XCircle className="w-4 h-4" /> Mark Failed
             </button>
           </div>
@@ -325,7 +325,7 @@ function ActionPanel({ taskId, workflowId, status }: { taskId: string; workflowI
 
       {/* Proactive/Ticket guide box (always visible) */}
       {(workflowId === 'proactive' || workflowId === 'ticket') && (
-        <div className="bg-gray-50 border border-gray-200 rounded p-3 dark:bg-gray-800 dark:border-gray-700">
+        <div className="toolbar">
           <div className="text-sm text-gray-900 font-medium mb-2 dark:text-gray-100">Guide Task</div>
           <div className="flex gap-2">
             <textarea
@@ -336,18 +336,18 @@ function ActionPanel({ taskId, workflowId, status }: { taskId: string; workflowI
               className="textarea"
               placeholder="Provide guidance message… (Ctrl/Cmd+Enter to send)"
             />
-            <button onClick={onGuide} disabled={!guide.trim() || busy} className="btn bg-gray-800 text-white disabled:opacity-50">Send Guidance</button>
+            <button onClick={onGuide} disabled={!guide.trim() || busy} className="btn-outline disabled:opacity-50">Send Guidance</button>
           </div>
         </div>
       )}
 
       {/* Proactive/Ticket help box when needed */}
       {(workflowId === 'proactive' || workflowId === 'ticket') && status === 'help_required' && (
-        <div className="bg-blue-50 border border-blue-200 rounded p-3">
+        <div className="toolbar">
           <div className="text-sm text-blue-900 font-medium mb-2">Provide Help</div>
           <div className="flex gap-2">
-            <textarea value={help} onChange={e => setHelp(e.target.value)} rows={2} className="flex-1 px-3 py-2 border rounded" placeholder="Type your help response..." />
-            <button onClick={onHelp} disabled={!help.trim() || busy} className="px-3 py-2 border rounded bg-blue-600 text-white border-blue-600 disabled:opacity-50">Send Help</button>
+            <textarea value={help} onChange={e => setHelp(e.target.value)} rows={2} className="textarea" placeholder="Type your help response..." />
+            <button onClick={onHelp} disabled={!help.trim() || busy} className="btn-primary disabled:opacity-50">Send Help</button>
           </div>
         </div>
       )}
@@ -355,7 +355,7 @@ function ActionPanel({ taskId, workflowId, status }: { taskId: string; workflowI
       {/* Cancel Task */}
       {!['completed','failed','canceled','cancelled'].includes(status) && (
         <div className="flex items-center">
-          <button onClick={async () => { setBusy(true); try { await tasksApi.cancel(taskId) } finally { setBusy(false); invalidate() } }} className="px-3 py-1.5 border rounded text-sm text-red-700 hover:bg-red-50">Cancel Task</button>
+          <button onClick={async () => { setBusy(true); try { await tasksApi.cancel(taskId) } finally { setBusy(false); invalidate() } }} className="btn-danger">Cancel Task</button>
         </div>
       )}
     </div>

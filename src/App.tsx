@@ -53,10 +53,7 @@ function Header() {
     localStorage.setItem('theme', next ? 'dark' : 'light')
   }
   const navItem = (to: string, label: string) => (
-    <NavLink
-      to={to}
-      className={({ isActive }) => `px-3 py-2 rounded-md text-sm font-medium ${isActive ? 'bg-primary-100 text-primary-700 dark:bg-primary-900/40 dark:text-primary-200' : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800'}`}
-    >
+    <NavLink to={to} className={({ isActive }) => `${'nav-link'} ${isActive ? 'nav-link-active' : ''}`}>
       {label}
     </NavLink>
   )
@@ -69,14 +66,14 @@ function Header() {
             <nav className="hidden md:flex items-center gap-2">
               {navItem('/', 'Inbox')}
               <div className="relative" onMouseEnter={() => cancelClose('wf')} onMouseLeave={() => scheduleClose('wf')}>
-                <button onClick={() => setWfOpen(o => !o)} className="px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100">Workflows</button>
+                <button onClick={() => setWfOpen(o => !o)} className={`nav-link ${wfOpen ? 'nav-link-active' : ''}`}>Workflows</button>
                 {wfOpen && (
-                  <div className="absolute z-10 left-0 top-full mt-0.5 w-44 bg-white border rounded shadow dark:bg-gray-800 dark:border-gray-700" onMouseEnter={() => cancelClose('wf')} onMouseLeave={() => scheduleClose('wf')}>
+                  <div className={`dropdown-menu w-44`} onMouseEnter={() => cancelClose('wf')} onMouseLeave={() => scheduleClose('wf')}>
                     <div className="py-1 text-sm">
-                      <NavLink to="/workflows/tickets" className={({isActive}) => `block px-3 py-1.5 ${isActive ? 'bg-primary-50 text-primary-700' : 'text-gray-700 hover:bg-gray-50'}`} onClick={() => setWfOpen(false)}>Tickets</NavLink>
-                      <NavLink to="/workflows/matrix" className={({isActive}) => `block px-3 py-1.5 ${isActive ? 'bg-primary-50 text-primary-700' : 'text-gray-700 hover:bg-gray-50'}`} onClick={() => setWfOpen(false)}>Matrix</NavLink>
-                      <NavLink to="/workflows/proactive" className={({isActive}) => `block px-3 py-1.5 ${isActive ? 'bg-primary-50 text-primary-700' : 'text-gray-700 hover:bg-gray-50'}`} onClick={() => setWfOpen(false)}>Proactive</NavLink>
-                      <NavLink to="/workflows/interactive" className={({isActive}) => `block px-3 py-1.5 ${isActive ? 'bg-primary-50 text-primary-700' : 'text-gray-700 hover:bg-gray-50'}`} onClick={() => setWfOpen(false)}>Interactive</NavLink>
+                      <NavLink to="/workflows/tickets" className={({isActive}) => `${'dropdown-item'} ${isActive ? 'dropdown-item-active' : ''}`} onClick={() => setWfOpen(false)}>Tickets</NavLink>
+                      <NavLink to="/workflows/matrix" className={({isActive}) => `${'dropdown-item'} ${isActive ? 'dropdown-item-active' : ''}`} onClick={() => setWfOpen(false)}>Matrix</NavLink>
+                      <NavLink to="/workflows/proactive" className={({isActive}) => `${'dropdown-item'} ${isActive ? 'dropdown-item-active' : ''}`} onClick={() => setWfOpen(false)}>Proactive</NavLink>
+                      <NavLink to="/workflows/interactive" className={({isActive}) => `${'dropdown-item'} ${isActive ? 'dropdown-item-active' : ''}`} onClick={() => setWfOpen(false)}>Interactive</NavLink>
                     </div>
                   </div>
                 )}
@@ -84,17 +81,17 @@ function Header() {
               {navItem('/tasks', 'Tasks')}
               {navItem('/create', 'Create')}
               <div className="relative" onMouseEnter={() => cancelClose('settings')} onMouseLeave={() => scheduleClose('settings')}>
-                <button onClick={() => setSettingsOpen(o => !o)} className="px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100">Settings</button>
+                <button onClick={() => setSettingsOpen(o => !o)} className={`nav-link ${settingsOpen ? 'nav-link-active' : ''}`}>Settings</button>
                 {settingsOpen && (
-                  <div className="absolute z-10 left-0 top-full mt-0.5 w-52 bg-white border rounded shadow dark:bg-gray-800 dark:border-gray-700" onMouseEnter={() => cancelClose('settings')} onMouseLeave={() => scheduleClose('settings')}>
+                  <div className={`dropdown-menu w-52`} onMouseEnter={() => cancelClose('settings')} onMouseLeave={() => scheduleClose('settings')}>
                     <div className="py-1 text-sm">
-                      <NavLink to="/config/models" className={({isActive}) => `block px-3 py-1.5 ${isActive ? 'bg-primary-50 text-primary-700' : 'text-gray-700 hover:bg-gray-50'}`} onClick={() => setSettingsOpen(false)}>Models</NavLink>
-                      <NavLink to="/config/llm-backends" className={({isActive}) => `block px-3 py-1.5 ${isActive ? 'bg-primary-50 text-primary-700' : 'text-gray-700 hover:bg-gray-50'}`} onClick={() => setSettingsOpen(false)}>LLM Backends</NavLink>
-                      <NavLink to="/config/mcp-servers" className={({isActive}) => `block px-3 py-1.5 ${isActive ? 'bg-primary-50 text-primary-700' : 'text-gray-700 hover:bg-gray-50'}`} onClick={() => setSettingsOpen(false)}>MCP Servers</NavLink>
-                      <NavLink to="/config/task-handler" className={({isActive}) => `block px-3 py-1.5 ${isActive ? 'bg-primary-50 text-primary-700' : 'text-gray-700 hover:bg-gray-50'}`} onClick={() => setSettingsOpen(false)}>Task Handler</NavLink>
-                      <NavLink to="/config/tools" className={({isActive}) => `block px-3 py-1.5 ${isActive ? 'bg-primary-50 text-primary-700' : 'text-gray-700 hover:bg-gray-50'}`} onClick={() => setSettingsOpen(false)}>Tools Explorer</NavLink>
-                      <NavLink to="/config/system" className={({isActive}) => `block px-3 py-1.5 ${isActive ? 'bg-primary-50 text-primary-700' : 'text-gray-700 hover:bg-gray-50'}`} onClick={() => setSettingsOpen(false)}>System</NavLink>
-                      <NavLink to="/config/auth" className={({isActive}) => `block px-3 py-1.5 ${isActive ? 'bg-primary-50 text-primary-700' : 'text-gray-700 hover:bg-gray-50'}`} onClick={() => setSettingsOpen(false)}>Auth</NavLink>
+                      <NavLink to="/config/models" className={({isActive}) => `${'dropdown-item'} ${isActive ? 'dropdown-item-active' : ''}`} onClick={() => setSettingsOpen(false)}>Models</NavLink>
+                      <NavLink to="/config/llm-backends" className={({isActive}) => `${'dropdown-item'} ${isActive ? 'dropdown-item-active' : ''}`} onClick={() => setSettingsOpen(false)}>LLM Backends</NavLink>
+                      <NavLink to="/config/mcp-servers" className={({isActive}) => `${'dropdown-item'} ${isActive ? 'dropdown-item-active' : ''}`} onClick={() => setSettingsOpen(false)}>MCP Servers</NavLink>
+                      <NavLink to="/config/task-handler" className={({isActive}) => `${'dropdown-item'} ${isActive ? 'dropdown-item-active' : ''}`} onClick={() => setSettingsOpen(false)}>Task Handler</NavLink>
+                      <NavLink to="/config/tools" className={({isActive}) => `${'dropdown-item'} ${isActive ? 'dropdown-item-active' : ''}`} onClick={() => setSettingsOpen(false)}>Tools Explorer</NavLink>
+                      <NavLink to="/config/system" className={({isActive}) => `${'dropdown-item'} ${isActive ? 'dropdown-item-active' : ''}`} onClick={() => setSettingsOpen(false)}>System</NavLink>
+                      <NavLink to="/config/auth" className={({isActive}) => `${'dropdown-item'} ${isActive ? 'dropdown-item-active' : ''}`} onClick={() => setSettingsOpen(false)}>Auth</NavLink>
                     </div>
                   </div>
                 )}
@@ -103,10 +100,10 @@ function Header() {
           </div>
           <div className="flex items-center gap-3">
             <span className="text-xs text-gray-500 hidden sm:inline">{location.pathname}</span>
-            <button onClick={toggleTheme} className="px-3 py-2 text-sm rounded-md border hover:bg-gray-50">
+            <button onClick={toggleTheme} className="btn-outline">
               {isDark ? 'Light' : 'Dark'} Theme
             </button>
-            <button onClick={toggle} className="px-3 py-2 text-sm rounded-md border hover:bg-gray-50">
+            <button onClick={toggle} className="btn-outline">
               {mode === 'simple' ? 'Simple' : 'Expert'} Mode
             </button>
           </div>
@@ -118,10 +115,7 @@ function Header() {
 
 function ConfigLayout() {
   const tab = (to: string, label: string) => (
-    <NavLink
-      to={to}
-      className={({ isActive }) => `px-3 py-2 rounded-md text-sm font-medium ${isActive ? 'bg-primary-100 text-primary-700' : 'text-gray-700 hover:bg-gray-100'}`}
-    >
+    <NavLink to={to} className={({ isActive }) => `${'nav-link'} ${isActive ? 'nav-link-active' : ''}`}>
       {label}
     </NavLink>
   )

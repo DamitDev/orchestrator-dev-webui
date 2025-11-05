@@ -1,5 +1,3 @@
-@tailwind components;
-
 @layer components {
   .card {
     @apply bg-white border rounded-lg dark:bg-gray-800 dark:border-gray-700;
@@ -37,4 +35,56 @@
   .badge {
     @apply text-xs px-2 py-0.5 rounded bg-gray-100 text-gray-800 border border-gray-200 dark:bg-gray-900 dark:text-gray-200 dark:border-gray-700;
   }
+
+  /* Navigation Tabs */
+  .nav-link {
+    @apply px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800;
+  }
+  .nav-link-active {
+    @apply bg-primary-100 text-primary-700 dark:bg-primary-900/40 dark:text-primary-200;
+  }
+
+  /* Dropdown */
+  .dropdown-menu {
+    @apply absolute z-10 left-0 top-full mt-0.5 bg-white border rounded shadow dark:bg-gray-800 dark:border-gray-700;
+  }
+  .dropdown-item {
+    @apply block px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-700;
+  }
+  .dropdown-item-active {
+    @apply bg-primary-50 text-primary-700 dark:bg-primary-900/30 dark:text-primary-200;
+  }
+
+  /* Messages */
+  .message {
+    @apply border rounded p-2 dark:border-gray-700;
+  }
+  .message--assistant { @apply bg-gray-50 dark:bg-gray-900; }
+  .message--user { @apply bg-white dark:bg-gray-800; }
+  .message--system { @apply bg-white dark:bg-gray-800; }
+  .message--tool { @apply bg-white dark:bg-gray-800; }
+  .message-header { @apply text-xs text-gray-500 dark:text-gray-400 flex items-center gap-2; }
+  .reasoning {
+    @apply text-xs text-gray-900 whitespace-pre-wrap bg-gray-100 rounded p-2 mt-1 dark:text-gray-100 dark:bg-gray-900 border dark:border-gray-700;
+  }
+
+  /* Status badges */
+  .status-badge { @apply px-2 py-0.5 rounded text-xs font-medium; }
+  .status--completed { @apply bg-green-100 text-green-800; }
+  .status--failed { @apply bg-red-100 text-red-800; }
+  .status--action_required { @apply bg-amber-100 text-amber-800; }
+  .status--help_required { @apply bg-blue-100 text-blue-800; }
+  .status--running { @apply bg-primary-100 text-primary-800; }
+
+  /* Progress bars */
+  .progress {
+    @apply w-full bg-gray-200 rounded h-2;
+  }
+  .progress-bar-primary { @apply h-2 rounded bg-primary-600; }
+  .progress-bar-green { @apply h-2 rounded bg-green-600; }
+  .progress-bar-red { @apply h-2 rounded bg-red-600; }
+
+  /* Selectable cards */
+  .select-card { @apply card border-2 hover:border-gray-300; }
+  .select-card-active { @apply border-primary-500 bg-primary-50; }
 }

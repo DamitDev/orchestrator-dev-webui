@@ -23,25 +23,25 @@ function StatusBadge({ status }: { status: string }) {
 
 function TaskCard({ task, selected, onToggle }: { task: Task; selected: boolean; onToggle: (id: string, checked: boolean) => void }) {
   return (
-    <div className={`border rounded-lg p-4 bg-white dark:bg-gray-800 dark:border-gray-700 ${selected ? 'ring-2 ring-primary-400' : ''}`}>
+    <div className={`card p-4 ${selected ? 'ring-2 ring-primary-400' : ''}`}>
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">
             <StatusBadge status={task.status} />
-            <span className="text-xs font-mono text-gray-500">{task.id.slice(0,8)}</span>
-            <span className="text-xs text-gray-500">{task.workflow_id}</span>
+            <span className="text-xs font-mono text-gray-500 dark:text-gray-300">{task.id.slice(0,8)}</span>
+            <span className="text-xs text-gray-500 dark:text-gray-300">{task.workflow_id}</span>
             {task.ticket_id && (
-              <span className="text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded">{task.ticket_id}</span>
+              <span className="badge">{task.ticket_id}</span>
             )}
           </div>
-          <Link to={`/task/${task.id}`} className="block text-sm text-gray-900 dark:text-gray-100 truncate underline decoration-dotted">
+          <Link to={`/task/${task.id}`} className="block text-sm link-muted truncate">
             {task.goal_prompt || task.ticket_id || task.id}
           </Link>
           {(['ticket','proactive'].includes(task.workflow_id)) && (
-            <div className="text-xs text-gray-500 mt-1">Iteration {task.iteration}/{task.max_iterations}</div>
+            <div className="small-muted mt-1">Iteration {task.iteration}/{task.max_iterations}</div>
           )}
           {task.workflow_id === 'matrix' && (
-            <div className="text-xs text-gray-500 mt-1">Phase {(task.workflow_data?.phase ?? 0)}/4</div>
+            <div className="small-muted mt-1">Phase {(task.workflow_data?.phase ?? 0)}/4</div>
           )}
         </div>
         <input type="checkbox" checked={selected} onChange={e => onToggle(task.id, e.target.checked)} className="mt-1" />
@@ -52,7 +52,7 @@ function TaskCard({ task, selected, onToggle }: { task: Task; selected: boolean;
 
 function TasksTable({ tasks, selected, onToggle }: { tasks: Task[]; selected: Set<string>; onToggle: (id: string, checked: boolean) => void }) {
   return (
-    <div className="overflow-auto border rounded-lg bg-white dark:bg-gray-800 dark:border-gray-700">
+    <div className="overflow-auto card">
       <table className="min-w-full text-sm">
         <thead className="bg-gray-50 text-gray-700 dark:bg-gray-900 dark:text-gray-300">
           <tr>
@@ -67,13 +67,13 @@ function TasksTable({ tasks, selected, onToggle }: { tasks: Task[]; selected: Se
         </thead>
         <tbody className="dark:text-gray-200">
           {tasks.map(t => (
-            <tr key={t.id} className="border-t">
+            <tr key={t.id} className="border-t dark:border-gray-700">
               <td className="px-3 py-2"><input type="checkbox" checked={selected.has(t.id)} onChange={e => onToggle(t.id, e.target.checked)} /></td>
               <td className="px-3 py-2 font-mono text-xs text-gray-700 dark:text-gray-300">{t.id.slice(0,8)}</td>
               <td className="px-3 py-2 text-gray-700 dark:text-gray-300">{t.workflow_id}</td>
               <td className="px-3 py-2"><StatusBadge status={t.status} /></td>
               <td className="px-3 py-2 max-w-[420px]">
-                <Link to={`/task/${t.id}`} className="underline decoration-dotted text-gray-900 dark:text-gray-100 truncate inline-block max-w-full align-top">
+                <Link to={`/task/${t.id}`} className="link-muted truncate inline-block max-w-full align-top">
                   {t.ticket_id || t.goal_prompt || t.id}
                 </Link>
               </td>
@@ -88,7 +88,7 @@ function TasksTable({ tasks, selected, onToggle }: { tasks: Task[]; selected: Se
                   <span>-</span>
                 )}
               </td>
-              <td className="px-3 py-2 text-gray-500 dark:text-gray-400 text-xs">{formatTimestamp(t.updated_at)}</td>
+              <td className="px-3 py-2 small-muted">{formatTimestamp(t.updated_at)}</td>
             </tr>
           ))}
         </tbody>
@@ -190,20 +190,20 @@ export default function Tasks() {
       </div>
 
       {/* Controls */}
-      <div className="bg-white border rounded-lg p-3 flex flex-col gap-3">
+      <div className="toolbar flex flex-col gap-3">
         <div className="flex flex-wrap items-center gap-2">
-          <select value={workflow} onChange={e => setWorkflow(e.target.value as WorkflowFilter)} className="px-2 py-1 border rounded text-sm">
+          <select value={workflow} onChange={e => setWorkflow(e.target.value as WorkflowFilter)} className="select">
             <option value="all">All workflows</option>
             <option value="ticket">Ticket</option>
             <option value="matrix">Matrix</option>
             <option value="proactive">Proactive</option>
             <option value="interactive">Interactive</option>
           </select>
-          <input id="tasks-search" aria-label="Search tasks" value={search} onChange={e => setSearch(e.target.value)} placeholder="Search (ID, goal, ticket)" className="px-3 py-1 border rounded text-sm min-w-[240px]" />
+          <input id="tasks-search" aria-label="Search tasks" value={search} onChange={e => setSearch(e.target.value)} placeholder="Search (ID, goal, ticket)" className="input text-sm min-w-[240px]" />
           <div className="flex items-center gap-3 ml-auto">
-            <button onClick={() => { setOrderBy('updated_at'); setOrderDirection(orderDirection === 'desc' ? 'asc' : 'desc') }} className="px-2 py-1 border rounded text-sm">Updated {orderBy==='updated_at' ? `(${orderDirection})` : ''}</button>
-            <button onClick={() => { setOrderBy('created_at'); setOrderDirection(orderDirection === 'desc' ? 'asc' : 'desc') }} className="px-2 py-1 border rounded text-sm">Created {orderBy==='created_at' ? `(${orderDirection})` : ''}</button>
-            <select value={limit} onChange={e => { setLimit(Number(e.target.value)); setPage(1) }} className="px-2 py-1 border rounded text-sm">
+            <button onClick={() => { setOrderBy('updated_at'); setOrderDirection(orderDirection === 'desc' ? 'asc' : 'desc') }} className="btn-outline text-sm">Updated {orderBy==='updated_at' ? `(${orderDirection})` : ''}</button>
+            <button onClick={() => { setOrderBy('created_at'); setOrderDirection(orderDirection === 'desc' ? 'asc' : 'desc') }} className="btn-outline text-sm">Created {orderBy==='created_at' ? `(${orderDirection})` : ''}</button>
+            <select value={limit} onChange={e => { setLimit(Number(e.target.value)); setPage(1) }} className="select">
               <option value={25}>25</option>
               <option value={50}>50</option>
               <option value={100}>100</option>
@@ -217,10 +217,10 @@ export default function Tasks() {
           <label className="flex items-center gap-1 text-sm"><input type="checkbox" checked={showUserTurn} onChange={e => setShowUserTurn(e.target.checked)} /> Hide user turn</label>
           <label className="flex items-center gap-1 text-sm"><input type="checkbox" checked={showRunning} onChange={e => setShowRunning(e.target.checked)} /> Hide running</label>
           <div className="ml-auto flex items-center gap-2">
-            <button onClick={selectAllVisible} className="px-2 py-1 border rounded text-sm">Select visible</button>
-            <button onClick={clearSelection} className="px-2 py-1 border rounded text-sm">Clear</button>
-            <button onClick={bulkCancel} disabled={selected.size===0} className="px-2 py-1 border rounded text-sm text-amber-700 hover:bg-amber-50 disabled:opacity-50">Cancel</button>
-            <button onClick={bulkDelete} disabled={selected.size===0} className="px-2 py-1 border rounded text-sm text-red-700 hover:bg-red-50 disabled:opacity-50">Delete</button>
+            <button onClick={selectAllVisible} className="btn-outline text-sm">Select visible</button>
+            <button onClick={clearSelection} className="btn-outline text-sm">Clear</button>
+            <button onClick={bulkCancel} disabled={selected.size===0} className="btn-outline text-sm disabled:opacity-50">Cancel</button>
+            <button onClick={bulkDelete} disabled={selected.size===0} className="btn-danger text-sm disabled:opacity-50">Delete</button>
           </div>
         </div>
       </div>

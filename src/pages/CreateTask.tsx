@@ -130,14 +130,14 @@ export default function CreateTask() {
         )}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Max Iterations</label>
-            <input type="number" min={1} max={200} value={maxIterations} onChange={e => setMaxIterations(parseInt(e.target.value) || 50)} className="w-full px-3 py-2 border rounded" />
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Max Iterations</label>
+            <input type="number" min={1} max={200} value={maxIterations} onChange={e => setMaxIterations(parseInt(e.target.value) || 50)} className="input w-full" />
           </div>
           <div className="md:col-span-2">
-            <label className="block text-sm font-medium text-gray-700 mb-1">Reasoning Effort</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Reasoning Effort</label>
             <div className="flex gap-2">
               {(['low','medium','high'] as ReasoningEffort[]).map(r => (
-                <button key={r} type="button" onClick={() => setReasoning(r)} className={`px-3 py-2 rounded border ${reasoning===r ? 'bg-primary-600 text-white border-primary-600' : 'hover:bg-gray-50'}`}>{r}</button>
+                <button key={r} type="button" onClick={() => setReasoning(r)} className={`${reasoning===r ? 'btn-primary' : 'btn-outline'}`}>{r}</button>
               ))}
             </div>
           </div>
@@ -147,25 +147,25 @@ export default function CreateTask() {
       {/* Tools */}
       <div className="space-y-3">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Tool Preset</label>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Tool Preset</label>
           <div className="flex flex-wrap gap-2">
-            <button type="button" onClick={() => setToolPreset('all')} className={`px-3 py-2 rounded border ${toolPreset==='all' ? 'bg-primary-600 text-white border-primary-600' : 'hover:bg-gray-50'}`}>All tools</button>
-            <button type="button" onClick={() => setToolPreset('none')} className={`px-3 py-2 rounded border ${toolPreset==='none' ? 'bg-primary-600 text-white border-primary-600' : 'hover:bg-gray-50'}`}>No tools</button>
-            <button type="button" onClick={() => setToolPreset('custom')} className={`px-3 py-2 rounded border ${toolPreset==='custom' ? 'bg-primary-600 text-white border-primary-600' : 'hover:bg-gray-50'}`}>Custom</button>
+            <button type="button" onClick={() => setToolPreset('all')} className={`${toolPreset==='all' ? 'btn-primary' : 'btn-outline'}`}>All tools</button>
+            <button type="button" onClick={() => setToolPreset('none')} className={`${toolPreset==='none' ? 'btn-primary' : 'btn-outline'}`}>No tools</button>
+            <button type="button" onClick={() => setToolPreset('custom')} className={`${toolPreset==='custom' ? 'btn-primary' : 'btn-outline'}`}>Custom</button>
           </div>
         </div>
         {toolPreset === 'custom' && (
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Tool names (comma-separated)</label>
-            <input value={customTools} onChange={e => setCustomTools(e.target.value)} className="w-full px-3 py-2 border rounded" placeholder="read_file, list_directory" />
-            <p className="text-xs text-gray-500 mt-1">Leave empty to allow none. Tool names are case-sensitive.</p>
+            <input value={customTools} onChange={e => setCustomTools(e.target.value)} className="input w-full" placeholder="read_file, list_directory" />
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Leave empty to allow none. Tool names are case-sensitive.</p>
           </div>
         )}
       </div>
 
       {/* Review & Create */}
       <div className="space-y-3">
-        <div className="bg-white border rounded p-4 dark:bg-gray-800 dark:border-gray-700">
+        <div className="card p-4">
           <div className="text-sm text-gray-700 dark:text-gray-300">Workflow: <span className="font-medium">{workflow}</span></div>
           {workflow!=='ticket' ? (
             <div className="text-sm text-gray-700 dark:text-gray-300">Goal: <span className="font-medium">{goalPrompt || '(empty)'}</span></div>
@@ -180,7 +180,7 @@ export default function CreateTask() {
           <div className="text-sm text-gray-700 dark:text-gray-300">Tools: <span className="font-medium">{toolPreset === 'all' ? 'All' : toolPreset === 'none' ? 'None' : customTools || '(none)'}</span></div>
         </div>
         <div className="flex items-center justify-end">
-          <button className="px-3 py-2 border rounded bg-primary-600 text-white border-primary-600" onClick={onSubmit} disabled={!canContinueStep2}>Create Task</button>
+          <button className="btn-primary" onClick={onSubmit} disabled={!canContinueStep2}>Create Task</button>
         </div>
       </div>
     </div>
