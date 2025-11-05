@@ -1,6 +1,6 @@
 import axios, { AxiosInstance } from 'axios'
 import { getRuntimeConfig } from './runtimeConfig'
-import type { TasksQueryParams, TasksResponse } from '../types/api'
+import type { TasksQueryParams, TasksResponse, TaskCreateRequest, TaskCreateResponse } from '../types/api'
 
 let apiClient: AxiosInstance | null = null
 
@@ -33,6 +33,11 @@ export const tasksApi = {
 
   async deleteMultiple(taskIds: string[]): Promise<{ deleted_tasks: string[]; failed_tasks: string[] }> {
     const { data } = await getApi().post('/task/delete/multiple', { task_ids: taskIds })
+    return data
+  },
+
+  async create(body: TaskCreateRequest): Promise<TaskCreateResponse> {
+    const { data } = await getApi().post('/task/create', body)
     return data
   }
 }

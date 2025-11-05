@@ -38,4 +38,29 @@ export interface TasksQueryParams {
   order_direction?: OrderDirection
 }
 
+export type ReasoningEffort = 'low' | 'medium' | 'high'
+
+export interface TaskCreateRequest {
+  workflow_id: 'proactive' | 'interactive' | 'ticket' | 'matrix'
+  goal_prompt?: string
+  max_iterations?: number
+  reasoning_effort?: ReasoningEffort
+  system_prompt?: string | null
+  developer_prompt?: string | null
+  available_tools?: string[] | null
+  agent_model_id?: string | null
+  orchestrator_model_id?: string | null
+  // ticket
+  ticket_id?: string
+  ticket_text?: string | null
+  summary?: string | null
+  problem_summary?: string | null
+  solution_strategy?: string | null
+}
+
+export interface TaskCreateResponse {
+  task_id: string
+  status: string
+}
+
 
