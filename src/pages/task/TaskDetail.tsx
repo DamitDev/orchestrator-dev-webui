@@ -3,7 +3,7 @@ import { useParams, Link } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import { useTask, useTaskConversation, useMatrixConversation, taskKeys } from '../../hooks/useTask'
 import { MessageContent } from '../../lib/markdown'
-import { formatTimestamp } from '../../lib/time'
+import { formatTimestamp, formatMessageTimestamp } from '../../lib/time'
 import { useMode } from '../../state/ModeContext'
 import { useWebSocket } from '../../ws/WebSocketProvider'
 import { tasksApi } from '../../lib/api'
@@ -170,10 +170,18 @@ export default function TaskDetail() {
                     <div key={idx} className={`border rounded p-2 ${m.role==='assistant' ? 'bg-gray-50 dark:bg-gray-900' : 'bg-white dark:bg-gray-800'} dark:border-gray-700`}>
                       <div className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-2">
                         <span className="uppercase">{m.role}</span>
-                        {m.created_at && <span>{formatTimestamp(m.created_at)}</span>}
+                        {m.created_at && <span>{formatMessageTimestamp(m.created_at)}</span>}
                       </div>
+                      {/* Reasoning should appear above assistant content */}
+                      {m.role === 'assistant' && mode === 'expert' && m.reasoning && (
+                        <details className="mt-2">
+                          <summary className="text-xs text-gray-700 cursor-pointer">Reasoning</summary>
+                          <div className="text-xs text-gray-900 whitespace-pre-wrap bg-gray-100 rounded p-2 mt-1">{m.reasoning}</div>
+                        </details>
+                      )}
                       {m.content && <MessageContent role={m.role} content={m.content} isLatestTool={idx === lastToolIndex} />}
-                      {mode === 'expert' && m.reasoning && (
+                      {/* For non-assistant roles, keep reasoning below content */}
+                      {m.role !== 'assistant' && mode === 'expert' && m.reasoning && (
                         <details className="mt-2">
                           <summary className="text-xs text-gray-700 cursor-pointer">Reasoning</summary>
                           <div className="text-xs text-gray-900 whitespace-pre-wrap bg-gray-100 rounded p-2 mt-1">{m.reasoning}</div>
@@ -380,7 +388,7 @@ function MatrixPhasePanel({ taskId }: { taskId: string }) {
             <div key={idx} className={`border rounded p-2 ${m.role==='assistant' ? 'bg-gray-50 dark:bg-gray-900' : 'bg-white dark:bg-gray-800'} dark:border-gray-700`}>
               <div className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-2">
                 <span className="uppercase">{m.role}</span>
-                {m.created_at && <span>{formatTimestamp(m.created_at)}</span>}
+                {m.created_at && <span>{formatMessageTimestamp(m.created_at)}</span>}
               </div>
               {m.content && <MessageContent role={m.role} content={m.content} isLatestTool={idx === lastToolIndex} />}
             </div>

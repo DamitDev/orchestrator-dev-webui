@@ -8,24 +8,24 @@ import { useWebSocket } from '../ws/WebSocketProvider'
 function Section({ title, tasks }: { title: string; tasks: Task[] }) {
   const top = tasks.slice(0, 5)
   return (
-    <div className="bg-white border rounded-lg p-4">
+    <div className="card p-4">
       <div className="flex items-center justify-between mb-2">
-        <h2 className="font-medium">{title}</h2>
-        <span className="text-xs text-gray-500">{tasks.length}</span>
+        <h2 className="font-medium text-gray-900 dark:text-gray-100">{title}</h2>
+        <span className="text-xs text-gray-500 dark:text-gray-400">{tasks.length}</span>
       </div>
       {top.length === 0 ? (
-        <p className="text-sm text-gray-500">No items</p>
+        <p className="text-sm text-gray-500 dark:text-gray-400">No items</p>
       ) : (
         <ul className="space-y-2">
           {top.map(t => (
             <li key={t.id} className="text-sm flex items-center justify-between gap-2">
               <div className="min-w-0">
-                <div className="truncate text-gray-900">
-                  <Link className="underline decoration-dotted" to={`/task/${t.id}`}>{t.ticket_id || t.goal_prompt || t.id}</Link>
+                <div className="truncate text-gray-900 dark:text-gray-100">
+                  <Link className="link-muted" to={`/task/${t.id}`}>{t.ticket_id || t.goal_prompt || t.id}</Link>
                 </div>
-                <div className="text-xs text-gray-500">{t.workflow_id} • {t.status.replace(/_/g,' ')}</div>
+                <div className="text-xs text-gray-500 dark:text-gray-400">{t.workflow_id} • {t.status.replace(/_/g,' ')}</div>
               </div>
-              <div className="text-xs text-gray-500 font-mono">{t.id.slice(0,8)}</div>
+              <div className="text-xs text-gray-500 dark:text-gray-400 font-mono">{t.id.slice(0,8)}</div>
             </li>
           ))}
         </ul>

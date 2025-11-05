@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useWebSocket } from '../ws/WebSocketProvider'
+import { formatMessageTimestamp } from '../lib/time'
 
 type Evt = { event_type: string; timestamp: string; task_id?: string; [k: string]: any }
 
@@ -31,17 +32,17 @@ export default function Events() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold">Events</h1>
-        <div className="text-sm text-gray-500">{events.length} cached</div>
+        <div className="text-sm text-gray-500 dark:text-gray-400">{events.length} cached</div>
       </div>
-      <div className="bg-white border rounded p-3 flex flex-wrap items-center gap-2">
-        <input value={typeFilter} onChange={e => setTypeFilter(e.target.value)} placeholder="Filter by type" className="px-3 py-2 border rounded text-sm" />
-        <input value={taskFilter} onChange={e => setTaskFilter(e.target.value)} placeholder="Filter by task id" className="px-3 py-2 border rounded text-sm" />
+      <div className="card p-3 flex flex-wrap items-center gap-2">
+        <input value={typeFilter} onChange={e => setTypeFilter(e.target.value)} placeholder="Filter by type" className="input text-sm" />
+        <input value={taskFilter} onChange={e => setTaskFilter(e.target.value)} placeholder="Filter by task id" className="input text-sm" />
       </div>
-      <div ref={containerRef} className="bg-white border rounded p-3 max-h-[520px] overflow-auto divide-y text-sm">
+      <div ref={containerRef} className="card p-3 max-h-[520px] overflow-auto divide-y divide-gray-200 dark:divide-gray-700 text-sm">
         {filtered.map((e, idx) => (
           <div key={idx} className="py-2">
-            <div className="text-gray-800 font-medium">{e.event_type}</div>
-            <div className="text-xs text-gray-500">{e.timestamp} {e.task_id && <>• <span className="font-mono">{e.task_id.slice(0,8)}</span></>}</div>
+            <div className="text-gray-800 dark:text-gray-100 font-medium">{e.event_type}</div>
+            <div className="text-xs text-gray-500 dark:text-gray-400">{formatMessageTimestamp(e.timestamp)} {e.task_id && <>• <span className="font-mono">{e.task_id.slice(0,8)}</span></>}</div>
           </div>
         ))}
       </div>

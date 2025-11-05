@@ -1,5 +1,5 @@
 import { Link, NavLink, Outlet, Route, Routes, useLocation } from 'react-router-dom'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useMode } from './state/ModeContext'
 import Inbox from './pages/Inbox'
 import Tasks from './pages/Tasks'
@@ -26,6 +26,20 @@ function Header() {
   const [wfOpen, setWfOpen] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [isDark, setIsDark] = useState(false)
+  const wfCloseTimeout = useRef<number | null>(null)
+  const settingsCloseTimeout = useRef<number | null>(null)
+  const scheduleClose = (which: 'wf'|'settings') => {
+    const ref = which === 'wf' ? wfCloseTimeout : settingsCloseTimeout
+    if (ref.current) clearTimeout(ref.current)
+    ref.current = window.setTimeout(() => {
+      if (which === 'wf') setWfOpen(false); else setSettingsOpen(false)
+      ref.current = null
+    }, 200)
+  }
+  const cancelClose = (which: 'wf'|'settings') => {
+    const ref = which === 'wf' ? wfCloseTimeout : settingsCloseTimeout
+    if (ref.current) { clearTimeout(ref.current); ref.current = null }
+  }
   useEffect(() => {
     const stored = localStorage.getItem('theme')
     const initialDark = stored ? stored === 'dark' : document.documentElement.classList.contains('dark')
@@ -54,10 +68,10 @@ function Header() {
             <Link to="/" className="text-xl font-bold text-primary-700">Orchestrator</Link>
             <nav className="hidden md:flex items-center gap-2">
               {navItem('/', 'Inbox')}
-              <div className="relative">
+              <div className="relative" onMouseEnter={() => cancelClose('wf')} onMouseLeave={() => scheduleClose('wf')}>
                 <button onClick={() => setWfOpen(o => !o)} className="px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100">Workflows</button>
                 {wfOpen && (
-                  <div className="absolute z-10 mt-1 w-44 bg-white border rounded shadow">
+                  <div className="absolute z-10 left-0 top-full mt-0.5 w-44 bg-white border rounded shadow" onMouseEnter={() => cancelClose('wf')} onMouseLeave={() => scheduleClose('wf')}>
                     <div className="py-1 text-sm">
                       <NavLink to="/workflows/tickets" className={({isActive}) => `block px-3 py-1.5 ${isActive ? 'bg-primary-50 text-primary-700' : 'text-gray-700 hover:bg-gray-50'}`} onClick={() => setWfOpen(false)}>Tickets</NavLink>
                       <NavLink to="/workflows/matrix" className={({isActive}) => `block px-3 py-1.5 ${isActive ? 'bg-primary-50 text-primary-700' : 'text-gray-700 hover:bg-gray-50'}`} onClick={() => setWfOpen(false)}>Matrix</NavLink>
@@ -69,10 +83,10 @@ function Header() {
               </div>
               {navItem('/tasks', 'Tasks')}
               {navItem('/create', 'Create')}
-              <div className="relative">
+              <div className="relative" onMouseEnter={() => cancelClose('settings')} onMouseLeave={() => scheduleClose('settings')}>
                 <button onClick={() => setSettingsOpen(o => !o)} className="px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100">Settings</button>
                 {settingsOpen && (
-                  <div className="absolute z-10 mt-1 w-52 bg-white border rounded shadow">
+                  <div className="absolute z-10 left-0 top-full mt-0.5 w-52 bg-white border rounded shadow" onMouseEnter={() => cancelClose('settings')} onMouseLeave={() => scheduleClose('settings')}>
                     <div className="py-1 text-sm">
                       <NavLink to="/config/models" className={({isActive}) => `block px-3 py-1.5 ${isActive ? 'bg-primary-50 text-primary-700' : 'text-gray-700 hover:bg-gray-50'}`} onClick={() => setSettingsOpen(false)}>Models</NavLink>
                       <NavLink to="/config/llm-backends" className={({isActive}) => `block px-3 py-1.5 ${isActive ? 'bg-primary-50 text-primary-700' : 'text-gray-700 hover:bg-gray-50'}`} onClick={() => setSettingsOpen(false)}>LLM Backends</NavLink>

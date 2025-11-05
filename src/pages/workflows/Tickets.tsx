@@ -7,13 +7,13 @@ import type { Task, TasksQueryParams } from '../../types/api'
 
 function TicketCard({ t }: { t: Task }) {
   return (
-    <div className="border rounded-lg p-4 bg-white">
+    <div className="card p-4">
       <div className="flex items-center gap-2 mb-1">
         {t.ticket_id && <span className="text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded">{t.ticket_id}</span>}
         <span className="text-xs text-gray-500 font-mono">{t.id.slice(0,8)}</span>
         <span className="text-xs text-gray-500">{t.status.replace(/_/g,' ')}</span>
       </div>
-      <Link to={`/task/${t.id}`} className="text-sm text-gray-900 underline decoration-dotted truncate block">{t.goal_prompt || t.ticket_id || t.id}</Link>
+      <Link to={`/task/${t.id}`} className="text-sm link-muted truncate block">{t.goal_prompt || t.ticket_id || t.id}</Link>
       <div className="text-xs text-gray-500 mt-1">Iteration {t.iteration}/{t.max_iterations}</div>
     </div>
   )
@@ -45,9 +45,9 @@ export default function WorkflowTickets() {
         <h1 className="text-2xl font-semibold">Tickets</h1>
         <div className="text-sm text-gray-500">{tickets.length} items</div>
       </div>
-      <div className="bg-white border rounded p-3 flex items-center gap-2">
-        <span className="text-sm text-gray-700">Status:</span>
-        <select value={statusFilter} onChange={e => setStatusFilter(e.target.value as any)} className="px-2 py-1 border rounded text-sm">
+      <div className="toolbar flex items-center gap-2">
+        <span className="text-sm text-gray-700 dark:text-gray-300">Status:</span>
+        <select value={statusFilter} onChange={e => setStatusFilter(e.target.value as any)} className="select">
           <option value="all">All</option>
           <option value="action_required">Action required</option>
           <option value="help_required">Help required</option>

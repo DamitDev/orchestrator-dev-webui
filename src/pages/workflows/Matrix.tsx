@@ -8,13 +8,13 @@ import type { Task, TasksQueryParams } from '../../types/api'
 function Card({ t }: { t: Task }) {
   const phase = (t.workflow_data?.phase ?? 0) as number
   return (
-    <div className="border rounded-lg p-4 bg-white">
+    <div className="card p-4">
       <div className="flex items-center gap-2 mb-1">
         <span className="text-xs text-orange-700 bg-orange-100 px-2 py-0.5 rounded">Phase {phase}</span>
         <span className="text-xs text-gray-500 font-mono">{t.id.slice(0,8)}</span>
         <span className="text-xs text-gray-500">{t.status.replace(/_/g,' ')}</span>
       </div>
-      <Link to={`/task/${t.id}`} className="text-sm text-gray-900 underline decoration-dotted truncate block">{t.goal_prompt || t.id}</Link>
+      <Link to={`/task/${t.id}`} className="text-sm link-muted truncate block">{t.goal_prompt || t.id}</Link>
     </div>
   )
 }
@@ -45,9 +45,9 @@ export default function WorkflowMatrix() {
         <h1 className="text-2xl font-semibold">Matrix</h1>
         <div className="text-sm text-gray-500">{items.length} items</div>
       </div>
-      <div className="bg-white border rounded p-3 flex items-center gap-2">
-        <span className="text-sm text-gray-700">Phase:</span>
-        <select value={phaseFilter as any} onChange={e => setPhaseFilter(e.target.value === 'all' ? 'all' : parseInt(e.target.value))} className="px-2 py-1 border rounded text-sm">
+      <div className="toolbar flex items-center gap-2">
+        <span className="text-sm text-gray-700 dark:text-gray-300">Phase:</span>
+        <select value={phaseFilter as any} onChange={e => setPhaseFilter(e.target.value === 'all' ? 'all' : parseInt(e.target.value))} className="select">
           <option value="all">All</option>
           <option value="0">0</option>
           <option value="1">1</option>
