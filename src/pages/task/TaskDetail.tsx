@@ -325,20 +325,18 @@ function ActionPanel({ taskId, workflowId, status }: { taskId: string; workflowI
 
       {/* Proactive/Ticket guide box (always visible) */}
       {(workflowId === 'proactive' || workflowId === 'ticket') && (
-        <div className="bg-gray-50 border border-gray-200 rounded p-3">
-          <div className="text-sm text-gray-900 font-medium mb-2">Guide Task</div>
+        <div className="bg-gray-50 border border-gray-200 rounded p-3 dark:bg-gray-800 dark:border-gray-700">
+          <div className="text-sm text-gray-900 font-medium mb-2 dark:text-gray-100">Guide Task</div>
           <div className="flex gap-2">
             <textarea
               value={guide}
               onChange={e => setGuide(e.target.value)}
               onKeyDown={e => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); onGuide() } }}
               rows={2}
-              className="flex-1 px-3 py-2 border rounded"
+              className="textarea"
               placeholder="Provide guidance message… (Ctrl/Cmd+Enter to send)"
             />
-            <button onClick={onGuide} disabled={!guide.trim() || busy} className="px-3 py-2 border rounded bg-gray-800 text-white disabled:opacity-50 flex items-center gap-1">
-              <Send className="w-4 h-4" /> Send Guidance
-            </button>
+            <button onClick={onGuide} disabled={!guide.trim() || busy} className="btn bg-gray-800 text-white disabled:opacity-50">Send Guidance</button>
           </div>
         </div>
       )}

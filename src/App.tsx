@@ -55,7 +55,7 @@ function Header() {
   const navItem = (to: string, label: string) => (
     <NavLink
       to={to}
-      className={({ isActive }) => `px-3 py-2 rounded-md text-sm font-medium ${isActive ? 'bg-primary-100 text-primary-700' : 'text-gray-700 hover:bg-gray-100'}`}
+      className={({ isActive }) => `px-3 py-2 rounded-md text-sm font-medium ${isActive ? 'bg-primary-100 text-primary-700 dark:bg-primary-900/40 dark:text-primary-200' : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800'}`}
     >
       {label}
     </NavLink>
@@ -71,7 +71,7 @@ function Header() {
               <div className="relative" onMouseEnter={() => cancelClose('wf')} onMouseLeave={() => scheduleClose('wf')}>
                 <button onClick={() => setWfOpen(o => !o)} className="px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100">Workflows</button>
                 {wfOpen && (
-                  <div className="absolute z-10 left-0 top-full mt-0.5 w-44 bg-white border rounded shadow" onMouseEnter={() => cancelClose('wf')} onMouseLeave={() => scheduleClose('wf')}>
+                  <div className="absolute z-10 left-0 top-full mt-0.5 w-44 bg-white border rounded shadow dark:bg-gray-800 dark:border-gray-700" onMouseEnter={() => cancelClose('wf')} onMouseLeave={() => scheduleClose('wf')}>
                     <div className="py-1 text-sm">
                       <NavLink to="/workflows/tickets" className={({isActive}) => `block px-3 py-1.5 ${isActive ? 'bg-primary-50 text-primary-700' : 'text-gray-700 hover:bg-gray-50'}`} onClick={() => setWfOpen(false)}>Tickets</NavLink>
                       <NavLink to="/workflows/matrix" className={({isActive}) => `block px-3 py-1.5 ${isActive ? 'bg-primary-50 text-primary-700' : 'text-gray-700 hover:bg-gray-50'}`} onClick={() => setWfOpen(false)}>Matrix</NavLink>
@@ -86,7 +86,7 @@ function Header() {
               <div className="relative" onMouseEnter={() => cancelClose('settings')} onMouseLeave={() => scheduleClose('settings')}>
                 <button onClick={() => setSettingsOpen(o => !o)} className="px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100">Settings</button>
                 {settingsOpen && (
-                  <div className="absolute z-10 left-0 top-full mt-0.5 w-52 bg-white border rounded shadow" onMouseEnter={() => cancelClose('settings')} onMouseLeave={() => scheduleClose('settings')}>
+                  <div className="absolute z-10 left-0 top-full mt-0.5 w-52 bg-white border rounded shadow dark:bg-gray-800 dark:border-gray-700" onMouseEnter={() => cancelClose('settings')} onMouseLeave={() => scheduleClose('settings')}>
                     <div className="py-1 text-sm">
                       <NavLink to="/config/models" className={({isActive}) => `block px-3 py-1.5 ${isActive ? 'bg-primary-50 text-primary-700' : 'text-gray-700 hover:bg-gray-50'}`} onClick={() => setSettingsOpen(false)}>Models</NavLink>
                       <NavLink to="/config/llm-backends" className={({isActive}) => `block px-3 py-1.5 ${isActive ? 'bg-primary-50 text-primary-700' : 'text-gray-700 hover:bg-gray-50'}`} onClick={() => setSettingsOpen(false)}>LLM Backends</NavLink>
