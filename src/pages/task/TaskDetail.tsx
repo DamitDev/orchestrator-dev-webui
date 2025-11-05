@@ -135,6 +135,7 @@ export default function TaskDetail() {
           </div>
 
           {task.workflow_id === 'matrix' && <MatrixPhasePanel taskId={task.id} />}
+          {task.workflow_id === 'ticket' && <TicketTodoPanel conv={conv?.conversation || []} taskId={task.id} />}
 
           <ActionPanel taskId={id!} workflowId={task.workflow_id} status={task.status} />
         </div>
@@ -289,6 +290,49 @@ function MatrixPhasePanel({ taskId }: { taskId: string }) {
           </div>
         ))}
       </div>
+    </div>
+  )
+}
+
+function extractTicketTodoFromConversation(conversation: any[]): string {
+  let content = ''
+  for (const m of conversation) {
+    const calls = (m?.tool_calls || []) as any[]
+    for (const tc of calls) {
+      const fname = tc?.function?.name
+      if (fname === 'ticket_todo') {
+        try {
+          const args = tc.function?.arguments ? JSON.parse(tc.function.arguments) : {}
+          const action = args?.action
+          if (action === 'set' && typeof args?.content === 'string') {
+            content = args.content
+          } else if (action === 'append' && typeof args?.content === 'string') {
+            content = content ? `${content}\n${args.content}` : args.content
+          }
+        } catch {}
+      }
+    }
+  }
+  return content
+}
+
+function TicketTodoPanel({ conv, taskId }: { conv: any[]; taskId: string }) {
+  const [value, setValue] = useState<string>(() => extractTicketTodoFromConversation(conv))
+  useEffect(() => {
+    setValue(extractTicketTodoFromConversation(conv))
+  }, [conv])
+  const onSend = async () => {
+    const msg = `Update the ticket_todo to the following Markdown exactly:\n\n${value}`
+    await tasksApi.workflows.ticket.guide(taskId, msg)
+  }
+  return (
+    <div className="bg-white border rounded-lg p-4 space-y-2">
+      <div className="flex items-center justify-between">
+        <h2 className="text-lg font-medium">Ticket TODO</h2>
+        <button onClick={onSend} className="px-3 py-1.5 border rounded text-sm">Send Update</button>
+      </div>
+      <textarea aria-label="Ticket todo content" value={value} onChange={e => setValue(e.target.value)} rows={8} className="w-full px-3 py-2 border rounded font-mono" placeholder="# TODO\n- [ ] item" />
+      <div className="text-xs text-gray-500">This updates the TODO by sending guidance to the agent, which will apply it using the built-in ticket_todo tool.</div>
     </div>
   )
 }

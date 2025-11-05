@@ -17,6 +17,7 @@ import ConfigSystem from './pages/config/System'
 import ConfigAuth from './pages/config/Auth'
 import Events from './pages/Events'
 import Preferences from './pages/Preferences'
+import GlobalShortcuts from './components/GlobalShortcuts'
 
 function Header() {
   const { mode, toggle } = useMode()
@@ -85,6 +86,7 @@ function ConfigLayout() {
 export default function App() {
   return (
     <div className="min-h-full flex flex-col">
+      <GlobalShortcuts />
       <Header />
       <main className="flex-1">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">

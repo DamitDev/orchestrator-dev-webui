@@ -88,6 +88,14 @@ export default function Tasks() {
 
   const [workflow, setWorkflow] = useState<WorkflowFilter>('all')
   const [search, setSearch] = useState('')
+  const searchRef = useState<HTMLInputElement | null>(null)[0]
+  useEffect(() => {
+    const onFocus = () => {
+      (document.getElementById('tasks-search') as HTMLInputElement | null)?.focus()
+    }
+    window.addEventListener('focus-search', onFocus as any)
+    return () => window.removeEventListener('focus-search', onFocus as any)
+  }, [])
   const [showApprovals, setShowApprovals] = useState(true)
   const [showHelp, setShowHelp] = useState(true)
   const [showUserTurn, setShowUserTurn] = useState(true)
@@ -175,7 +183,7 @@ export default function Tasks() {
             <option value="proactive">Proactive</option>
             <option value="interactive">Interactive</option>
           </select>
-          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search (ID, goal, ticket)" className="px-3 py-1 border rounded text-sm min-w-[240px]" />
+          <input id="tasks-search" aria-label="Search tasks" value={search} onChange={e => setSearch(e.target.value)} placeholder="Search (ID, goal, ticket)" className="px-3 py-1 border rounded text-sm min-w-[240px]" />
           <div className="flex items-center gap-3 ml-auto">
             <button onClick={() => { setOrderBy('updated_at'); setOrderDirection(orderDirection === 'desc' ? 'asc' : 'desc') }} className="px-2 py-1 border rounded text-sm">Updated {orderBy==='updated_at' ? `(${orderDirection})` : ''}</button>
             <button onClick={() => { setOrderBy('created_at'); setOrderDirection(orderDirection === 'desc' ? 'asc' : 'desc') }} className="px-2 py-1 border rounded text-sm">Created {orderBy==='created_at' ? `(${orderDirection})` : ''}</button>
