@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
-import { useTask, useTaskConversation, taskKeys } from '../../hooks/useTask'
+import { useTask, useTaskConversation, useMatrixConversation, taskKeys } from '../../hooks/useTask'
 import { useMode } from '../../state/ModeContext'
 import { useWebSocket } from '../../ws/WebSocketProvider'
 import { tasksApi } from '../../lib/api'
@@ -108,10 +108,33 @@ export default function TaskDetail() {
                     {m.created_at && <span>{new Date(m.created_at).toLocaleString()}</span>}
                   </div>
                   {m.content && <div className="text-sm text-gray-900 whitespace-pre-wrap">{m.content}</div>}
+                  {mode === 'expert' && m.reasoning && (
+                    <details className="mt-2">
+                      <summary className="text-xs text-gray-700 cursor-pointer">Reasoning</summary>
+                      <div className="text-xs text-gray-900 whitespace-pre-wrap bg-gray-100 rounded p-2 mt-1">{m.reasoning}</div>
+                    </details>
+                  )}
+                  {mode === 'expert' && m.tool_calls && Array.isArray(m.tool_calls) && m.tool_calls.length > 0 && (
+                    <details className="mt-2">
+                      <summary className="text-xs text-gray-700 cursor-pointer">Tool calls ({m.tool_calls.length})</summary>
+                      <div className="mt-1 space-y-2">
+                        {m.tool_calls.map((tc: any, i: number) => (
+                          <div key={i} className="text-xs bg-yellow-50 border border-yellow-200 rounded p-2">
+                            <div className="font-medium text-yellow-800">{tc.function?.name || tc.type}</div>
+                            {tc.function?.arguments && (
+                              <pre className="overflow-auto bg-yellow-100 rounded p-2 mt-1">{tc.function.arguments}</pre>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </details>
+                  )}
                 </div>
               ))}
             </div>
           </div>
+
+          {task.workflow_id === 'matrix' && <MatrixPhasePanel taskId={task.id} />}
 
           <ActionPanel taskId={id!} workflowId={task.workflow_id} status={task.status} />
         </div>
@@ -223,6 +246,36 @@ function ActionPanel({ taskId, workflowId, status }: { taskId: string; workflowI
           </div>
         </div>
       )}
+    </div>
+  )
+}
+
+function MatrixPhasePanel({ taskId }: { taskId: string }) {
+  const [phase, setPhase] = useState<number>(1)
+  const { data, isLoading, error } = useMatrixConversation(taskId, phase)
+  return (
+    <div className="bg-white border rounded-lg p-4 space-y-3">
+      <div className="flex items-center justify-between">
+        <h2 className="text-lg font-medium">Matrix Phases</h2>
+        <div className="flex items-center gap-2">
+          {[1,2,3,4].map(p => (
+            <button key={p} onClick={() => setPhase(p)} className={`px-2 py-1 rounded border text-sm ${phase===p ? 'bg-orange-600 text-white border-orange-600' : 'hover:bg-orange-50'}`}>Phase {p}</button>
+          ))}
+        </div>
+      </div>
+      {isLoading && <div className="text-sm text-gray-500">Loading phase {phase}…</div>}
+      {error && <div className="text-sm text-red-600">Failed to load phase</div>}
+      <div className="space-y-2 max-h-[320px] overflow-auto">
+        {(data?.conversation || []).map((m: any, idx: number) => (
+          <div key={idx} className={`border rounded p-2 ${m.role==='assistant' ? 'bg-gray-50' : 'bg-white'}`}>
+            <div className="text-xs text-gray-500 flex items-center gap-2">
+              <span className="uppercase">{m.role}</span>
+              {m.created_at && <span>{new Date(m.created_at).toLocaleString()}</span>}
+            </div>
+            {m.content && <div className="text-sm text-gray-900 whitespace-pre-wrap">{m.content}</div>}
+          </div>
+        ))}
+      </div>
     </div>
   )
 }

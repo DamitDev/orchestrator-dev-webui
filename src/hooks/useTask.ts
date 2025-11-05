@@ -23,4 +23,12 @@ export function useTaskConversation(id: string | undefined) {
   })
 }
 
+export function useMatrixConversation(id: string | undefined, phase: number) {
+  return useQuery<{ task_id: string; conversation: any[] }>({
+    queryKey: ['task', id || '', 'matrix', 'phase', phase],
+    queryFn: () => tasksApi.getMatrixConversationByPhase(id!, phase),
+    enabled: !!id && phase >= 1 && phase <= 4
+  })
+}
+
 

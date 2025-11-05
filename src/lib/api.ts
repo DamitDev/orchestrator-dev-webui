@@ -51,6 +51,11 @@ export const tasksApi = {
     return data
   },
 
+  async getMatrixConversationByPhase(taskId: string, phase: number): Promise<{ task_id: string; conversation: any[] }> {
+    const { data } = await getApi().get(`/task/matrix/conversation`, { params: { task_id: taskId, phase } })
+    return data
+  },
+
   workflows: {
     interactive: {
       async sendMessage(taskId: string, message: string): Promise<{ message: string }> {
@@ -116,5 +121,61 @@ export const tasksApi = {
         return data
       }
     }
+  }
+}
+
+export const configApi = {
+  async getStatus(): Promise<any> {
+    const { data } = await getApi().get('/configuration/status')
+    return data
+  },
+  async setAgent(modelName: string): Promise<void> {
+    await getApi().post('/configuration/agent', { model_name: modelName })
+  },
+  async setOrchestrator(modelName: string): Promise<void> {
+    await getApi().post('/configuration/orchestrator', { model_name: modelName })
+  },
+  async getLLMBackends(): Promise<any> {
+    const { data } = await getApi().get('/configuration/llmbackend/status')
+    return data
+  },
+  async addLLMBackend(host: string, apiKey: string): Promise<void> {
+    await getApi().post('/configuration/llmbackend/add', { backends: [{ url: host, api_key: apiKey }] })
+  },
+  async removeLLMBackend(host: string): Promise<void> {
+    await getApi().post('/configuration/llmbackend/remove', { host })
+  },
+  async getMCPServers(): Promise<any> {
+    const { data } = await getApi().get('/configuration/mcpserver/status')
+    return data
+  },
+  async addMCPServer(host: string, apiKey: string): Promise<void> {
+    await getApi().post('/configuration/mcpserver/add', { servers: [{ url: host, api_key: apiKey }] })
+  },
+  async removeMCPServer(host: string): Promise<void> {
+    await getApi().post('/configuration/mcpserver/remove', { host })
+  },
+  async getTaskHandlerStatus(): Promise<any> {
+    const { data } = await getApi().get('/configuration/taskhandler/status')
+    return data
+  },
+  async setMaxConcurrentTasks(max: number): Promise<void> {
+    await getApi().post('/configuration/taskhandler/concurrent', undefined, { params: { max_tasks: max } })
+  },
+  async getTools(): Promise<any> {
+    const { data } = await getApi().get('/tools/all')
+    return data
+  },
+  async getAuthConfig(): Promise<any> {
+    const { data } = await getApi().get('/auth/config')
+    return data
+  },
+  async getHealth(): Promise<any> {
+    const { data } = await getApi().get('/health')
+    return data
+  },
+  async getWebSocketStatus(): Promise<any> {
+    const { data } = await getApi().get('/websocket/status')
+    return data
   }
 }
