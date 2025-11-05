@@ -3,20 +3,52 @@
 @tailwind components;
 @tailwind utilities;
 
-/* App base styles */
+/* App base styles with Nord theme */
 html, body, #root {
   height: 100%;
 }
+
 body {
-  @apply bg-gray-50 text-gray-900;
+  @apply bg-gradient-nord-light text-nord0;
+  background-attachment: fixed;
 }
 
 .dark body {
-  @apply bg-gray-900 text-gray-100;
+  @apply bg-gradient-nord-dark text-nord6;
+  background-attachment: fixed;
 }
 
+/* Custom scrollbar with Nord colors */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-nord5 dark:bg-nord1;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-nord4 dark:bg-nord3 rounded-full;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-nord8 dark:bg-nord8;
+}
+
+/* Selection styling */
+::selection {
+  @apply bg-nord8/30 text-nord0 dark:text-nord6;
+}
+
+/* Density modes */
 .density-compact .btn, .density-compact input, .density-compact select, .density-compact textarea {
   @apply py-1 text-sm;
+}
+
+/* Smooth transitions */
+* {
+  @apply transition-colors duration-150;
 }
 
 

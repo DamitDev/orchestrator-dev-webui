@@ -76,26 +76,43 @@ export default function TaskDetail() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">Task Detail</h1>
-        <div className="text-sm text-gray-500 font-mono">{id?.slice(0,8)}</div>
+        <div className="flex items-center gap-3">
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-nord10 to-nord8 bg-clip-text text-transparent">
+            Task Detail
+          </h1>
+          <div className="text-sm text-nord3 dark:text-nord4 font-mono bg-nord5/50 px-3 py-1 rounded-lg dark:bg-nord2">
+            {id?.slice(0,8)}
+          </div>
+        </div>
       </div>
 
-      {isLoading && <div className="text-sm text-gray-500">Loading…</div>}
-      {error && <div className="text-sm text-red-600">Failed to load task</div>}
+      {isLoading && (
+        <div className="text-center py-12">
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-nord8 border-t-transparent"></div>
+          <p className="mt-4 text-nord3 dark:text-nord4">Loading task...</p>
+        </div>
+      )}
+      
+      {error && (
+        <div className="card p-6 bg-nord11/10 border border-nord11/30 text-center">
+          <div className="text-4xl mb-2">⚠️</div>
+          <div className="text-nord11 font-semibold">Failed to load task</div>
+        </div>
+      )}
 
       {task && (
-        <div className="space-y-4">
-          <div className="card p-4">
+        <div className="space-y-6">
+          <div className="card p-6 bg-gradient-to-br from-nord6 to-nord5 dark:from-nord1 dark:to-nord2 border-2">
             <div className="flex items-start justify-between gap-4">
               <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-2">
+                <div className="flex items-center gap-2 mb-3 flex-wrap">
                   <StatusBadge status={task.status} />
-                  <span className="text-xs bg-gray-100 text-gray-800 px-2 py-0.5 rounded">{task.workflow_id.toUpperCase()}</span>
+                  <span className="badge bg-nord8/20 text-nord10 border-nord8/30 dark:bg-nord8/10 dark:text-nord8">{task.workflow_id.toUpperCase()}</span>
                   {task.ticket_id && (
-                    <span className="text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded">{task.ticket_id}</span>
+                    <span className="badge bg-nord15/20 text-nord15 border-nord15/30">🎫 {task.ticket_id}</span>
                   )}
                 </div>
-                <div className="text-lg truncate text-gray-900 dark:text-gray-100" title={task.goal_prompt}>{task.goal_prompt || task.ticket_id || task.id}</div>
+                <div className="text-xl font-semibold text-nord0 dark:text-nord6 mb-3" title={task.goal_prompt}>{task.goal_prompt || task.ticket_id || task.id}</div>
                 <div className="grid grid-cols-2 gap-4 text-sm mt-2">
                   {(['ticket','proactive'].includes(task.workflow_id)) && (
                     <div className="small-muted">Iteration <span className="font-medium text-gray-900 dark:text-gray-100">{task.iteration}/{task.max_iterations}</span></div>
@@ -137,65 +154,106 @@ export default function TaskDetail() {
 
           {/* Critical banners */}
           {task.status === 'action_required' && (
-            <div className="p-3 bg-amber-50 border border-amber-200 rounded">
-              <div className="text-sm text-amber-800 font-medium">Supervisor action required</div>
-              {task.approval_reason && <div className="text-sm text-amber-700 whitespace-pre-wrap">{task.approval_reason}</div>}
+            <div className="card p-5 bg-gradient-to-r from-nord13/20 to-nord13/10 border-2 border-nord13/40">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="text-2xl">⏳</span>
+                <div className="text-base text-nord0 dark:text-nord6 font-semibold">Supervisor action required</div>
+              </div>
+              {task.approval_reason && (
+                <div className="text-sm text-nord0 dark:text-nord6 whitespace-pre-wrap bg-nord6/50 p-3 rounded-lg border border-nord13/20 dark:bg-nord2/50">
+                  {task.approval_reason}
+                </div>
+              )}
             </div>
           )}
           {task.status === 'help_required' && (
-            <div className="p-3 bg-blue-50 border border-blue-200 rounded">
-              <div className="text-sm text-blue-800 font-medium">Agent needs help</div>
-              {task.approval_reason && <div className="text-sm text-blue-700 whitespace-pre-wrap">{task.approval_reason}</div>}
+            <div className="card p-5 bg-gradient-to-r from-nord8/20 to-nord8/10 border-2 border-nord8/40">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="text-2xl">🆘</span>
+                <div className="text-base text-nord0 dark:text-nord6 font-semibold">Agent needs help</div>
+              </div>
+              {task.approval_reason && (
+                <div className="text-sm text-nord0 dark:text-nord6 whitespace-pre-wrap bg-nord6/50 p-3 rounded-lg border border-nord8/20 dark:bg-nord2/50">
+                  {task.approval_reason}
+                </div>
+              )}
             </div>
           )}
 
           {/* Conversation: hidden for matrix, shown otherwise */}
           {task.workflow_id !== 'matrix' && (
-            <div className="card p-4 space-y-3">
-              <div className="flex items-center justify-between">
-                <h2 className="text-lg font-medium text-gray-900 dark:text-gray-100">Conversation</h2>
-                <div className="flex items-center gap-3">
-                  <label className="small-muted flex items-center gap-1">
-                    <input type="checkbox" checked={autoScroll} onChange={e => setAutoScroll(e.target.checked)} /> Auto-scroll
-                  </label>
-                  <span className="small-muted">{conv?.conversation?.length ?? 0} messages</span>
+            <div className="card p-6 space-y-4">
+              <div className="flex items-center justify-between pb-3 border-b border-nord4 dark:border-nord2">
+                <div className="flex items-center gap-2">
+                  <svg className="w-5 h-5 text-nord8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                  </svg>
+                  <h2 className="text-lg font-semibold text-nord0 dark:text-nord6">Conversation</h2>
+                  <span className="badge bg-nord8/20 text-nord10 dark:bg-nord8/10 dark:text-nord8">
+                    {conv?.conversation?.length ?? 0}
+                  </span>
                 </div>
+                <label className="flex items-center gap-2 text-sm text-nord3 dark:text-nord4 cursor-pointer hover:text-nord10 transition-colors">
+                  <input type="checkbox" checked={autoScroll} onChange={e => setAutoScroll(e.target.checked)} className="rounded" /> 
+                  Auto-scroll
+                </label>
               </div>
-              <div ref={convRef} className="space-y-2 max-h-[420px] overflow-auto">
+              <div ref={convRef} className="space-y-4 max-h-[500px] overflow-auto pr-2">
                 {(() => {
                   const msgs = (conv?.conversation || []).filter((m: any) => mode === 'expert' ? true : (m.role !== 'system' && m.role !== 'developer'))
                   let lastToolIndex = -1
                   for (let i = msgs.length - 1; i >= 0; i--) { if (msgs[i].role === 'tool') { lastToolIndex = i; break } }
+                  
+                  const roleIcons = {
+                    assistant: '🤖',
+                    user: '👤',
+                    system: '⚙️',
+                    tool: '🔧'
+                  }
+                  
                   return msgs.map((m: any, idx: number) => (
-                    <div key={idx} className={`message ${m.role==='assistant' ? 'message--assistant' : m.role==='user' ? 'message--user' : m.role==='system' ? 'message--system' : 'message--tool'}`}>
-                      <div className="message-header">
-                        <span className="uppercase">{m.role}</span>
-                        {m.created_at && <span>{formatMessageTimestamp(m.created_at)}</span>}
+                    <div key={idx} className={`message group ${m.role==='assistant' ? 'message--assistant' : m.role==='user' ? 'message--user' : m.role==='system' ? 'message--system' : 'message--tool'}`}>
+                      <div className="message-header mb-2">
+                        <span className="flex items-center gap-1.5">
+                          <span className="text-base">{roleIcons[m.role as keyof typeof roleIcons]}</span>
+                          <span className="uppercase font-semibold">{m.role}</span>
+                        </span>
+                        {m.created_at && (
+                          <span className="text-xs bg-nord5/50 px-2 py-0.5 rounded dark:bg-nord2">
+                            {formatMessageTimestamp(m.created_at)}
+                          </span>
+                        )}
                       </div>
                       {/* Reasoning should appear above assistant content */}
                       {m.role === 'assistant' && mode === 'expert' && m.reasoning && (
-                        <details className="mt-2">
-                          <summary className="text-xs text-gray-700 cursor-pointer">Reasoning</summary>
+                        <details className="mb-3">
+                          <summary className="text-xs text-nord10 dark:text-nord8 cursor-pointer hover:underline font-medium">
+                            💭 Reasoning
+                          </summary>
                           <div className="reasoning">{m.reasoning}</div>
                         </details>
                       )}
                       {m.content && <MessageContent role={m.role} content={m.content} isLatestTool={idx === lastToolIndex} />}
                       {/* For non-assistant roles, keep reasoning below content */}
                       {m.role !== 'assistant' && mode === 'expert' && m.reasoning && (
-                        <details className="mt-2">
-                          <summary className="text-xs text-gray-700 cursor-pointer">Reasoning</summary>
+                        <details className="mt-3">
+                          <summary className="text-xs text-nord10 dark:text-nord8 cursor-pointer hover:underline font-medium">
+                            💭 Reasoning
+                          </summary>
                           <div className="reasoning">{m.reasoning}</div>
                         </details>
                       )}
                       {mode === 'expert' && m.tool_calls && Array.isArray(m.tool_calls) && m.tool_calls.length > 0 && (
-                        <details className="mt-2">
-                          <summary className="text-xs text-gray-700 cursor-pointer">Tool calls ({m.tool_calls.length})</summary>
-                          <div className="mt-1 space-y-2">
+                        <details className="mt-3">
+                          <summary className="text-xs text-nord15 dark:text-nord15 cursor-pointer hover:underline font-medium">
+                            🛠️ Tool calls ({m.tool_calls.length})
+                          </summary>
+                          <div className="mt-2 space-y-2">
                             {m.tool_calls.map((tc: any, i: number) => (
-                              <div key={i} className="text-xs bg-yellow-50 border border-yellow-200 rounded p-2">
-                                <div className="font-medium text-yellow-800">{tc.function?.name || tc.type}</div>
+                              <div key={i} className="text-xs bg-nord15/10 border border-nord15/30 rounded-lg p-3 dark:bg-nord15/5">
+                                <div className="font-semibold text-nord15 mb-1">{tc.function?.name || tc.type}</div>
                                 {tc.function?.arguments && (
-                                  <pre className="overflow-auto bg-yellow-100 rounded p-2 mt-1">{tc.function.arguments}</pre>
+                                  <pre className="overflow-auto bg-nord5 rounded-lg p-2 mt-1 text-nord0 dark:bg-nord2 dark:text-nord6">{tc.function.arguments}</pre>
                                 )}
                               </div>
                             ))}

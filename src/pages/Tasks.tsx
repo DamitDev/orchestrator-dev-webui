@@ -12,39 +12,57 @@ import toast from 'react-hot-toast'
 type WorkflowFilter = 'all' | 'ticket' | 'matrix' | 'proactive' | 'interactive'
 
 function StatusBadge({ status }: { status: string }) {
-  const color = status === 'completed' ? 'bg-green-100 text-green-800'
-    : status === 'failed' ? 'bg-red-100 text-red-800'
-    : status === 'action_required' ? 'bg-amber-100 text-amber-800'
-    : status === 'help_required' ? 'bg-blue-100 text-blue-800'
-    : ['in_progress','validation','function_execution','agent_turn'].includes(status) ? 'bg-primary-100 text-primary-800'
-    : 'bg-gray-100 text-gray-700'
-  return <span className={`px-2 py-0.5 rounded text-xs font-medium ${color}`}>{status.replace(/_/g,' ')}</span>
+  return <span className={`status-badge ${
+    status === 'completed' ? 'status--completed'
+    : status === 'failed' ? 'status--failed'
+    : status === 'action_required' ? 'status--action_required'
+    : status === 'help_required' ? 'status--help_required'
+    : ['in_progress','validation','function_execution','agent_turn'].includes(status) ? 'status--running'
+    : 'badge'
+  }`}>{status.replace(/_/g,' ')}</span>
 }
 
 function TaskCard({ task, selected, onToggle }: { task: Task; selected: boolean; onToggle: (id: string, checked: boolean) => void }) {
   return (
-    <div className={`card p-4 ${selected ? 'ring-2 ring-primary-400' : ''}`}>
+    <div className={`card p-5 transition-all ${selected ? 'ring-2 ring-nord8 bg-nord8/5 dark:bg-nord8/5' : 'hover:shadow-nord-lg'}`}>
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1">
+          <div className="flex items-center gap-2 mb-2 flex-wrap">
             <StatusBadge status={task.status} />
-            <span className="text-xs font-mono text-gray-500 dark:text-gray-300">{task.id.slice(0,8)}</span>
-            <span className="text-xs text-gray-500 dark:text-gray-300">{task.workflow_id}</span>
+            <span className="text-xs font-mono bg-nord5/50 px-2 py-0.5 rounded text-nord3 dark:bg-nord2 dark:text-nord4">
+              {task.id.slice(0,8)}
+            </span>
+            <span className="badge bg-nord8/20 text-nord10 border-nord8/30 dark:bg-nord8/10 dark:text-nord8">
+              {task.workflow_id}
+            </span>
             {task.ticket_id && (
-              <span className="badge">{task.ticket_id}</span>
+              <span className="badge bg-nord15/20 text-nord15 border-nord15/30">
+                🎫 {task.ticket_id}
+              </span>
             )}
           </div>
-          <Link to={`/task/${task.id}`} className="block text-sm link-muted truncate">
+          <Link to={`/task/${task.id}`} className="block text-sm font-medium link-muted truncate hover:text-nord8">
             {task.goal_prompt || task.ticket_id || task.id}
           </Link>
-          {(['ticket','proactive'].includes(task.workflow_id)) && (
-            <div className="small-muted mt-1">Iteration {task.iteration}/{task.max_iterations}</div>
-          )}
-          {task.workflow_id === 'matrix' && (
-            <div className="small-muted mt-1">Phase {(task.workflow_data?.phase ?? 0)}/4</div>
-          )}
+          <div className="flex items-center gap-3 mt-2 text-xs">
+            {(['ticket','proactive'].includes(task.workflow_id)) && (
+              <div className="text-nord3 dark:text-nord4">
+                📊 Iteration <span className="font-semibold text-nord10 dark:text-nord8">{task.iteration}/{task.max_iterations}</span>
+              </div>
+            )}
+            {task.workflow_id === 'matrix' && (
+              <div className="text-nord3 dark:text-nord4">
+                🔢 Phase <span className="font-semibold text-nord10 dark:text-nord8">{(task.workflow_data?.phase ?? 0)}/4</span>
+              </div>
+            )}
+          </div>
         </div>
-        <input type="checkbox" checked={selected} onChange={e => onToggle(task.id, e.target.checked)} className="mt-1" />
+        <input 
+          type="checkbox" 
+          checked={selected} 
+          onChange={e => onToggle(task.id, e.target.checked)} 
+          className="mt-1 rounded border-nord4 text-nord8 focus:ring-nord8 dark:border-nord3" 
+        />
       </div>
     </div>
   )
@@ -52,43 +70,65 @@ function TaskCard({ task, selected, onToggle }: { task: Task; selected: boolean;
 
 function TasksTable({ tasks, selected, onToggle }: { tasks: Task[]; selected: Set<string>; onToggle: (id: string, checked: boolean) => void }) {
   return (
-    <div className="overflow-auto card">
+    <div className="overflow-auto card shadow-nord-lg">
       <table className="min-w-full text-sm">
-        <thead className="bg-gray-50 text-gray-700 dark:bg-gray-900 dark:text-gray-300">
+        <thead className="bg-gradient-to-r from-nord5 to-nord6 text-nord0 dark:from-nord2 dark:to-nord1 dark:text-nord6 border-b-2 border-nord8/30">
           <tr>
-            <th className="px-3 py-2 text-left w-8"></th>
-            <th className="px-3 py-2 text-left">ID</th>
-            <th className="px-3 py-2 text-left">Workflow</th>
-            <th className="px-3 py-2 text-left">Status</th>
-            <th className="px-3 py-2 text-left">Goal / Ticket</th>
-            <th className="px-3 py-2 text-left">Progress</th>
-            <th className="px-3 py-2 text-left">Updated</th>
+            <th className="px-4 py-3 text-left w-8"></th>
+            <th className="px-4 py-3 text-left font-semibold">ID</th>
+            <th className="px-4 py-3 text-left font-semibold">Workflow</th>
+            <th className="px-4 py-3 text-left font-semibold">Status</th>
+            <th className="px-4 py-3 text-left font-semibold">Goal / Ticket</th>
+            <th className="px-4 py-3 text-left font-semibold">Progress</th>
+            <th className="px-4 py-3 text-left font-semibold">Updated</th>
           </tr>
         </thead>
-        <tbody className="dark:text-gray-200">
-          {tasks.map(t => (
-            <tr key={t.id} className="border-t dark:border-gray-700">
-              <td className="px-3 py-2"><input type="checkbox" checked={selected.has(t.id)} onChange={e => onToggle(t.id, e.target.checked)} /></td>
-              <td className="px-3 py-2 font-mono text-xs text-gray-700 dark:text-gray-300">{t.id.slice(0,8)}</td>
-              <td className="px-3 py-2 text-gray-700 dark:text-gray-300">{t.workflow_id}</td>
-              <td className="px-3 py-2"><StatusBadge status={t.status} /></td>
-              <td className="px-3 py-2 max-w-[420px]">
-                <Link to={`/task/${t.id}`} className="link-muted truncate inline-block max-w-full align-top">
+        <tbody className="text-nord0 dark:text-nord6">
+          {tasks.map((t, idx) => (
+            <tr key={t.id} className={`border-t border-nord4 dark:border-nord2 hover:bg-nord8/5 transition-colors ${
+              selected.has(t.id) ? 'bg-nord8/10 dark:bg-nord8/5' : ''
+            }`}>
+              <td className="px-4 py-3">
+                <input 
+                  type="checkbox" 
+                  checked={selected.has(t.id)} 
+                  onChange={e => onToggle(t.id, e.target.checked)}
+                  className="rounded border-nord4 text-nord8 focus:ring-nord8 dark:border-nord3"
+                />
+              </td>
+              <td className="px-4 py-3">
+                <span className="font-mono text-xs bg-nord5/50 px-2 py-0.5 rounded text-nord3 dark:bg-nord2 dark:text-nord4">
+                  {t.id.slice(0,8)}
+                </span>
+              </td>
+              <td className="px-4 py-3">
+                <span className="badge bg-nord8/20 text-nord10 border-nord8/30 dark:bg-nord8/10 dark:text-nord8">
+                  {t.workflow_id}
+                </span>
+              </td>
+              <td className="px-4 py-3"><StatusBadge status={t.status} /></td>
+              <td className="px-4 py-3 max-w-[420px]">
+                <Link to={`/task/${t.id}`} className="link-muted truncate inline-block max-w-full align-top hover:text-nord8 font-medium">
+                  {t.ticket_id && <span className="mr-1">🎫</span>}
                   {t.ticket_id || t.goal_prompt || t.id}
                 </Link>
               </td>
-              <td className="px-3 py-2 text-gray-700 dark:text-gray-300">
+              <td className="px-4 py-3 text-nord3 dark:text-nord4">
                 {(['ticket','proactive'].includes(t.workflow_id)) && (
-                  <span>{t.iteration}/{t.max_iterations}</span>
+                  <span className="font-medium">
+                    <span className="text-nord10 dark:text-nord8">{t.iteration}</span>/{t.max_iterations}
+                  </span>
                 )}
                 {t.workflow_id === 'matrix' && (
-                  <span>Phase {(t.workflow_data?.phase ?? 0)}/4</span>
+                  <span className="font-medium">
+                    Phase <span className="text-nord10 dark:text-nord8">{(t.workflow_data?.phase ?? 0)}</span>/4
+                  </span>
                 )}
                 {t.workflow_id === 'interactive' && (
-                  <span>-</span>
+                  <span className="text-nord3 dark:text-nord4">-</span>
                 )}
               </td>
-              <td className="px-3 py-2 small-muted">{formatTimestamp(t.updated_at)}</td>
+              <td className="px-4 py-3 text-xs text-nord3 dark:text-nord4">{formatTimestamp(t.updated_at)}</td>
             </tr>
           ))}
         </tbody>
@@ -183,26 +223,59 @@ export default function Tasks() {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">Tasks</h1>
-        <div className="text-sm text-gray-500">Total: {data?.pagination?.total_items ?? 0}</div>
+        <div>
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-nord10 to-nord8 bg-clip-text text-transparent">
+            Tasks
+          </h1>
+          <p className="text-nord3 dark:text-nord4 mt-1">
+            Manage and monitor all orchestrator tasks
+          </p>
+        </div>
+        <div className="text-right">
+          <div className="text-2xl font-bold text-nord10 dark:text-nord8">
+            {data?.pagination?.total_items ?? 0}
+          </div>
+          <div className="text-xs text-nord3 dark:text-nord4">
+            Total Tasks
+          </div>
+        </div>
       </div>
 
       {/* Controls */}
-      <div className="toolbar flex flex-col gap-3">
-        <div className="flex flex-wrap items-center gap-2">
+      <div className="card p-5 space-y-4 shadow-nord-lg">
+        <div className="flex flex-wrap items-center gap-3">
           <select value={workflow} onChange={e => setWorkflow(e.target.value as WorkflowFilter)} className="select">
-            <option value="all">All workflows</option>
-            <option value="ticket">Ticket</option>
-            <option value="matrix">Matrix</option>
-            <option value="proactive">Proactive</option>
-            <option value="interactive">Interactive</option>
+            <option value="all">📋 All workflows</option>
+            <option value="ticket">🎫 Ticket</option>
+            <option value="matrix">🔢 Matrix</option>
+            <option value="proactive">⚡ Proactive</option>
+            <option value="interactive">💬 Interactive</option>
           </select>
-          <input id="tasks-search" aria-label="Search tasks" value={search} onChange={e => setSearch(e.target.value)} placeholder="Search (ID, goal, ticket)" className="input text-sm min-w-[240px]" />
-          <div className="flex items-center gap-3 ml-auto">
-            <button onClick={() => { setOrderBy('updated_at'); setOrderDirection(orderDirection === 'desc' ? 'asc' : 'desc') }} className="btn-outline text-sm">Updated {orderBy==='updated_at' ? `(${orderDirection})` : ''}</button>
-            <button onClick={() => { setOrderBy('created_at'); setOrderDirection(orderDirection === 'desc' ? 'asc' : 'desc') }} className="btn-outline text-sm">Created {orderBy==='created_at' ? `(${orderDirection})` : ''}</button>
+          <div className="flex-1 min-w-[240px]">
+            <input 
+              id="tasks-search" 
+              aria-label="Search tasks" 
+              value={search} 
+              onChange={e => setSearch(e.target.value)} 
+              placeholder="🔍 Search (ID, goal, ticket)" 
+              className="input text-sm w-full" 
+            />
+          </div>
+          <div className="flex items-center gap-2 ml-auto">
+            <button 
+              onClick={() => { setOrderBy('updated_at'); setOrderDirection(orderDirection === 'desc' ? 'asc' : 'desc') }} 
+              className={`btn-outline text-sm ${orderBy === 'updated_at' ? 'bg-nord8/10 border-nord8' : ''}`}
+            >
+              {orderBy === 'updated_at' ? (orderDirection === 'desc' ? '↓' : '↑') : ''} Updated
+            </button>
+            <button 
+              onClick={() => { setOrderBy('created_at'); setOrderDirection(orderDirection === 'desc' ? 'asc' : 'desc') }} 
+              className={`btn-outline text-sm ${orderBy === 'created_at' ? 'bg-nord8/10 border-nord8' : ''}`}
+            >
+              {orderBy === 'created_at' ? (orderDirection === 'desc' ? '↓' : '↑') : ''} Created
+            </button>
             <select value={limit} onChange={e => { setLimit(Number(e.target.value)); setPage(1) }} className="select">
               <option value={25}>25</option>
               <option value={50}>50</option>
@@ -211,22 +284,57 @@ export default function Tasks() {
             </select>
           </div>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <label className="flex items-center gap-1 text-sm"><input type="checkbox" checked={showApprovals} onChange={e => setShowApprovals(e.target.checked)} /> Hide approvals</label>
-          <label className="flex items-center gap-1 text-sm"><input type="checkbox" checked={showHelp} onChange={e => setShowHelp(e.target.checked)} /> Hide help</label>
-          <label className="flex items-center gap-1 text-sm"><input type="checkbox" checked={showUserTurn} onChange={e => setShowUserTurn(e.target.checked)} /> Hide user turn</label>
-          <label className="flex items-center gap-1 text-sm"><input type="checkbox" checked={showRunning} onChange={e => setShowRunning(e.target.checked)} /> Hide running</label>
-          <div className="ml-auto flex items-center gap-2">
-            <button onClick={selectAllVisible} className="btn-outline text-sm">Select visible</button>
-            <button onClick={clearSelection} className="btn-outline text-sm">Clear</button>
-            <button onClick={bulkCancel} disabled={selected.size===0} className="btn-outline text-sm disabled:opacity-50">Cancel</button>
-            <button onClick={bulkDelete} disabled={selected.size===0} className="btn-danger text-sm disabled:opacity-50">Delete</button>
+        
+        <div className="flex flex-wrap items-center gap-3 pt-3 border-t border-nord4 dark:border-nord2">
+          <div className="flex items-center gap-3">
+            <label className="flex items-center gap-2 text-sm text-nord0 dark:text-nord6 cursor-pointer">
+              <input type="checkbox" checked={!showApprovals} onChange={e => setShowApprovals(!e.target.checked)} className="rounded border-nord4 text-nord8 focus:ring-nord8 dark:border-nord3" /> 
+              Hide approvals
+            </label>
+            <label className="flex items-center gap-2 text-sm text-nord0 dark:text-nord6 cursor-pointer">
+              <input type="checkbox" checked={!showHelp} onChange={e => setShowHelp(!e.target.checked)} className="rounded border-nord4 text-nord8 focus:ring-nord8 dark:border-nord3" /> 
+              Hide help
+            </label>
+            <label className="flex items-center gap-2 text-sm text-nord0 dark:text-nord6 cursor-pointer">
+              <input type="checkbox" checked={!showUserTurn} onChange={e => setShowUserTurn(!e.target.checked)} className="rounded border-nord4 text-nord8 focus:ring-nord8 dark:border-nord3" /> 
+              Hide user turn
+            </label>
+            <label className="flex items-center gap-2 text-sm text-nord0 dark:text-nord6 cursor-pointer">
+              <input type="checkbox" checked={!showRunning} onChange={e => setShowRunning(!e.target.checked)} className="rounded border-nord4 text-nord8 focus:ring-nord8 dark:border-nord3" /> 
+              Hide running
+            </label>
           </div>
+          
+          {selected.size > 0 && (
+            <div className="ml-auto flex items-center gap-2">
+              <span className="text-sm text-nord10 dark:text-nord8 font-semibold">
+                {selected.size} selected
+              </span>
+              <button onClick={selectAllVisible} className="btn-outline text-sm">Select visible</button>
+              <button onClick={clearSelection} className="btn-outline text-sm">Clear</button>
+              <button onClick={bulkCancel} className="btn-outline text-sm">Cancel</button>
+              <button onClick={bulkDelete} className="btn-danger text-sm">Delete</button>
+            </div>
+          )}
+          {selected.size === 0 && (
+            <button onClick={selectAllVisible} className="btn-outline text-sm ml-auto">Select all visible</button>
+          )}
         </div>
       </div>
 
-      {isLoading && <div className="text-sm text-gray-500">Loading…</div>}
-      {error && <div className="text-sm text-red-600">Failed to load tasks</div>}
+      {isLoading && (
+        <div className="text-center py-12">
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-nord8 border-t-transparent"></div>
+          <p className="mt-4 text-nord3 dark:text-nord4">Loading tasks...</p>
+        </div>
+      )}
+      
+      {error && (
+        <div className="card p-6 bg-nord11/10 border border-nord11/30 text-center">
+          <div className="text-4xl mb-2">⚠️</div>
+          <div className="text-nord11 font-semibold">Failed to load tasks</div>
+        </div>
+      )}
 
       {/* Content */}
       {mode === 'expert' ? (
@@ -240,13 +348,34 @@ export default function Tasks() {
       )}
 
       {/* Pagination */}
-      <div className="flex items-center justify-between text-sm text-gray-600">
-        <div>Page {data?.pagination?.current_page ?? page} / {data?.pagination?.total_pages ?? 1}</div>
-        <div className="flex items-center gap-2">
-          <button onClick={() => setPage(p => Math.max(1, p-1))} disabled={!data?.pagination?.has_prev} className="px-2 py-1 border rounded disabled:opacity-50">Prev</button>
-          <button onClick={() => setPage(p => p+1)} disabled={!data?.pagination?.has_next} className="px-2 py-1 border rounded disabled:opacity-50">Next</button>
+      {!isLoading && !error && (
+        <div className="card p-4 flex items-center justify-between text-sm">
+          <div className="text-nord0 dark:text-nord6">
+            Page <span className="font-bold text-nord10 dark:text-nord8">{data?.pagination?.current_page ?? page}</span> 
+            {' '}/{' '}
+            <span className="font-bold">{data?.pagination?.total_pages ?? 1}</span>
+            <span className="text-nord3 dark:text-nord4 ml-2">
+              ({filtered.length} of {data?.pagination?.total_items ?? 0} items)
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <button 
+              onClick={() => setPage(p => Math.max(1, p-1))} 
+              disabled={!data?.pagination?.has_prev} 
+              className="btn-outline disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              ← Prev
+            </button>
+            <button 
+              onClick={() => setPage(p => p+1)} 
+              disabled={!data?.pagination?.has_next} 
+              className="btn-outline disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Next →
+            </button>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   )
 }
