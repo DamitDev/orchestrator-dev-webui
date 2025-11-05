@@ -10,4 +10,12 @@ body {
   @apply bg-gray-50 text-gray-900;
 }
 
+.dark body {
+  @apply bg-gray-900 text-gray-100;
+}
+
+.density-compact .btn, .density-compact input, .density-compact select, .density-compact textarea {
+  @apply py-1 text-sm;
+}
+
 

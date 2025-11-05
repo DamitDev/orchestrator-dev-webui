@@ -149,17 +149,23 @@ function ActionPanel({ taskId, workflowId, status }: { taskId: string; workflowI
   const [message, setMessage] = useState('')
   const [guide, setGuide] = useState('')
   const [help, setHelp] = useState('')
+  const [busy, setBusy] = useState(false)
 
   const invalidate = () => {
     queryClient.invalidateQueries()
   }
 
   const onApprove = async (approved: boolean) => {
-    if (workflowId === 'interactive') await tasksApi.workflows.interactive.action(taskId, approved)
-    else if (workflowId === 'proactive') await tasksApi.workflows.proactive.action(taskId, approved)
-    else if (workflowId === 'ticket') await tasksApi.workflows.ticket.action(taskId, approved)
-    else if (workflowId === 'matrix') await tasksApi.workflows.matrix.action(taskId, approved)
-    invalidate()
+    setBusy(true)
+    try {
+      if (workflowId === 'interactive') await tasksApi.workflows.interactive.action(taskId, approved)
+      else if (workflowId === 'proactive') await tasksApi.workflows.proactive.action(taskId, approved)
+      else if (workflowId === 'ticket') await tasksApi.workflows.ticket.action(taskId, approved)
+      else if (workflowId === 'matrix') await tasksApi.workflows.matrix.action(taskId, approved)
+    } finally {
+      setBusy(false)
+      invalidate()
+    }
   }
 
   const onSendMessage = async () => {
@@ -216,11 +222,11 @@ function ActionPanel({ taskId, workflowId, status }: { taskId: string; workflowI
           <div className="text-sm text-blue-900 font-medium mb-2">Your Message</div>
           <div className="flex gap-2">
             <textarea value={message} onChange={e => setMessage(e.target.value)} rows={2} className="flex-1 px-3 py-2 border rounded" placeholder="Type your message..." />
-            <button onClick={onSendMessage} disabled={!message.trim()} className="px-3 py-2 border rounded bg-blue-600 text-white border-blue-600 disabled:opacity-50">Send</button>
+            <button onClick={onSendMessage} disabled={!message.trim() || busy} className="px-3 py-2 border rounded bg-blue-600 text-white border-blue-600 disabled:opacity-50">Send</button>
           </div>
           <div className="mt-2 flex items-center gap-2">
-            <button onClick={onMarkComplete} className="px-3 py-1.5 border rounded text-sm text-green-700 hover:bg-green-50">Mark Complete</button>
-            <button onClick={onMarkFailed} className="px-3 py-1.5 border rounded text-sm text-red-700 hover:bg-red-50">Mark Failed</button>
+            <button onClick={onMarkComplete} disabled={busy} className="px-3 py-1.5 border rounded text-sm text-green-700 hover:bg-green-50 disabled:opacity-50">Mark Complete</button>
+            <button onClick={onMarkFailed} disabled={busy} className="px-3 py-1.5 border rounded text-sm text-red-700 hover:bg-red-50 disabled:opacity-50">Mark Failed</button>
           </div>
         </div>
       )}
@@ -231,7 +237,7 @@ function ActionPanel({ taskId, workflowId, status }: { taskId: string; workflowI
           <div className="text-sm text-gray-900 font-medium mb-2">Guide Task</div>
           <div className="flex gap-2">
             <textarea value={guide} onChange={e => setGuide(e.target.value)} rows={2} className="flex-1 px-3 py-2 border rounded" placeholder="Provide guidance message..." />
-            <button onClick={onGuide} disabled={!guide.trim()} className="px-3 py-2 border rounded bg-gray-800 text-white disabled:opacity-50">Send Guidance</button>
+            <button onClick={onGuide} disabled={!guide.trim() || busy} className="px-3 py-2 border rounded bg-gray-800 text-white disabled:opacity-50">Send Guidance</button>
           </div>
         </div>
       )}
@@ -242,8 +248,15 @@ function ActionPanel({ taskId, workflowId, status }: { taskId: string; workflowI
           <div className="text-sm text-blue-900 font-medium mb-2">Provide Help</div>
           <div className="flex gap-2">
             <textarea value={help} onChange={e => setHelp(e.target.value)} rows={2} className="flex-1 px-3 py-2 border rounded" placeholder="Type your help response..." />
-            <button onClick={onHelp} disabled={!help.trim()} className="px-3 py-2 border rounded bg-blue-600 text-white border-blue-600 disabled:opacity-50">Send Help</button>
+            <button onClick={onHelp} disabled={!help.trim() || busy} className="px-3 py-2 border rounded bg-blue-600 text-white border-blue-600 disabled:opacity-50">Send Help</button>
           </div>
+        </div>
+      )}
+
+      {/* Cancel Task */}
+      {!['completed','failed','canceled','cancelled'].includes(status) && (
+        <div className="flex items-center">
+          <button onClick={async () => { setBusy(true); try { await tasksApi.cancel(taskId) } finally { setBusy(false); invalidate() } }} className="px-3 py-1.5 border rounded text-sm text-red-700 hover:bg-red-50">Cancel Task</button>
         </div>
       )}
     </div>
