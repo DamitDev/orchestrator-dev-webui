@@ -6,6 +6,7 @@ import { useTasks, tasksKeys } from '../hooks/useTasks'
 import type { Task, TasksQueryParams } from '../types/api'
 import { useWebSocket } from '../ws/WebSocketProvider'
 import { tasksApi } from '../lib/api'
+import { formatTimestamp } from '../lib/time'
 import toast from 'react-hot-toast'
 
 type WorkflowFilter = 'all' | 'ticket' | 'matrix' | 'proactive' | 'interactive'
@@ -22,7 +23,7 @@ function StatusBadge({ status }: { status: string }) {
 
 function TaskCard({ task, selected, onToggle }: { task: Task; selected: boolean; onToggle: (id: string, checked: boolean) => void }) {
   return (
-    <div className={`border rounded-lg p-4 bg-white ${selected ? 'ring-2 ring-primary-400' : ''}`}>
+    <div className={`border rounded-lg p-4 bg-white dark:bg-gray-800 dark:border-gray-700 ${selected ? 'ring-2 ring-primary-400' : ''}`}>
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">
@@ -33,10 +34,15 @@ function TaskCard({ task, selected, onToggle }: { task: Task; selected: boolean;
               <span className="text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded">{task.ticket_id}</span>
             )}
           </div>
-          <Link to={`/task/${task.id}`} className="block text-sm text-gray-900 truncate underline decoration-dotted">
+          <Link to={`/task/${task.id}`} className="block text-sm text-gray-900 dark:text-gray-100 truncate underline decoration-dotted">
             {task.goal_prompt || task.ticket_id || task.id}
           </Link>
-          <div className="text-xs text-gray-500 mt-1">Iteration {task.iteration}/{task.max_iterations}</div>
+          {(['ticket','proactive'].includes(task.workflow_id)) && (
+            <div className="text-xs text-gray-500 mt-1">Iteration {task.iteration}/{task.max_iterations}</div>
+          )}
+          {task.workflow_id === 'matrix' && (
+            <div className="text-xs text-gray-500 mt-1">Phase {(task.workflow_data?.phase ?? 0)}/4</div>
+          )}
         </div>
         <input type="checkbox" checked={selected} onChange={e => onToggle(task.id, e.target.checked)} className="mt-1" />
       </div>
@@ -46,33 +52,43 @@ function TaskCard({ task, selected, onToggle }: { task: Task; selected: boolean;
 
 function TasksTable({ tasks, selected, onToggle }: { tasks: Task[]; selected: Set<string>; onToggle: (id: string, checked: boolean) => void }) {
   return (
-    <div className="overflow-auto border rounded-lg bg-white">
+    <div className="overflow-auto border rounded-lg bg-white dark:bg-gray-800 dark:border-gray-700">
       <table className="min-w-full text-sm">
-        <thead className="bg-gray-50 text-gray-700">
+        <thead className="bg-gray-50 text-gray-700 dark:bg-gray-900 dark:text-gray-300">
           <tr>
             <th className="px-3 py-2 text-left w-8"></th>
             <th className="px-3 py-2 text-left">ID</th>
             <th className="px-3 py-2 text-left">Workflow</th>
             <th className="px-3 py-2 text-left">Status</th>
             <th className="px-3 py-2 text-left">Goal / Ticket</th>
-            <th className="px-3 py-2 text-left">Iteration</th>
+            <th className="px-3 py-2 text-left">Progress</th>
             <th className="px-3 py-2 text-left">Updated</th>
           </tr>
         </thead>
-        <tbody>
+        <tbody className="dark:text-gray-200">
           {tasks.map(t => (
             <tr key={t.id} className="border-t">
               <td className="px-3 py-2"><input type="checkbox" checked={selected.has(t.id)} onChange={e => onToggle(t.id, e.target.checked)} /></td>
-              <td className="px-3 py-2 font-mono text-xs text-gray-700">{t.id.slice(0,8)}</td>
-              <td className="px-3 py-2 text-gray-700">{t.workflow_id}</td>
+              <td className="px-3 py-2 font-mono text-xs text-gray-700 dark:text-gray-300">{t.id.slice(0,8)}</td>
+              <td className="px-3 py-2 text-gray-700 dark:text-gray-300">{t.workflow_id}</td>
               <td className="px-3 py-2"><StatusBadge status={t.status} /></td>
               <td className="px-3 py-2 max-w-[420px]">
-                <Link to={`/task/${t.id}`} className="underline decoration-dotted text-gray-900 truncate inline-block max-w-full align-top">
+                <Link to={`/task/${t.id}`} className="underline decoration-dotted text-gray-900 dark:text-gray-100 truncate inline-block max-w-full align-top">
                   {t.ticket_id || t.goal_prompt || t.id}
                 </Link>
               </td>
-              <td className="px-3 py-2 text-gray-700">{t.iteration}/{t.max_iterations}</td>
-              <td className="px-3 py-2 text-gray-500 text-xs">{new Date(t.updated_at).toLocaleString()}</td>
+              <td className="px-3 py-2 text-gray-700 dark:text-gray-300">
+                {(['ticket','proactive'].includes(t.workflow_id)) && (
+                  <span>{t.iteration}/{t.max_iterations}</span>
+                )}
+                {t.workflow_id === 'matrix' && (
+                  <span>Phase {(t.workflow_data?.phase ?? 0)}/4</span>
+                )}
+                {t.workflow_id === 'interactive' && (
+                  <span>-</span>
+                )}
+              </td>
+              <td className="px-3 py-2 text-gray-500 dark:text-gray-400 text-xs">{formatTimestamp(t.updated_at)}</td>
             </tr>
           ))}
         </tbody>

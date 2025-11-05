@@ -1,10 +1,13 @@
-import { useEffect, useMemo, useState } from 'react'
-import { useParams } from 'react-router-dom'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { useParams, Link } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import { useTask, useTaskConversation, useMatrixConversation, taskKeys } from '../../hooks/useTask'
+import { MessageContent } from '../../lib/markdown'
+import { formatTimestamp } from '../../lib/time'
 import { useMode } from '../../state/ModeContext'
 import { useWebSocket } from '../../ws/WebSocketProvider'
 import { tasksApi } from '../../lib/api'
+import { Send, CheckCircle2, XCircle } from 'lucide-react'
 
 function StatusBadge({ status }: { status: string }) {
   const color = status === 'completed' ? 'bg-green-100 text-green-800'
@@ -17,8 +20,21 @@ function StatusBadge({ status }: { status: string }) {
 }
 
 function ProgressBar({ value, max, status }: { value: number; max: number; status: string }) {
-  const pct = Math.min(100, Math.round((value / Math.max(1, max)) * 100))
+  const pct = (status === 'completed' || status === 'failed')
+    ? 100
+    : Math.min(100, Math.round((value / Math.max(1, max)) * 100))
   const bar = status === 'completed' ? 'bg-green-600' : status === 'failed' ? 'bg-red-600' : 'bg-primary-600'
+  return (
+    <div className="w-full bg-gray-200 rounded h-2">
+      <div className={`h-2 rounded ${bar}`} style={{ width: `${pct}%` }} />
+    </div>
+  )
+}
+
+function PhaseProgressBar({ phase, total = 4, status }: { phase: number; total?: number; status: string }) {
+  const clamped = Math.max(0, Math.min(total, phase))
+  const pct = (status === 'completed' || status === 'failed') ? 100 : Math.round((clamped / total) * 100)
+  const bar = status === 'completed' ? 'bg-green-600' : status === 'failed' ? 'bg-red-600' : 'bg-orange-600'
   return (
     <div className="w-full bg-gray-200 rounded h-2">
       <div className={`h-2 rounded ${bar}`} style={{ width: `${pct}%` }} />
@@ -33,6 +49,8 @@ export default function TaskDetail() {
   const queryClient = useQueryClient()
   const { data: task, isLoading, error } = useTask(id)
   const { data: conv } = useTaskConversation(id)
+  const [autoScroll, setAutoScroll] = useState<boolean>(true)
+  const convRef = useRef<HTMLDivElement | null>(null)
 
   useEffect(() => {
     const unsub = subscribe((evt) => {
@@ -46,6 +64,15 @@ export default function TaskDetail() {
     return () => { /* ws provider handles cleanup */ }
   }, [subscribe, queryClient, id])
 
+  // Scroll to bottom on new messages if enabled
+  useEffect(() => {
+    if (!autoScroll) return
+    const el = convRef.current
+    if (el) {
+      setTimeout(() => { if (el) el.scrollTop = el.scrollHeight }, 50)
+    }
+  }, [conv?.conversation, autoScroll])
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -58,7 +85,7 @@ export default function TaskDetail() {
 
       {task && (
         <div className="space-y-4">
-          <div className="bg-white border rounded-lg p-4">
+          <div className="bg-white border rounded-lg p-4 dark:bg-gray-800 dark:border-gray-700">
             <div className="flex items-start justify-between gap-4">
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-2">
@@ -68,15 +95,43 @@ export default function TaskDetail() {
                     <span className="text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded">{task.ticket_id}</span>
                   )}
                 </div>
-                <div className="text-lg text-gray-900 truncate" title={task.goal_prompt}>{task.goal_prompt || task.ticket_id || task.id}</div>
+                <div className="text-lg text-gray-900 truncate dark:text-gray-100" title={task.goal_prompt}>{task.goal_prompt || task.ticket_id || task.id}</div>
                 <div className="grid grid-cols-2 gap-4 text-sm mt-2">
-                  <div className="text-gray-600">Iteration <span className="font-medium text-gray-900">{task.iteration}/{task.max_iterations}</span></div>
-                  <div className="text-gray-600">Updated <span className="font-medium text-gray-900">{new Date(task.updated_at).toLocaleString()}</span></div>
+                  {(['ticket','proactive'].includes(task.workflow_id)) && (
+                    <div className="text-gray-600 dark:text-gray-300">Iteration <span className="font-medium text-gray-900 dark:text-gray-100">{task.iteration}/{task.max_iterations}</span></div>
+                  )}
+                  {task.workflow_id === 'matrix' && (
+                    <div className="text-gray-600 dark:text-gray-300">Phase <span className="font-medium text-gray-900 dark:text-gray-100">{(task.workflow_data?.phase ?? 0)}/4</span></div>
+                  )}
+                  <div className="text-gray-600 dark:text-gray-300">Updated <span className="font-medium text-gray-900 dark:text-gray-100">{formatTimestamp(task.updated_at)}</span></div>
+                </div>
+                <div className="mt-2 text-xs text-gray-600 dark:text-gray-300 flex items-center gap-2 flex-wrap">
+                  <span className="">Available tools:</span>
+                  {task.available_tools === null && <span className="px-2 py-0.5 rounded bg-green-50 text-green-700 border border-green-200">All</span>}
+                  {Array.isArray(task.available_tools) && task.available_tools.length === 0 && (
+                    <span className="px-2 py-0.5 rounded bg-red-50 text-red-700 border border-red-200">None</span>
+                  )}
+                  {Array.isArray(task.available_tools) && task.available_tools.length > 0 && (
+                    <>
+                      {task.available_tools.slice(0, 5).map((tname, i) => (
+                        <span key={i} className="px-2 py-0.5 rounded bg-gray-100 text-gray-800 border border-gray-200 dark:bg-gray-900 dark:text-gray-200 dark:border-gray-700">{tname}</span>
+                      ))}
+                      {task.available_tools.length > 5 && (
+                        <span className="text-gray-500">+{task.available_tools.length - 5} more</span>
+                      )}
+                    </>
+                  )}
+                  <Link to="/config/tools" className="ml-2 underline decoration-dotted">Tools Explorer</Link>
                 </div>
               </div>
             </div>
             <div className="mt-4">
-              <ProgressBar value={task.iteration} max={task.max_iterations} status={task.status} />
+              {(['ticket','proactive'].includes(task.workflow_id)) && (
+                <ProgressBar value={task.iteration} max={task.max_iterations} status={task.status} />
+              )}
+              {task.workflow_id === 'matrix' && (
+                <PhaseProgressBar phase={(task.workflow_data?.phase ?? 0)} status={task.status} />
+              )}
             </div>
           </div>
 
@@ -94,45 +149,57 @@ export default function TaskDetail() {
             </div>
           )}
 
-          {/* Placeholder for conversation and workflow-specific panels - next tasks will fill */}
-          <div className="bg-white border rounded-lg p-4 space-y-3">
-            <div className="flex items-center justify-between">
-              <h2 className="text-lg font-medium">Conversation</h2>
-              <span className="text-xs text-gray-500">{conv?.conversation?.length ?? 0} messages</span>
-            </div>
-            <div className="space-y-2 max-h-[420px] overflow-auto">
-              {(conv?.conversation || []).filter((m: any) => mode === 'expert' ? true : (m.role !== 'system' && m.role !== 'developer')).map((m: any, idx: number) => (
-                <div key={idx} className={`border rounded p-2 ${m.role==='assistant' ? 'bg-gray-50' : 'bg-white'}`}>
-                  <div className="text-xs text-gray-500 flex items-center gap-2">
-                    <span className="uppercase">{m.role}</span>
-                    {m.created_at && <span>{new Date(m.created_at).toLocaleString()}</span>}
-                  </div>
-                  {m.content && <div className="text-sm text-gray-900 whitespace-pre-wrap">{m.content}</div>}
-                  {mode === 'expert' && m.reasoning && (
-                    <details className="mt-2">
-                      <summary className="text-xs text-gray-700 cursor-pointer">Reasoning</summary>
-                      <div className="text-xs text-gray-900 whitespace-pre-wrap bg-gray-100 rounded p-2 mt-1">{m.reasoning}</div>
-                    </details>
-                  )}
-                  {mode === 'expert' && m.tool_calls && Array.isArray(m.tool_calls) && m.tool_calls.length > 0 && (
-                    <details className="mt-2">
-                      <summary className="text-xs text-gray-700 cursor-pointer">Tool calls ({m.tool_calls.length})</summary>
-                      <div className="mt-1 space-y-2">
-                        {m.tool_calls.map((tc: any, i: number) => (
-                          <div key={i} className="text-xs bg-yellow-50 border border-yellow-200 rounded p-2">
-                            <div className="font-medium text-yellow-800">{tc.function?.name || tc.type}</div>
-                            {tc.function?.arguments && (
-                              <pre className="overflow-auto bg-yellow-100 rounded p-2 mt-1">{tc.function.arguments}</pre>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    </details>
-                  )}
+          {/* Conversation: hidden for matrix, shown otherwise */}
+          {task.workflow_id !== 'matrix' && (
+            <div className="bg-white border rounded-lg p-4 space-y-3 dark:bg-gray-800 dark:border-gray-700">
+              <div className="flex items-center justify-between">
+                <h2 className="text-lg font-medium dark:text-gray-100">Conversation</h2>
+                <div className="flex items-center gap-3">
+                  <label className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1">
+                    <input type="checkbox" checked={autoScroll} onChange={e => setAutoScroll(e.target.checked)} /> Auto-scroll
+                  </label>
+                  <span className="text-xs text-gray-500 dark:text-gray-400">{conv?.conversation?.length ?? 0} messages</span>
                 </div>
-              ))}
+              </div>
+              <div ref={convRef} className="space-y-2 max-h-[420px] overflow-auto">
+                {(() => {
+                  const msgs = (conv?.conversation || []).filter((m: any) => mode === 'expert' ? true : (m.role !== 'system' && m.role !== 'developer'))
+                  let lastToolIndex = -1
+                  for (let i = msgs.length - 1; i >= 0; i--) { if (msgs[i].role === 'tool') { lastToolIndex = i; break } }
+                  return msgs.map((m: any, idx: number) => (
+                    <div key={idx} className={`border rounded p-2 ${m.role==='assistant' ? 'bg-gray-50 dark:bg-gray-900' : 'bg-white dark:bg-gray-800'} dark:border-gray-700`}>
+                      <div className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-2">
+                        <span className="uppercase">{m.role}</span>
+                        {m.created_at && <span>{formatTimestamp(m.created_at)}</span>}
+                      </div>
+                      {m.content && <MessageContent role={m.role} content={m.content} isLatestTool={idx === lastToolIndex} />}
+                      {mode === 'expert' && m.reasoning && (
+                        <details className="mt-2">
+                          <summary className="text-xs text-gray-700 cursor-pointer">Reasoning</summary>
+                          <div className="text-xs text-gray-900 whitespace-pre-wrap bg-gray-100 rounded p-2 mt-1">{m.reasoning}</div>
+                        </details>
+                      )}
+                      {mode === 'expert' && m.tool_calls && Array.isArray(m.tool_calls) && m.tool_calls.length > 0 && (
+                        <details className="mt-2">
+                          <summary className="text-xs text-gray-700 cursor-pointer">Tool calls ({m.tool_calls.length})</summary>
+                          <div className="mt-1 space-y-2">
+                            {m.tool_calls.map((tc: any, i: number) => (
+                              <div key={i} className="text-xs bg-yellow-50 border border-yellow-200 rounded p-2">
+                                <div className="font-medium text-yellow-800">{tc.function?.name || tc.type}</div>
+                                {tc.function?.arguments && (
+                                  <pre className="overflow-auto bg-yellow-100 rounded p-2 mt-1">{tc.function.arguments}</pre>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        </details>
+                      )}
+                    </div>
+                  ))
+                })()}
+              </div>
             </div>
-          </div>
+          )}
 
           {task.workflow_id === 'matrix' && <MatrixPhasePanel taskId={task.id} />}
           {task.workflow_id === 'ticket' && <TicketTodoPanel conv={conv?.conversation || []} taskId={task.id} />}
@@ -222,12 +289,28 @@ function ActionPanel({ taskId, workflowId, status }: { taskId: string; workflowI
         <div className="bg-blue-50 border border-blue-200 rounded p-3">
           <div className="text-sm text-blue-900 font-medium mb-2">Your Message</div>
           <div className="flex gap-2">
-            <textarea value={message} onChange={e => setMessage(e.target.value)} rows={2} className="flex-1 px-3 py-2 border rounded" placeholder="Type your message..." />
-            <button onClick={onSendMessage} disabled={!message.trim() || busy} className="px-3 py-2 border rounded bg-blue-600 text-white border-blue-600 disabled:opacity-50">Send</button>
+            <textarea
+              value={message}
+              onChange={e => setMessage(e.target.value)}
+              onKeyDown={e => {
+                if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); onSendMessage() }
+                else if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); onSendMessage() }
+              }}
+              rows={2}
+              className="flex-1 px-3 py-2 border rounded"
+              placeholder="Type your message… (Enter to send, Shift+Enter newline)"
+            />
+            <button onClick={onSendMessage} disabled={!message.trim() || busy} className="px-3 py-2 border rounded bg-blue-600 text-white border-blue-600 disabled:opacity-50 flex items-center gap-1">
+              <Send className="w-4 h-4" /> Send
+            </button>
           </div>
           <div className="mt-2 flex items-center gap-2">
-            <button onClick={onMarkComplete} disabled={busy} className="px-3 py-1.5 border rounded text-sm text-green-700 hover:bg-green-50 disabled:opacity-50">Mark Complete</button>
-            <button onClick={onMarkFailed} disabled={busy} className="px-3 py-1.5 border rounded text-sm text-red-700 hover:bg-red-50 disabled:opacity-50">Mark Failed</button>
+            <button onClick={onMarkComplete} disabled={busy} className="px-3 py-1.5 border rounded text-sm text-green-700 hover:bg-green-50 disabled:opacity-50 flex items-center gap-1">
+              <CheckCircle2 className="w-4 h-4" /> Mark Complete
+            </button>
+            <button onClick={onMarkFailed} disabled={busy} className="px-3 py-1.5 border rounded text-sm text-red-700 hover:bg-red-50 disabled:opacity-50 flex items-center gap-1">
+              <XCircle className="w-4 h-4" /> Mark Failed
+            </button>
           </div>
         </div>
       )}
@@ -237,8 +320,17 @@ function ActionPanel({ taskId, workflowId, status }: { taskId: string; workflowI
         <div className="bg-gray-50 border border-gray-200 rounded p-3">
           <div className="text-sm text-gray-900 font-medium mb-2">Guide Task</div>
           <div className="flex gap-2">
-            <textarea value={guide} onChange={e => setGuide(e.target.value)} rows={2} className="flex-1 px-3 py-2 border rounded" placeholder="Provide guidance message..." />
-            <button onClick={onGuide} disabled={!guide.trim() || busy} className="px-3 py-2 border rounded bg-gray-800 text-white disabled:opacity-50">Send Guidance</button>
+            <textarea
+              value={guide}
+              onChange={e => setGuide(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); onGuide() } }}
+              rows={2}
+              className="flex-1 px-3 py-2 border rounded"
+              placeholder="Provide guidance message… (Ctrl/Cmd+Enter to send)"
+            />
+            <button onClick={onGuide} disabled={!guide.trim() || busy} className="px-3 py-2 border rounded bg-gray-800 text-white disabled:opacity-50 flex items-center gap-1">
+              <Send className="w-4 h-4" /> Send Guidance
+            </button>
           </div>
         </div>
       )}
@@ -268,7 +360,7 @@ function MatrixPhasePanel({ taskId }: { taskId: string }) {
   const [phase, setPhase] = useState<number>(1)
   const { data, isLoading, error } = useMatrixConversation(taskId, phase)
   return (
-    <div className="bg-white border rounded-lg p-4 space-y-3">
+    <div className="bg-white border rounded-lg p-4 space-y-3 dark:bg-gray-800 dark:border-gray-700">
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-medium">Matrix Phases</h2>
         <div className="flex items-center gap-2">
@@ -280,15 +372,20 @@ function MatrixPhasePanel({ taskId }: { taskId: string }) {
       {isLoading && <div className="text-sm text-gray-500">Loading phase {phase}…</div>}
       {error && <div className="text-sm text-red-600">Failed to load phase</div>}
       <div className="space-y-2 max-h-[320px] overflow-auto">
-        {(data?.conversation || []).map((m: any, idx: number) => (
-          <div key={idx} className={`border rounded p-2 ${m.role==='assistant' ? 'bg-gray-50' : 'bg-white'}`}>
-            <div className="text-xs text-gray-500 flex items-center gap-2">
-              <span className="uppercase">{m.role}</span>
-              {m.created_at && <span>{new Date(m.created_at).toLocaleString()}</span>}
+        {(() => {
+          const msgs = (data?.conversation || [])
+          let lastToolIndex = -1
+          for (let i = msgs.length - 1; i >= 0; i--) { if (msgs[i].role === 'tool') { lastToolIndex = i; break } }
+          return msgs.map((m: any, idx: number) => (
+            <div key={idx} className={`border rounded p-2 ${m.role==='assistant' ? 'bg-gray-50 dark:bg-gray-900' : 'bg-white dark:bg-gray-800'} dark:border-gray-700`}>
+              <div className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-2">
+                <span className="uppercase">{m.role}</span>
+                {m.created_at && <span>{formatTimestamp(m.created_at)}</span>}
+              </div>
+              {m.content && <MessageContent role={m.role} content={m.content} isLatestTool={idx === lastToolIndex} />}
             </div>
-            {m.content && <div className="text-sm text-gray-900 whitespace-pre-wrap">{m.content}</div>}
-          </div>
-        ))}
+          ))
+        })()}
       </div>
     </div>
   )
@@ -326,13 +423,13 @@ function TicketTodoPanel({ conv, taskId }: { conv: any[]; taskId: string }) {
     await tasksApi.workflows.ticket.guide(taskId, msg)
   }
   return (
-    <div className="bg-white border rounded-lg p-4 space-y-2">
+    <div className="bg-white border rounded-lg p-4 space-y-2 dark:bg-gray-800 dark:border-gray-700">
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-medium">Ticket TODO</h2>
         <button onClick={onSend} className="px-3 py-1.5 border rounded text-sm">Send Update</button>
       </div>
-      <textarea aria-label="Ticket todo content" value={value} onChange={e => setValue(e.target.value)} rows={8} className="w-full px-3 py-2 border rounded font-mono" placeholder="# TODO\n- [ ] item" />
-      <div className="text-xs text-gray-500">This updates the TODO by sending guidance to the agent, which will apply it using the built-in ticket_todo tool.</div>
+      <textarea aria-label="Ticket todo content" value={value} onChange={e => setValue(e.target.value)} rows={8} className="w-full px-3 py-2 border rounded font-mono dark:bg-gray-900 dark:border-gray-700 dark:text-gray-100" placeholder="# TODO\n- [ ] item" />
+      <div className="text-xs text-gray-500 dark:text-gray-400">This updates the TODO by sending guidance to the agent, which will apply it using the built-in ticket_todo tool.</div>
     </div>
   )
 }
