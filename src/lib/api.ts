@@ -49,7 +49,72 @@ export const tasksApi = {
   async getConversation(taskId: string): Promise<{ task_id: string; conversation: any[] }> {
     const { data } = await getApi().get(`/task/conversation`, { params: { task_id: taskId } })
     return data
+  },
+
+  workflows: {
+    interactive: {
+      async sendMessage(taskId: string, message: string): Promise<{ message: string }> {
+        const { data } = await getApi().post('/task/interactive/message', { task_id: taskId, message })
+        return data
+      },
+      async markComplete(taskId: string): Promise<{ message: string }> {
+        const { data } = await getApi().post('/task/interactive/mark_complete', { task_id: taskId })
+        return data
+      },
+      async markFailed(taskId: string): Promise<{ message: string }> {
+        const { data } = await getApi().post('/task/interactive/mark_failed', { task_id: taskId })
+        return data
+      },
+      async action(taskId: string, approved: boolean): Promise<{ message: string }> {
+        const { data } = await getApi().post('/task/interactive/action', { task_id: taskId, approved })
+        return data
+      }
+    },
+    proactive: {
+      async guide(taskId: string, message: string): Promise<{ message: string }> {
+        const { data } = await getApi().post('/task/proactive/guide', { task_id: taskId, message })
+        return data
+      },
+      async help(taskId: string, response: string): Promise<{ message: string }> {
+        const { data } = await getApi().post('/task/proactive/help', { task_id: taskId, response })
+        return data
+      },
+      async action(taskId: string, approved: boolean): Promise<{ message: string }> {
+        const { data } = await getApi().post('/task/proactive/action', { task_id: taskId, approved })
+        return data
+      }
+    },
+    ticket: {
+      async guide(taskId: string, message: string): Promise<{ message: string }> {
+        const { data } = await getApi().post('/task/ticket/guide', { task_id: taskId, message })
+        return data
+      },
+      async help(taskId: string, response: string): Promise<{ message: string }> {
+        const { data } = await getApi().post('/task/ticket/help', { task_id: taskId, response })
+        return data
+      },
+      async action(taskId: string, approved: boolean): Promise<{ message: string }> {
+        const { data } = await getApi().post('/task/ticket/action', { task_id: taskId, approved })
+        return data
+      }
+    },
+    matrix: {
+      async sendMessage(taskId: string, message: string): Promise<{ message: string }> {
+        const { data } = await getApi().post('/task/matrix/message', { task_id: taskId, message })
+        return data
+      },
+      async markComplete(taskId: string): Promise<{ message: string }> {
+        const { data } = await getApi().post('/task/matrix/mark_complete', { task_id: taskId })
+        return data
+      },
+      async markFailed(taskId: string): Promise<{ message: string }> {
+        const { data } = await getApi().post('/task/matrix/mark_failed', { task_id: taskId })
+        return data
+      },
+      async action(taskId: string, approved: boolean): Promise<{ message: string }> {
+        const { data } = await getApi().post('/task/matrix/action', { task_id: taskId, approved })
+        return data
+      }
+    }
   }
 }
-
-
