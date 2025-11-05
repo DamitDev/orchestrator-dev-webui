@@ -21,6 +21,19 @@ export const tasksApi = {
     const url = `/tasks${search.toString() ? `?${search.toString()}` : ''}`
     const { data } = await getApi().get(url)
     return data
+  },
+
+  async cancel(taskId: string): Promise<void> {
+    await getApi().post('/task/cancel', { task_id: taskId })
+  },
+
+  async delete(taskId: string): Promise<void> {
+    await getApi().post('/task/delete', { task_id: taskId })
+  },
+
+  async deleteMultiple(taskIds: string[]): Promise<{ deleted_tasks: string[]; failed_tasks: string[] }> {
+    const { data } = await getApi().post('/task/delete/multiple', { task_ids: taskIds })
+    return data
   }
 }
 
