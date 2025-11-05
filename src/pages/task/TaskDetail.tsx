@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import { useTask, useTaskConversation, useMatrixConversation, taskKeys } from '../../hooks/useTask'
+import { useCancelTask } from '../../hooks/useTasks'
 import { MessageContent } from '../../lib/markdown'
 import { formatTimestamp, formatMessageTimestamp } from '../../lib/time'
 import { useMode } from '../../state/ModeContext'
@@ -17,6 +18,22 @@ function StatusBadge({ status }: { status: string }) {
     : ['in_progress','validation','function_execution','agent_turn'].includes(status) ? 'status-badge status--running'
     : 'badge'
   return <span className={cls}>{status.replace(/_/g,' ')}</span>
+}
+
+function CancelButton({ taskId }: { taskId: string }) {
+  const cancelMutation = useCancelTask()
+  
+  return (
+    <button
+      onClick={() => cancelMutation.mutate(taskId)}
+      disabled={cancelMutation.isPending}
+      className="btn-danger text-sm flex items-center gap-2"
+      title="Cancel task"
+    >
+      <XCircle className="w-4 h-4" />
+      Cancel
+    </button>
+  )
 }
 
 // Group messages: assistant messages with their tool calls/responses
@@ -291,11 +308,16 @@ export default function TaskDetail() {
             {/* Main Task Info Card */}
             <div className="card p-6 bg-gradient-to-br from-nord6 to-nord5 dark:from-nord1 dark:to-nord2 border-2 space-y-4">
               {/* Header with badges */}
-              <div className="flex items-center gap-2 flex-wrap">
-                <StatusBadge status={task.status} />
-                <span className="badge bg-nord8/20 text-nord10 border-nord8/30 dark:bg-nord8/10 dark:text-nord8">{task.workflow_id.toUpperCase()}</span>
-                {task.ticket_id && (
-                  <span className="badge bg-nord15/20 text-nord15 border-nord15/30">🎫 {task.ticket_id}</span>
+              <div className="flex items-center justify-between gap-2 flex-wrap">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <StatusBadge status={task.status} />
+                  <span className="badge bg-nord8/20 text-nord10 border-nord8/30 dark:bg-nord8/10 dark:text-nord8">{task.workflow_id.toUpperCase()}</span>
+                  {task.ticket_id && (
+                    <span className="badge bg-nord15/20 text-nord15 border-nord15/30">🎫 {task.ticket_id}</span>
+                  )}
+                </div>
+                {!['completed', 'failed', 'cancelled', 'canceled'].includes(task.status) && (
+                  <CancelButton taskId={task.id} />
                 )}
               </div>
 
@@ -543,10 +565,10 @@ export default function TaskDetail() {
                     // Render other message types normally
                     const m = group.message
                     return (
-                      <div key={idx} className={`message ${m.role==='user' ? 'message--user' : m.role==='system' ? 'message--system' : 'message--tool'}`}>
+                      <div key={idx} className={`message ${m.role==='user' ? 'message--user' : m.role==='system' ? 'message--system' : m.role==='developer' ? 'message--developer' : 'message--tool'}`}>
                         <div className="message-header mb-2">
                           <span className="uppercase font-bold text-xs tracking-wide">
-                            {m.role === 'user' ? 'USER' : m.role === 'system' ? 'SYSTEM' : 'TOOL'}
+                            {m.role === 'user' ? 'USER' : m.role === 'system' ? 'SYSTEM' : m.role === 'developer' ? 'DEVELOPER' : 'TOOL'}
                           </span>
                           {m.created_at && (
                             <span className="text-xs bg-nord5/70 px-2 py-0.5 rounded dark:bg-nord2">
@@ -841,10 +863,10 @@ function MatrixPhasePanel({ taskId, currentPhase, status }: { taskId: string; cu
             // Render other message types normally
             const m = group.message
             return (
-              <div key={idx} className={`message ${m.role==='user' ? 'message--user' : m.role==='system' ? 'message--system' : 'message--tool'}`}>
+              <div key={idx} className={`message ${m.role==='user' ? 'message--user' : m.role==='system' ? 'message--system' : m.role==='developer' ? 'message--developer' : 'message--tool'}`}>
                 <div className="message-header mb-2">
                   <span className="uppercase font-bold text-xs tracking-wide">
-                    {m.role === 'user' ? 'USER' : m.role === 'system' ? 'SYSTEM' : 'TOOL'}
+                    {m.role === 'user' ? 'USER' : m.role === 'system' ? 'SYSTEM' : m.role === 'developer' ? 'DEVELOPER' : 'TOOL'}
                   </span>
                   {m.created_at && (
                     <span className="text-xs bg-nord5/70 px-2 py-0.5 rounded dark:bg-nord2">

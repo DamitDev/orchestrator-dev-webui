@@ -4,6 +4,7 @@ import remarkGfm from 'remark-gfm'
 
 function isToolRole(role: string): boolean { return role === 'tool' }
 function isSystemRole(role: string): boolean { return role === 'system' }
+function isDeveloperRole(role: string): boolean { return role === 'developer' }
 
 function CollapsibleToolOutput({ content, initialExpanded }: { content: string; initialExpanded: boolean }) {
   const [expanded, setExpanded] = useState<boolean>(initialExpanded)
@@ -44,11 +45,20 @@ export function MessageContent({ role, content, isLatestTool }: { role: string; 
     return <CollapsibleToolOutput content={content} initialExpanded={!!isLatestTool} />
   }
 
-  if (isSystemRole(role)) {
+  if (isSystemRole(role) || isDeveloperRole(role)) {
+    // For system and developer prompts, use markdown but limit height to ~10 lines
     return (
-      <pre className="text-sm text-gray-900 dark:text-gray-100 whitespace-pre-wrap break-words font-mono bg-gray-50 dark:bg-gray-900 p-3 rounded border dark:border-gray-700 overflow-x-auto">
-        {content}
-      </pre>
+      <div className="text-sm text-nord3 dark:text-nord4 max-h-[15rem] overflow-y-auto border border-nord4 dark:border-nord3 rounded-lg p-3 bg-nord5/30 dark:bg-nord2/30">
+        <ReactMarkdown
+          remarkPlugins={[remarkGfm]}
+          components={{
+            p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
+            code: ({ children }) => <code className="text-xs bg-nord4/30 dark:bg-nord1 px-1 py-0.5 rounded">{children}</code>,
+          }}
+        >
+          {content}
+        </ReactMarkdown>
+      </div>
     )
   }
 

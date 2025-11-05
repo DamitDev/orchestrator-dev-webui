@@ -2,12 +2,13 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import { useMode } from '../state/ModeContext'
-import { useTasks, tasksKeys } from '../hooks/useTasks'
+import { useTasks, tasksKeys, useCancelTask } from '../hooks/useTasks'
 import type { Task, TasksQueryParams } from '../types/api'
 import { useWebSocket } from '../ws/WebSocketProvider'
 import { tasksApi } from '../lib/api'
 import { formatTimestamp } from '../lib/time'
 import toast from 'react-hot-toast'
+import { XCircle } from 'lucide-react'
 
 type WorkflowFilter = 'all' | 'ticket' | 'matrix' | 'proactive' | 'interactive'
 
@@ -22,7 +23,9 @@ function StatusBadge({ status }: { status: string }) {
   }`}>{status.replace(/_/g,' ')}</span>
 }
 
-function TaskCard({ task, selected, onToggle }: { task: Task; selected: boolean; onToggle: (id: string, checked: boolean) => void }) {
+function TaskCard({ task, selected, onToggle, onCancel }: { task: Task; selected: boolean; onToggle: (id: string, checked: boolean) => void; onCancel: (id: string) => void }) {
+  const canCancel = !['completed', 'failed', 'cancelled', 'canceled'].includes(task.status)
+  
   return (
     <div className={`card p-5 transition-all ${selected ? 'ring-2 ring-nord8 bg-nord8/5 dark:bg-nord8/5' : 'hover:shadow-nord-lg'}`}>
       <div className="flex items-start justify-between gap-3">
@@ -57,18 +60,33 @@ function TaskCard({ task, selected, onToggle }: { task: Task; selected: boolean;
             )}
           </div>
         </div>
-        <input 
-          type="checkbox" 
-          checked={selected} 
-          onChange={e => onToggle(task.id, e.target.checked)} 
-          className="mt-1 rounded border-nord4 text-nord8 focus:ring-nord8 dark:border-nord3" 
-        />
+        <div className="flex items-center gap-2">
+          {canCancel && (
+            <button
+              onClick={(e) => {
+                e.preventDefault()
+                e.stopPropagation()
+                onCancel(task.id)
+              }}
+              className="p-1.5 rounded hover:bg-nord11/10 text-nord11 transition-colors"
+              title="Cancel task"
+            >
+              <XCircle className="w-4 h-4" />
+            </button>
+          )}
+          <input 
+            type="checkbox" 
+            checked={selected} 
+            onChange={e => onToggle(task.id, e.target.checked)} 
+            className="rounded border-nord4 text-nord8 focus:ring-nord8 dark:border-nord3" 
+          />
+        </div>
       </div>
     </div>
   )
 }
 
-function TasksTable({ tasks, selected, onToggle }: { tasks: Task[]; selected: Set<string>; onToggle: (id: string, checked: boolean) => void }) {
+function TasksTable({ tasks, selected, onToggle, onCancel }: { tasks: Task[]; selected: Set<string>; onToggle: (id: string, checked: boolean) => void; onCancel: (id: string) => void }) {
   return (
     <div className="overflow-auto card shadow-nord-lg">
       <table className="min-w-full text-sm">
@@ -81,6 +99,7 @@ function TasksTable({ tasks, selected, onToggle }: { tasks: Task[]; selected: Se
             <th className="px-4 py-3 text-left font-semibold">Goal / Ticket</th>
             <th className="px-4 py-3 text-left font-semibold">Progress</th>
             <th className="px-4 py-3 text-left font-semibold">Updated</th>
+            <th className="px-4 py-3 text-left w-16"></th>
           </tr>
         </thead>
         <tbody className="text-nord0 dark:text-nord6">
@@ -128,6 +147,21 @@ function TasksTable({ tasks, selected, onToggle }: { tasks: Task[]; selected: Se
                 )}
               </td>
               <td className="px-4 py-3 text-xs text-nord3 dark:text-nord4">{formatTimestamp(t.updated_at)}</td>
+              <td className="px-4 py-3">
+                {!['completed', 'failed', 'cancelled', 'canceled'].includes(t.status) && (
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault()
+                      e.stopPropagation()
+                      onCancel(t.id)
+                    }}
+                    className="p-1.5 rounded hover:bg-nord11/10 text-nord11 transition-colors"
+                    title="Cancel task"
+                  >
+                    <XCircle className="w-4 h-4" />
+                  </button>
+                )}
+              </td>
             </tr>
           ))}
         </tbody>
@@ -140,6 +174,7 @@ export default function Tasks() {
   const { mode } = useMode()
   const queryClient = useQueryClient()
   const { subscribe } = useWebSocket()
+  const cancelTaskMutation = useCancelTask()
 
   const [workflow, setWorkflow] = useState<WorkflowFilter>('all')
   const [search, setSearch] = useState('')
@@ -341,11 +376,11 @@ export default function Tasks() {
 
       {/* Content */}
       {mode === 'expert' ? (
-        <TasksTable tasks={filtered} selected={selected} onToggle={toggleSelected} />
+        <TasksTable tasks={filtered} selected={selected} onToggle={toggleSelected} onCancel={(id) => cancelTaskMutation.mutate(id)} />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filtered.map(t => (
-            <TaskCard key={t.id} task={t} selected={selected.has(t.id)} onToggle={toggleSelected} />
+            <TaskCard key={t.id} task={t} selected={selected.has(t.id)} onToggle={toggleSelected} onCancel={(id) => cancelTaskMutation.mutate(id)} />
           ))}
         </div>
       )}
