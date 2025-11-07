@@ -427,8 +427,8 @@ export default function TaskDetail() {
                         <div className="text-xs font-semibold text-nord3 dark:text-nord4 uppercase tracking-wide">
                           Summary
                         </div>
-                        <div className="text-sm text-nord0 dark:text-nord6">
-                          {task.workflow_data.summary}
+                        <div className="text-sm text-nord0 dark:text-nord6 bg-nord5/30 p-3 rounded-lg border border-nord4 dark:bg-nord2/30 dark:border-nord3">
+                          <MessageContent role="user" content={task.workflow_data.summary} isLatestTool={false} />
                         </div>
                       </div>
                     )}
@@ -439,7 +439,7 @@ export default function TaskDetail() {
                           Problem
                         </div>
                         <div className="text-sm text-nord0 dark:text-nord6 bg-nord11/5 p-3 rounded-lg border border-nord11/20 dark:bg-nord11/5">
-                          {task.workflow_data.problem_summary}
+                          <MessageContent role="user" content={task.workflow_data.problem_summary} isLatestTool={false} />
                         </div>
                       </div>
                     )}
@@ -450,7 +450,7 @@ export default function TaskDetail() {
                           Strategy
                         </div>
                         <div className="text-sm text-nord0 dark:text-nord6 bg-nord8/5 p-3 rounded-lg border border-nord8/20 dark:bg-nord8/5">
-                          {task.workflow_data.solution_strategy}
+                          <MessageContent role="user" content={task.workflow_data.solution_strategy} isLatestTool={false} />
                         </div>
                       </div>
                     )}
