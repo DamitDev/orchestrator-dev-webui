@@ -443,8 +443,10 @@ export default function TaskDetail() {
                         <div className="text-xs font-semibold text-nord3 dark:text-nord4 uppercase tracking-wide">
                           Summary
                         </div>
-                        <div className="text-sm text-nord0 dark:text-nord6 bg-nord5/30 p-3 rounded-lg border border-nord4 dark:bg-nord2/30 dark:border-nord3 overflow-auto max-h-[300px]">
-                          <MessageContent role="user" content={task.workflow_data.summary} isLatestTool={false} />
+                        <div className="text-sm text-nord0 dark:text-nord6 min-w-0">
+                          <div className="bg-nord5/30 p-3 rounded-lg border border-nord4 dark:bg-nord2/30 dark:border-nord3 overflow-auto max-h-[300px] break-words">
+                            <MessageContent role="user" content={task.workflow_data.summary} isLatestTool={false} />
+                          </div>
                         </div>
                       </div>
                     )}
@@ -454,8 +456,10 @@ export default function TaskDetail() {
                         <div className="text-xs font-semibold text-nord3 dark:text-nord4 uppercase tracking-wide">
                           Problem
                         </div>
-                        <div className="text-sm text-nord0 dark:text-nord6 bg-nord11/5 p-3 rounded-lg border border-nord11/20 dark:bg-nord11/5 overflow-auto max-h-[300px]">
-                          <MessageContent role="user" content={task.workflow_data.problem_summary} isLatestTool={false} />
+                        <div className="text-sm text-nord0 dark:text-nord6 min-w-0">
+                          <div className="bg-nord11/5 p-3 rounded-lg border border-nord11/20 dark:bg-nord11/5 overflow-auto max-h-[300px] break-words">
+                            <MessageContent role="user" content={task.workflow_data.problem_summary} isLatestTool={false} />
+                          </div>
                         </div>
                       </div>
                     )}
@@ -465,8 +469,10 @@ export default function TaskDetail() {
                         <div className="text-xs font-semibold text-nord3 dark:text-nord4 uppercase tracking-wide">
                           Strategy
                         </div>
-                        <div className="text-sm text-nord0 dark:text-nord6 bg-nord8/5 p-3 rounded-lg border border-nord8/20 dark:bg-nord8/5 overflow-auto max-h-[300px]">
-                          <MessageContent role="user" content={task.workflow_data.solution_strategy} isLatestTool={false} />
+                        <div className="text-sm text-nord0 dark:text-nord6 min-w-0">
+                          <div className="bg-nord8/5 p-3 rounded-lg border border-nord8/20 dark:bg-nord8/5 overflow-auto max-h-[300px] break-words">
+                            <MessageContent role="user" content={task.workflow_data.solution_strategy} isLatestTool={false} />
+                          </div>
                         </div>
                       </div>
                     )}
@@ -480,9 +486,9 @@ export default function TaskDetail() {
                       <div className="text-xs font-semibold text-nord3 dark:text-nord4 uppercase tracking-wide">
                         Aspect Goal
                       </div>
-                      <div className="text-sm text-nord0 dark:text-nord6">
+                      <div className="text-sm text-nord0 dark:text-nord6 min-w-0">
                         {task.workflow_data?.aspect_goal ? (
-                          <div className="bg-nord12/5 p-3 rounded-lg border border-nord12/20 dark:bg-nord12/5 overflow-auto max-h-[300px]">
+                          <div className="bg-nord12/5 p-3 rounded-lg border border-nord12/20 dark:bg-nord12/5 overflow-auto max-h-[300px] break-words">
                             <MessageContent role="user" content={task.workflow_data.aspect_goal} isLatestTool={false} />
                           </div>
                         ) : (
@@ -495,9 +501,9 @@ export default function TaskDetail() {
                       <div className="text-xs font-semibold text-nord3 dark:text-nord4 uppercase tracking-wide">
                         Strategy
                       </div>
-                      <div className="text-sm text-nord0 dark:text-nord6">
+                      <div className="text-sm text-nord0 dark:text-nord6 min-w-0">
                         {task.workflow_data?.strategy ? (
-                          <div className="bg-nord8/5 p-3 rounded-lg border border-nord8/20 dark:bg-nord8/5 overflow-auto max-h-[300px]">
+                          <div className="bg-nord8/5 p-3 rounded-lg border border-nord8/20 dark:bg-nord8/5 overflow-auto max-h-[300px] break-words">
                             <MessageContent role="user" content={task.workflow_data.strategy} isLatestTool={false} />
                           </div>
                         ) : (
