@@ -47,27 +47,77 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
   }, [])
 
   useEffect(() => {
-    const ws = new WebSocket(getWsUrl())
-    wsRef.current = ws
-    ws.onopen = () => setConnected(true)
-    ws.onclose = () => setConnected(false)
-    ws.onerror = () => setConnected(false)
-    ws.onmessage = (ev) => {
-      try {
-        const msg = JSON.parse(ev.data)
-        const evt = msg?.event ?? msg
-        subsRef.current.forEach(s => {
-          if (s.eventTypes && evt?.event_type && !s.eventTypes.includes(evt.event_type)) return
-          if (s.taskIds && evt?.task_id && !s.taskIds.includes(evt.task_id)) return
-          s.handler(evt)
-        })
-      } catch {
-        // ignore parse errors for scaffold
+    let reconnectTimeout: number | null = null
+    let isUnmounting = false
+    let reconnectAttempts = 0
+    const maxReconnectDelay = 30000 // Max 30 seconds
+    
+    const connect = () => {
+      if (isUnmounting) return
+      
+      const ws = new WebSocket(getWsUrl())
+      wsRef.current = ws
+      
+      ws.onopen = () => {
+        setConnected(true)
+        reconnectAttempts = 0 // Reset on successful connection
+        console.log('✅ WebSocket connected to orchestrator')
+      }
+      
+      ws.onclose = (ev) => {
+        setConnected(false)
+        
+        // Only log if it's not a normal closure and we had a successful connection before
+        if (ev.code !== 1000 && reconnectAttempts > 0) {
+          console.log(`⚠️ WebSocket disconnected (code: ${ev.code})`)
+        }
+        
+        // Reconnect with exponential backoff if not unmounting and not a normal closure
+        if (!isUnmounting && ev.code !== 1000) {
+          reconnectAttempts++
+          const delay = Math.min(1000 * Math.pow(2, reconnectAttempts - 1), maxReconnectDelay)
+          
+          if (reconnectAttempts === 1) {
+            console.log('🔄 Connecting to orchestrator WebSocket...')
+          } else if (reconnectAttempts <= 3) {
+            console.log(`🔄 Reconnecting... (attempt ${reconnectAttempts})`)
+          }
+          
+          reconnectTimeout = window.setTimeout(() => {
+            connect()
+          }, delay)
+        }
+      }
+      
+      ws.onerror = () => {
+        // Don't log errors, they're redundant with onclose
+        setConnected(false)
+      }
+      
+      ws.onmessage = (ev) => {
+        try {
+          const msg = JSON.parse(ev.data)
+          const evt = msg?.event ?? msg
+          subsRef.current.forEach(s => {
+            if (s.eventTypes && evt?.event_type && !s.eventTypes.includes(evt.event_type)) return
+            if (s.taskIds && evt?.task_id && !s.taskIds.includes(evt.task_id)) return
+            s.handler(evt)
+          })
+        } catch {
+          // ignore parse errors for scaffold
+        }
       }
     }
+    
+    connect()
+    
     return () => {
-      ws.close()
-      wsRef.current = null
+      isUnmounting = true
+      if (reconnectTimeout) clearTimeout(reconnectTimeout)
+      if (wsRef.current) {
+        wsRef.current.close(1000, 'Component unmounting')
+        wsRef.current = null
+      }
     }
   }, [])
 

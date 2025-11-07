@@ -52,9 +52,14 @@ body {
 }
 
 /* Smooth animations for details/summary elements */
+.details-animated {
+  overflow: hidden;
+}
+
 .details-animated summary {
   cursor: pointer;
   list-style: none;
+  transition: all 0.2s ease-out;
 }
 
 .details-animated summary::-webkit-details-marker {
@@ -65,19 +70,136 @@ body {
   display: none;
 }
 
-/* Animate the content when opening */
-.details-animated[open] > *:not(summary) {
-  animation: slideDown 0.3s ease-out;
+.details-animated summary:hover {
+  transform: translateX(2px);
 }
 
-@keyframes slideDown {
+/* Animate the content when opening - slide down and fade in */
+.details-animated[open] > *:not(summary) {
+  animation: slideDownFade 0.3s ease-out forwards;
+}
+
+@keyframes slideDownFade {
   from {
     opacity: 0;
-    transform: translateY(-8px);
+    transform: translateY(-10px);
+    max-height: 0;
   }
   to {
     opacity: 1;
     transform: translateY(0);
+    max-height: 1000px; /* Large enough to accommodate content */
+  }
+}
+
+/* Closing animation for custom animated details */
+@keyframes slideUpFade {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+    max-height: 1000px;
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-10px);
+    max-height: 0;
+  }
+}
+
+/* Animated details custom component */
+.animated-details-content.opening {
+  animation: slideDownFade 0.3s ease-out forwards;
+}
+
+.animated-details-content.closing {
+  animation: slideUpFade 0.3s ease-out forwards;
+}
+
+/* Tool response scroll animation */
+.tool-response-box {
+  animation: scrollAppear 0.4s ease-out forwards;
+}
+
+@keyframes scrollAppear {
+  from {
+    opacity: 0;
+    transform: translateY(-5px);
+    max-height: 0;
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+    max-height: 7.5rem; /* Match the max-h-[7.5rem] */
+  }
+}
+
+/* Token streaming animation */
+@keyframes tokenFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(2px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.token-stream {
+  animation: tokenFadeIn 0.5s ease-out forwards;
+}
+
+/* Smooth height transitions for assistant message cards */
+.message--assistant {
+  transition: all 0.3s ease-out;
+}
+
+/* Smooth expansion for content appearing */
+.content-expanding {
+  animation: expandHeight 0.3s ease-out forwards;
+}
+
+@keyframes expandHeight {
+  from {
+    opacity: 0;
+    max-height: 0;
+    transform: scaleY(0.95);
+  }
+  to {
+    opacity: 1;
+    max-height: 2000px;
+    transform: scaleY(1);
+  }
+}
+
+/* Chat input slide animations */
+.chat-input-enter {
+  animation: slideInFromBottom 0.3s ease-out forwards;
+}
+
+.chat-input-exit {
+  animation: slideOutToBottom 0.3s ease-out forwards;
+}
+
+@keyframes slideInFromBottom {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideOutToBottom {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(20px);
   }
 }
 

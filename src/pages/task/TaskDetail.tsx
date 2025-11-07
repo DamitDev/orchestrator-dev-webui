@@ -9,6 +9,12 @@ import { useMode } from '../../state/ModeContext'
 import { useWebSocket } from '../../ws/WebSocketProvider'
 import { tasksApi } from '../../lib/api'
 import { Send, CheckCircle2, XCircle, MessageSquare, X, ArrowLeft } from 'lucide-react'
+import { StreamingIndicator } from '../../components/StreamingIndicator'
+import { StreamingReasoning } from '../../components/StreamingReasoning'
+import { StreamingToolCall } from '../../components/StreamingToolCall'
+import { StreamingContent } from '../../components/StreamingContent'
+import { AnimatedDetails } from '../../components/AnimatedDetails'
+import { AnimatedMount } from '../../components/AnimatedMount'
 
 function StatusBadge({ status }: { status: string }) {
   const cls = status === 'completed' ? 'status-badge status--completed'
@@ -124,10 +130,26 @@ function groupMessages(messages: any[]) {
 }
 
 // Render a grouped assistant turn
-function AssistantTurn({ group, mode }: { group: any; mode: string }) {
+function AssistantTurn({ 
+  group, 
+  mode, 
+  streamingMessage, 
+  isStreaming 
+}: { 
+  group: any; 
+  mode: string; 
+  streamingMessage?: any; 
+  isStreaming?: boolean 
+}) {
   const hasContent = group.finalContent && group.finalContent.trim()
   const hasToolCalls = group.toolInteractions && group.toolInteractions.length > 0
   const firstMsg = group.assistantMessages[0]
+  
+  // Determine what streaming phase we're in
+  const isEmpty = isStreaming && streamingMessage && !streamingMessage.content && !streamingMessage.reasoning && (!streamingMessage.tool_calls || streamingMessage.tool_calls.length === 0)
+  const isStreamingReasoning = isStreaming && streamingMessage?.reasoning && (!streamingMessage?.tool_calls || streamingMessage.tool_calls.length === 0) && !streamingMessage?.content
+  const isStreamingToolCalls = isStreaming && streamingMessage?.tool_calls && streamingMessage.tool_calls.length > 0
+  const isStreamingContent = isStreaming && streamingMessage?.content && streamingMessage.content.length > 0
   
   return (
     <div className="message message--assistant">
@@ -141,7 +163,7 @@ function AssistantTurn({ group, mode }: { group: any; mode: string }) {
       </div>
       
       <div className="space-y-2">
-        {/* Tool interactions */}
+        {/* Tool interactions (completed) - render these FIRST */}
         {hasToolCalls && group.toolInteractions.map((interaction: any, idx: number) => {
           const toolCall = interaction.toolCall
           const toolResponse = interaction.toolResponse
@@ -157,65 +179,104 @@ function AssistantTurn({ group, mode }: { group: any; mode: string }) {
             <div key={idx}>
               {/* Show reasoning before this tool call if it exists */}
               {reasoning && mode === 'expert' && (
-                <details className="text-xs details-animated mb-2">
-                  <summary className="cursor-pointer text-nord3 dark:text-nord4 hover:text-nord10 dark:hover:text-nord8 select-none">
-                    ▸ Thought
-                  </summary>
+                <AnimatedDetails 
+                  className="text-xs mb-2"
+                  summaryClassName="text-nord3 dark:text-nord4 hover:text-nord10 dark:hover:text-nord8"
+                  defaultOpen={false}
+                  summary={<>▸ Thought</>}
+                >
                   <div className="reasoning mt-2">{reasoning}</div>
-                </details>
+                </AnimatedDetails>
               )}
               
               {/* Tool call + response in one collapsible */}
-              {/* Only keep last tool open if there's no final content yet (still streaming) */}
-              <details className="text-xs details-animated mb-2" open={!hasContent && idx === group.toolInteractions.length - 1}>
-                <summary className="cursor-pointer text-nord3 dark:text-nord4 hover:text-nord10 dark:hover:text-nord8 select-none">
-                  ▸ Using tool: <code className="text-nord10 dark:text-nord8 font-medium">{toolName}</code>
-                </summary>
-                
+              {/* Only keep last tool open if there's no final content yet and not streaming */}
+              <AnimatedDetails 
+                className="text-xs mb-2"
+                summaryClassName="text-nord3 dark:text-nord4 hover:text-nord10 dark:hover:text-nord8"
+                open={!hasContent && !isStreaming && idx === group.toolInteractions.length - 1}
+                summary={
+                  <>
+                    ▸ Using tool: <code className="text-nord10 dark:text-nord8 font-medium">{toolName}</code>
+                  </>
+                }
+              >
                 <div className="mt-2 ml-4 space-y-2">
                   {/* Tool call parameters */}
                   {mode === 'expert' && toolCall?.function?.arguments && (
-                    <details className="text-xs details-animated">
-                      <summary className="cursor-pointer text-nord3 dark:text-nord4 hover:text-nord10 dark:hover:text-nord8 select-none">
-                        Parameters
-                      </summary>
+                    <AnimatedDetails 
+                      className="text-xs"
+                      summaryClassName="text-nord3 dark:text-nord4 hover:text-nord10 dark:hover:text-nord8"
+                      open={!hasContent && !isStreaming && idx === group.toolInteractions.length - 1}
+                      summary={<>Parameters</>}
+                    >
                       <pre className="mt-1 overflow-auto bg-nord5 rounded-lg p-2 text-nord0 dark:bg-nord2 dark:text-nord6 text-xs">
                         {toolCall.function.arguments}
                       </pre>
-                    </details>
+                    </AnimatedDetails>
                   )}
                   
-                  {/* Tool response - just show the box, no collapsible */}
+                  {/* Tool response - simple box with limited height (5 lines) */}
                   {toolResponse && (
-                    <div className="mt-2">
+                    <div className="mt-2 content-expanding">
                       <div className="text-xs text-nord3 dark:text-nord4 mb-1">Response:</div>
-                      <div className="p-3 bg-nord5/30 rounded-lg border border-nord4/50 dark:bg-nord2/30 dark:border-nord3/50 text-xs">
-                        <MessageContent role="tool" content={toolResponse.content} isLatestTool={false} />
+                      <div className="tool-response-box p-3 bg-nord5/30 rounded-lg border border-nord4/50 dark:bg-nord2/30 dark:border-nord3/50 text-xs max-h-[7.5rem] overflow-y-auto">
+                        <div className="text-sm text-gray-900 dark:text-gray-100 whitespace-pre-wrap break-words">
+                          {toolResponse.content}
+                        </div>
                       </div>
                     </div>
                   )}
                 </div>
-              </details>
+              </AnimatedDetails>
             </div>
           )
         })}
         
         {/* Final reasoning before the response */}
         {hasContent && group.finalReasoning && mode === 'expert' && (
-          <details className="text-xs details-animated mb-2">
-            <summary className="cursor-pointer text-nord3 dark:text-nord4 hover:text-nord10 dark:hover:text-nord8 select-none">
-              ▸ Thought
-            </summary>
+          <AnimatedDetails 
+            className="text-xs mb-2"
+            summaryClassName="text-nord3 dark:text-nord4 hover:text-nord10 dark:hover:text-nord8"
+            defaultOpen={false}
+            summary={<>▸ Thought</>}
+          >
             <div className="reasoning mt-2">{group.finalReasoning}</div>
-          </details>
+          </AnimatedDetails>
         )}
         
-        {/* Main content */}
-        {hasContent && (
+        {/* Streaming content */}
+        {isStreamingContent && (
+          <div className="mt-2">
+            <StreamingContent content={streamingMessage.content} />
+          </div>
+        )}
+        
+        {/* Main content (when not streaming) */}
+        {!isStreaming && hasContent && (
           <div className="text-sm leading-relaxed mt-2">
             <MessageContent role="assistant" content={group.finalContent} isLatestTool={false} />
           </div>
         )}
+        
+        {/* STREAMING ITEMS BELOW - these appear at the bottom after all completed content */}
+        
+        {/* Show streaming reasoning */}
+        {isStreamingReasoning && mode === 'expert' && (
+          <StreamingReasoning reasoning={streamingMessage.reasoning} />
+        )}
+        
+        {/* Show streaming tool calls */}
+        {isStreamingToolCalls && streamingMessage.tool_calls.map((tc: any, idx: number) => {
+          const toolName = tc?.function?.name || 'unknown'
+          const parameters = tc?.function?.arguments || ''
+          return (
+            <StreamingToolCall key={idx} toolName={toolName} parameters={parameters} mode={mode} />
+          )
+        })}
+        
+        {/* Show streaming indicator when message is empty (prefill) - appears at the very bottom */}
+        {isEmpty && <StreamingIndicator />}
       </div>
     </div>
   )
@@ -253,28 +314,67 @@ export default function TaskDetail() {
   const { data: conv } = useTaskConversation(id)
   const [autoScroll, setAutoScroll] = useState<boolean>(true)
   const [isPanelOpen, setIsPanelOpen] = useState<boolean>(true)
+  const [streamingMessage, setStreamingMessage] = useState<any>(null)
+  const blockInvalidateRef = useRef<boolean>(false)
   const convRef = useRef<HTMLDivElement | null>(null)
 
   useEffect(() => {
     const unsub = subscribe((evt) => {
       if (!id) return
-      // invalidate on any task updates or conversation changes
+      
+      // Handle streaming messages
+      if (evt.event_type === 'message_streaming' && evt.task_id === id) {
+        const streamData = {
+          message_id: evt.message_id,
+          role: evt.role,
+          content: evt.content || '',
+          reasoning: evt.reasoning || '',
+          tool_calls: evt.tool_calls || null,
+          tool_call_id: evt.tool_call_id || null,
+          name: evt.name || null,
+          is_complete: evt.is_complete || false,
+          stream_index: evt.stream_index || 0,
+          has_tool_calls: evt.has_tool_calls || false,
+          tool_call_count: evt.tool_call_count || 0
+        }
+        
+        if (streamData.is_complete) {
+          // Clear streaming state and invalidate to show final message
+          setStreamingMessage(null)
+          queryClient.invalidateQueries({ queryKey: taskKeys.conversation(id) })
+        } else {
+          // Update streaming state
+          setStreamingMessage(streamData)
+        }
+        return
+      }
+      
+      // Handle other task updates
       if (evt.task_id === id) {
+        // Skip invalidation if we're in the middle of an exit animation
+        if (blockInvalidateRef.current) {
+          return
+        }
+        
         queryClient.invalidateQueries({ queryKey: taskKeys.byId(id) })
-        queryClient.invalidateQueries({ queryKey: taskKeys.conversation(id) })
+        
+        // Only invalidate conversation for non-streaming events
+        if (evt.event_type !== 'message_streaming') {
+          queryClient.invalidateQueries({ queryKey: taskKeys.conversation(id) })
+        }
       }
     }, { eventTypes: ['task_status_changed','message_added','message_streaming','approval_requested','help_requested','task_result_updated','task_workflow_data_changed'] })
     return () => { /* ws provider handles cleanup */ }
   }, [subscribe, queryClient, id])
 
-  // Scroll to bottom on new messages if enabled
+  // Scroll to bottom on new messages or streaming updates if enabled
   useEffect(() => {
     if (!autoScroll) return
     const el = convRef.current
     if (el) {
       setTimeout(() => { if (el) el.scrollTop = el.scrollHeight }, 50)
     }
-  }, [conv?.conversation, autoScroll])
+  }, [conv?.conversation, streamingMessage, autoScroll])
 
   return (
     <div className="space-y-6">
@@ -542,14 +642,15 @@ export default function TaskDetail() {
                     </div>
                     <div className="text-sm text-nord0 dark:text-nord6">
                       {task.goal_prompt.length > 200 ? (
-                        <details>
-                          <summary className="cursor-pointer hover:text-nord10 dark:hover:text-nord8">
-                            {task.goal_prompt.slice(0, 200)}...
-                          </summary>
+                        <AnimatedDetails
+                          defaultOpen={false}
+                          summaryClassName="hover:text-nord10 dark:hover:text-nord8"
+                          summary={<>{task.goal_prompt.slice(0, 200)}...</>}
+                        >
                           <div className="mt-2 p-3 bg-nord5/50 rounded-lg border border-nord4 dark:bg-nord2/50 dark:border-nord3">
                             {task.goal_prompt}
                           </div>
-                        </details>
+                        </AnimatedDetails>
                       ) : (
                         task.goal_prompt
                       )}
@@ -613,6 +714,8 @@ export default function TaskDetail() {
                 currentPhase={task.workflow_data?.phase ?? 0} 
                 status={task.status}
                 onClose={() => setIsPanelOpen(false)}
+                streamingMessage={streamingMessage}
+                blockInvalidateRef={blockInvalidateRef}
               />
             ) : (
               <div className="w-full h-full flex flex-col card border-2 border-nord8/30 dark:border-nord8/20 bg-nord6 dark:bg-nord1 shadow-nord-xl">
@@ -650,35 +753,55 @@ export default function TaskDetail() {
                     const msgs = (conv?.conversation || []).filter((m: any) => mode === 'expert' ? true : (m.role !== 'system' && m.role !== 'developer'))
                     const groups = groupMessages(msgs)
                     
-                    return groups.map((group: any, idx: number) => {
-                      // Render assistant turns with grouped tool calls
-                      if (group.type === 'assistant') {
-                        return <AssistantTurn key={idx} group={group} mode={mode} />
-                      }
-                      
-                      // Render other message types normally
-                      const m = group.message
-                      return (
-                        <div key={idx} className={`message ${m.role==='user' ? 'message--user' : m.role==='system' ? 'message--system' : m.role==='developer' ? 'message--developer' : 'message--tool'}`}>
-                          <div className="message-header mb-2">
-                            <span className="uppercase font-bold text-xs tracking-wide">
-                              {m.role === 'user' ? 'USER' : m.role === 'system' ? 'SYSTEM' : m.role === 'developer' ? 'DEVELOPER' : 'TOOL'}
-                            </span>
-                            {m.created_at && (
-                              <span className="text-xs bg-nord5/70 px-2 py-0.5 rounded dark:bg-nord2">
-                                {formatMessageTimestamp(m.created_at)}
-                              </span>
-                            )}
-                          </div>
-                          {m.content && <MessageContent role={m.role} content={m.content} isLatestTool={false} />}
-                        </div>
-                      )
-                    })
+                    // Check if we should show streaming for the last group
+                    const isLastGroup = (idx: number) => idx === groups.length - 1
+                    const shouldShowStreaming = streamingMessage && groups.length > 0
+                    
+                    return (
+                      <>
+                        {groups.map((group: any, idx: number) => {
+                          // Render assistant turns with grouped tool calls
+                          if (group.type === 'assistant') {
+                            const isStreaming = shouldShowStreaming && isLastGroup(idx)
+                            return <AssistantTurn key={idx} group={group} mode={mode} streamingMessage={streamingMessage} isStreaming={isStreaming} />
+                          }
+                          
+                          // Render other message types normally
+                          const m = group.message
+                          return (
+                            <div key={idx} className={`message ${m.role==='user' ? 'message--user' : m.role==='system' ? 'message--system' : m.role==='developer' ? 'message--developer' : 'message--tool'}`}>
+                              <div className="message-header mb-2">
+                                <span className="uppercase font-bold text-xs tracking-wide">
+                                  {m.role === 'user' ? 'USER' : m.role === 'system' ? 'SYSTEM' : m.role === 'developer' ? 'DEVELOPER' : 'TOOL'}
+                                </span>
+                                {m.created_at && (
+                                  <span className="text-xs bg-nord5/70 px-2 py-0.5 rounded dark:bg-nord2">
+                                    {formatMessageTimestamp(m.created_at)}
+                                  </span>
+                                )}
+                              </div>
+                              {m.content && <MessageContent role={m.role} content={m.content} isLatestTool={false} />}
+                            </div>
+                          )
+                        })}
+                      </>
+                    )
                   })()}
                 </div>
                 
                 {/* Chat Input Area */}
-                <ChatInputPanel taskId={id!} workflowId={task.workflow_id} status={task.status} approvalReason={task.approval_reason} />
+                {/* Only show when there's actually content to display */}
+              <AnimatedMount
+                show={
+                  task.status === 'action_required' ||
+                  (task.status === 'help_required' && !!task.approval_reason) ||
+                  ((task.workflow_id === 'interactive' || task.workflow_id === 'matrix') && task.status === 'user_turn') ||
+                  task.workflow_id === 'proactive' ||
+                  task.workflow_id === 'ticket'
+                }
+              >
+                <ChatInputPanel taskId={id!} workflowId={task.workflow_id} status={task.status} approvalReason={task.approval_reason} blockInvalidateRef={blockInvalidateRef} />
+              </AnimatedMount>
               </div>
             )}
           </div>
@@ -688,12 +811,13 @@ export default function TaskDetail() {
   )
 }
 
-function ChatInputPanel({ taskId, workflowId, status, approvalReason }: { taskId: string; workflowId: string; status: string; approvalReason?: string | null }) {
+function ChatInputPanel({ taskId, workflowId, status, approvalReason, blockInvalidateRef }: { taskId: string; workflowId: string; status: string; approvalReason?: string | null; blockInvalidateRef: React.MutableRefObject<boolean> }) {
   const queryClient = useQueryClient()
   const [message, setMessage] = useState('')
   const [guide, setGuide] = useState('')
   const [help, setHelp] = useState('')
   const [busy, setBusy] = useState(false)
+  const [isExiting, setIsExiting] = useState(false)
 
   const invalidate = () => {
     queryClient.invalidateQueries()
@@ -701,6 +825,7 @@ function ChatInputPanel({ taskId, workflowId, status, approvalReason }: { taskId
 
   const onApprove = async (approved: boolean) => {
     setBusy(true)
+    blockInvalidateRef.current = true
     try {
       if (workflowId === 'interactive') await tasksApi.workflows.interactive.action(taskId, approved)
       else if (workflowId === 'proactive') await tasksApi.workflows.proactive.action(taskId, approved)
@@ -708,7 +833,11 @@ function ChatInputPanel({ taskId, workflowId, status, approvalReason }: { taskId
       else if (workflowId === 'matrix') await tasksApi.workflows.matrix.action(taskId, approved)
     } finally {
       setBusy(false)
-      invalidate()
+      // Delay invalidate to allow exit animation to play
+      setTimeout(() => {
+        blockInvalidateRef.current = false
+        invalidate()
+      }, 350)
     }
   }
 
@@ -737,15 +866,27 @@ function ChatInputPanel({ taskId, workflowId, status, approvalReason }: { taskId
   }
 
   const onMarkComplete = async () => {
+    setIsExiting(true)
+    blockInvalidateRef.current = true
     if (workflowId === 'interactive') await tasksApi.workflows.interactive.markComplete(taskId)
     else if (workflowId === 'matrix') await tasksApi.workflows.matrix.markComplete(taskId)
-    invalidate()
+    // Delay invalidate to allow exit animation to play
+    setTimeout(() => {
+      blockInvalidateRef.current = false
+      invalidate()
+    }, 350)
   }
   
   const onMarkFailed = async () => {
+    setIsExiting(true)
+    blockInvalidateRef.current = true
     if (workflowId === 'interactive') await tasksApi.workflows.interactive.markFailed(taskId)
     else if (workflowId === 'matrix') await tasksApi.workflows.matrix.markFailed(taskId)
-    invalidate()
+    // Delay invalidate to allow exit animation to play
+    setTimeout(() => {
+      blockInvalidateRef.current = false
+      invalidate()
+    }, 350)
   }
 
   return (
@@ -755,7 +896,7 @@ function ChatInputPanel({ taskId, workflowId, status, approvalReason }: { taskId
         <div className="p-4 pb-12 bg-nord13/20 border-b-2 border-nord13/40 dark:bg-nord13/10 dark:border-nord13/30">
           <div className="text-sm text-nord0 dark:text-nord6 font-semibold mb-2">Supervisor action required</div>
           {approvalReason && (
-            <div className="text-xs text-nord0 dark:text-nord6 mb-3 p-2 bg-nord6/50 rounded dark:bg-nord2/50">
+            <div className="text-sm text-nord0 dark:text-nord6 mb-3 p-3 bg-white rounded-lg border border-nord13/30 shadow-sm dark:bg-nord0 dark:border-nord13/20">
               {approvalReason}
             </div>
           )}
@@ -780,7 +921,7 @@ function ChatInputPanel({ taskId, workflowId, status, approvalReason }: { taskId
       )}
 
       {/* Interactive/Matrix user_turn message input */}
-      {(workflowId === 'interactive' || workflowId === 'matrix') && status === 'user_turn' && (
+      {!isExiting && (workflowId === 'interactive' || workflowId === 'matrix') && status === 'user_turn' && (
         <div className="p-4 pb-12 space-y-2">
           <div className="flex gap-2">
             <textarea
@@ -799,10 +940,10 @@ function ChatInputPanel({ taskId, workflowId, status, approvalReason }: { taskId
             </button>
           </div>
           <div className="flex items-center gap-2">
-            <button onClick={onMarkComplete} disabled={busy} className="btn-outline disabled:opacity-50 text-xs flex items-center gap-1">
+            <button onClick={onMarkComplete} disabled={busy || isExiting} className="btn-outline disabled:opacity-50 text-xs flex items-center gap-1">
               <CheckCircle2 className="w-3 h-3" /> Complete
             </button>
-            <button onClick={onMarkFailed} disabled={busy} className="btn-danger disabled:opacity-50 text-xs flex items-center gap-1">
+            <button onClick={onMarkFailed} disabled={busy || isExiting} className="btn-danger disabled:opacity-50 text-xs flex items-center gap-1">
               <XCircle className="w-3 h-3" /> Failed
             </button>
           </div>
@@ -873,7 +1014,7 @@ function ActionPanel({ taskId, workflowId, status }: { taskId: string; workflowI
   )
 }
 
-function MatrixPhasePanel({ taskId, currentPhase, status, onClose }: { taskId: string; currentPhase: number; status: string; onClose: () => void }) {
+function MatrixPhasePanel({ taskId, currentPhase, status, onClose, streamingMessage, blockInvalidateRef }: { taskId: string; currentPhase: number; status: string; onClose: () => void; streamingMessage: any; blockInvalidateRef: React.MutableRefObject<boolean> }) {
   const { mode } = useMode()
   const [phase, setPhase] = useState<number>(Math.max(1, currentPhase || 1))
   const [autoScroll, setAutoScroll] = useState<boolean>(true)
@@ -978,37 +1119,46 @@ function MatrixPhasePanel({ taskId, currentPhase, status, onClose }: { taskId: s
           const msgs = (data?.conversation || []).filter((m: any) => mode === 'expert' ? true : (m.role !== 'system' && m.role !== 'developer'))
           const groups = groupMessages(msgs)
           
-          return groups.map((group: any, idx: number) => {
-            // Render assistant turns with grouped tool calls
-            if (group.type === 'assistant') {
-              return <AssistantTurn key={idx} group={group} mode={mode} />
-            }
-            
-            // Render other message types normally
-            const m = group.message
-            return (
-              <div key={idx} className={`message ${m.role==='user' ? 'message--user' : m.role==='system' ? 'message--system' : m.role==='developer' ? 'message--developer' : 'message--tool'}`}>
-                <div className="message-header mb-2">
-                  <span className="uppercase font-bold text-xs tracking-wide">
-                    {m.role === 'user' ? 'USER' : m.role === 'system' ? 'SYSTEM' : m.role === 'developer' ? 'DEVELOPER' : 'TOOL'}
-                  </span>
-                  {m.created_at && (
-                    <span className="text-xs bg-nord5/70 px-2 py-0.5 rounded dark:bg-nord2">
-                      {formatMessageTimestamp(m.created_at)}
-                    </span>
-                  )}
-                </div>
-                {m.content && <MessageContent role={m.role} content={m.content} isLatestTool={false} />}
-              </div>
-            )
-          })
+          // Check if we should show streaming for the last group in Matrix phase
+          const isLastGroup = (idx: number) => idx === groups.length - 1
+          const shouldShowStreaming = streamingMessage && groups.length > 0 && !isViewingPastPhase
+          
+          return (
+            <>
+              {groups.map((group: any, idx: number) => {
+                // Render assistant turns with grouped tool calls
+                if (group.type === 'assistant') {
+                  const isStreaming = shouldShowStreaming && isLastGroup(idx)
+                  return <AssistantTurn key={idx} group={group} mode={mode} streamingMessage={streamingMessage} isStreaming={isStreaming} />
+                }
+                
+                // Render other message types normally
+                const m = group.message
+                return (
+                  <div key={idx} className={`message ${m.role==='user' ? 'message--user' : m.role==='system' ? 'message--system' : m.role==='developer' ? 'message--developer' : 'message--tool'}`}>
+                    <div className="message-header mb-2">
+                      <span className="uppercase font-bold text-xs tracking-wide">
+                        {m.role === 'user' ? 'USER' : m.role === 'system' ? 'SYSTEM' : m.role === 'developer' ? 'DEVELOPER' : 'TOOL'}
+                      </span>
+                      {m.created_at && (
+                        <span className="text-xs bg-nord5/70 px-2 py-0.5 rounded dark:bg-nord2">
+                          {formatMessageTimestamp(m.created_at)}
+                        </span>
+                      )}
+                    </div>
+                    {m.content && <MessageContent role={m.role} content={m.content} isLatestTool={false} />}
+                  </div>
+                )
+              })}
+            </>
+          )
         })()}
       </div>
       
       {/* Chat Input Area - only show for current phase */}
-      {!isViewingPastPhase && (
-        <ChatInputPanel taskId={taskId} workflowId="matrix" status={status} approvalReason={null} />
-      )}
+      <AnimatedMount show={!isViewingPastPhase}>
+        <ChatInputPanel taskId={taskId} workflowId="matrix" status={status} approvalReason={null} blockInvalidateRef={blockInvalidateRef} />
+      </AnimatedMount>
     </div>
   )
 }
