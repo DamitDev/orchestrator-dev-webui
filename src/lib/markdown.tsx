@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
+import remarkBreaks from 'remark-breaks'
 
 function isToolRole(role: string): boolean { return role === 'tool' }
 function isSystemRole(role: string): boolean { return role === 'system' }
@@ -50,7 +51,7 @@ export function MessageContent({ role, content, isLatestTool }: { role: string; 
     return (
       <div className="text-sm text-nord3 dark:text-nord4 max-h-[15rem] overflow-y-auto border border-nord4 dark:border-nord3 rounded-lg p-3 bg-nord5/30 dark:bg-nord2/30">
         <ReactMarkdown
-          remarkPlugins={[remarkGfm]}
+          remarkPlugins={[remarkGfm, remarkBreaks]}
           components={{
             p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
             code: ({ children }) => <code className="text-xs bg-nord4/30 dark:bg-nord1 px-1 py-0.5 rounded">{children}</code>,
@@ -65,8 +66,61 @@ export function MessageContent({ role, content, isLatestTool }: { role: string; 
   return (
     <div className="text-sm text-gray-900 dark:text-gray-100 break-words overflow-hidden">
       <ReactMarkdown
-        remarkPlugins={[remarkGfm]}
+        remarkPlugins={[remarkGfm, remarkBreaks]}
         components={{
+          // Paragraphs with proper spacing
+          p: ({ children }) => <p className="mb-3 last:mb-0 leading-relaxed">{children}</p>,
+          
+          // Headings
+          h1: ({ children }) => <h1 className="text-2xl font-bold mb-3 mt-4 first:mt-0 text-nord0 dark:text-nord6">{children}</h1>,
+          h2: ({ children }) => <h2 className="text-xl font-bold mb-2 mt-3 first:mt-0 text-nord0 dark:text-nord6">{children}</h2>,
+          h3: ({ children }) => <h3 className="text-lg font-semibold mb-2 mt-3 first:mt-0 text-nord0 dark:text-nord6">{children}</h3>,
+          h4: ({ children }) => <h4 className="text-base font-semibold mb-2 mt-2 first:mt-0 text-nord0 dark:text-nord6">{children}</h4>,
+          h5: ({ children }) => <h5 className="text-sm font-semibold mb-1 mt-2 first:mt-0 text-nord0 dark:text-nord6">{children}</h5>,
+          h6: ({ children }) => <h6 className="text-xs font-semibold mb-1 mt-2 first:mt-0 text-nord0 dark:text-nord6">{children}</h6>,
+          
+          // Lists
+          ul: ({ children }) => <ul className="list-disc list-outside ml-5 mb-3 space-y-1">{children}</ul>,
+          ol: ({ children }) => <ol className="list-decimal list-outside ml-5 mb-3 space-y-1">{children}</ol>,
+          li: ({ children }) => <li className="leading-relaxed">{children}</li>,
+          
+          // Code blocks and inline code
+          code: ({ inline, children }: any) => {
+            if (inline) {
+              return <code className="bg-nord5/50 dark:bg-nord2 px-1.5 py-0.5 rounded text-xs font-mono text-nord10 dark:text-nord8">{children}</code>
+            }
+            return (
+              <pre className="bg-nord5 dark:bg-nord2 p-3 rounded-lg overflow-x-auto mb-3 border border-nord4 dark:border-nord3">
+                <code className="text-xs font-mono text-nord0 dark:text-nord6">{children}</code>
+              </pre>
+            )
+          },
+          
+          // Blockquotes
+          blockquote: ({ children }) => (
+            <blockquote className="border-l-4 border-nord8 dark:border-nord8 pl-4 my-3 italic text-nord3 dark:text-nord4">
+              {children}
+            </blockquote>
+          ),
+          
+          // Horizontal rule
+          hr: () => <hr className="border-t border-nord4 dark:border-nord3 my-4" />,
+          
+          // Links
+          a: ({ children, href }) => (
+            <a href={href} className="text-nord8 dark:text-nord8 hover:underline" target="_blank" rel="noopener noreferrer">
+              {children}
+            </a>
+          ),
+          
+          // Strong and emphasis
+          strong: ({ children }) => <strong className="font-bold text-nord0 dark:text-nord6">{children}</strong>,
+          em: ({ children }) => <em className="italic">{children}</em>,
+          
+          // Line breaks
+          br: () => <br />,
+          
+          // Tables
           table: ({ children }) => (
             <div className="overflow-x-auto my-3">
               <table className="min-w-full border-collapse border border-gray-300 dark:border-gray-700 text-sm">
