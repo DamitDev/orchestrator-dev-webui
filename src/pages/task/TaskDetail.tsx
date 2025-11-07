@@ -369,14 +369,30 @@ export default function TaskDetail() {
                     </div>
                   </div>
                 ) : task.workflow_id === 'matrix' ? (
-                  <div className="grid grid-cols-[120px_1fr] gap-2 items-start">
-                    <div className="text-xs font-semibold text-nord3 dark:text-nord4 uppercase tracking-wide">
-                      Phase
+                  <>
+                    <div className="grid grid-cols-[120px_1fr] gap-2 items-start">
+                      <div className="text-xs font-semibold text-nord3 dark:text-nord4 uppercase tracking-wide">
+                        Phase
+                      </div>
+                      <div className="text-sm text-nord0 dark:text-nord6">
+                        <span className="font-bold text-nord12 dark:text-nord12">{task.workflow_data?.phase ?? 0}</span> / 4
+                      </div>
                     </div>
-                    <div className="text-sm text-nord0 dark:text-nord6">
-                      <span className="font-bold text-nord12 dark:text-nord12">{task.workflow_data?.phase ?? 0}</span> / 4
-                    </div>
-                  </div>
+                    
+                    {/* Algorithm ID - shown when task is complete */}
+                    {task.workflow_data?.algorithm_id && (
+                      <div className="grid grid-cols-[120px_1fr] gap-2 items-start">
+                        <div className="text-xs font-semibold text-nord3 dark:text-nord4 uppercase tracking-wide">
+                          Algorithm ID
+                        </div>
+                        <div className="text-sm">
+                          <span className="font-mono bg-nord14/20 text-nord14 px-2 py-0.5 rounded border border-nord14/30 dark:bg-nord14/10">
+                            {task.workflow_data.algorithm_id.slice(0, 8)}
+                          </span>
+                        </div>
+                      </div>
+                    )}
+                  </>
                 ) : null}
 
                 {/* Timestamps */}
@@ -427,7 +443,7 @@ export default function TaskDetail() {
                         <div className="text-xs font-semibold text-nord3 dark:text-nord4 uppercase tracking-wide">
                           Summary
                         </div>
-                        <div className="text-sm text-nord0 dark:text-nord6 bg-nord5/30 p-3 rounded-lg border border-nord4 dark:bg-nord2/30 dark:border-nord3">
+                        <div className="text-sm text-nord0 dark:text-nord6 bg-nord5/30 p-3 rounded-lg border border-nord4 dark:bg-nord2/30 dark:border-nord3 overflow-auto max-h-[300px]">
                           <MessageContent role="user" content={task.workflow_data.summary} isLatestTool={false} />
                         </div>
                       </div>
@@ -438,7 +454,7 @@ export default function TaskDetail() {
                         <div className="text-xs font-semibold text-nord3 dark:text-nord4 uppercase tracking-wide">
                           Problem
                         </div>
-                        <div className="text-sm text-nord0 dark:text-nord6 bg-nord11/5 p-3 rounded-lg border border-nord11/20 dark:bg-nord11/5">
+                        <div className="text-sm text-nord0 dark:text-nord6 bg-nord11/5 p-3 rounded-lg border border-nord11/20 dark:bg-nord11/5 overflow-auto max-h-[300px]">
                           <MessageContent role="user" content={task.workflow_data.problem_summary} isLatestTool={false} />
                         </div>
                       </div>
@@ -449,11 +465,46 @@ export default function TaskDetail() {
                         <div className="text-xs font-semibold text-nord3 dark:text-nord4 uppercase tracking-wide">
                           Strategy
                         </div>
-                        <div className="text-sm text-nord0 dark:text-nord6 bg-nord8/5 p-3 rounded-lg border border-nord8/20 dark:bg-nord8/5">
+                        <div className="text-sm text-nord0 dark:text-nord6 bg-nord8/5 p-3 rounded-lg border border-nord8/20 dark:bg-nord8/5 overflow-auto max-h-[300px]">
                           <MessageContent role="user" content={task.workflow_data.solution_strategy} isLatestTool={false} />
                         </div>
                       </div>
                     )}
+                  </>
+                )}
+
+                {/* Matrix-specific fields */}
+                {task.workflow_id === 'matrix' && (
+                  <>
+                    <div className="grid grid-cols-[120px_1fr] gap-2 items-start pt-2 border-t border-nord4 dark:border-nord3">
+                      <div className="text-xs font-semibold text-nord3 dark:text-nord4 uppercase tracking-wide">
+                        Aspect Goal
+                      </div>
+                      <div className="text-sm text-nord0 dark:text-nord6">
+                        {task.workflow_data?.aspect_goal ? (
+                          <div className="bg-nord12/5 p-3 rounded-lg border border-nord12/20 dark:bg-nord12/5 overflow-auto max-h-[300px]">
+                            <MessageContent role="user" content={task.workflow_data.aspect_goal} isLatestTool={false} />
+                          </div>
+                        ) : (
+                          <span className="text-nord3 dark:text-nord4">-</span>
+                        )}
+                      </div>
+                    </div>
+                    
+                    <div className="grid grid-cols-[120px_1fr] gap-2 items-start">
+                      <div className="text-xs font-semibold text-nord3 dark:text-nord4 uppercase tracking-wide">
+                        Strategy
+                      </div>
+                      <div className="text-sm text-nord0 dark:text-nord6">
+                        {task.workflow_data?.strategy ? (
+                          <div className="bg-nord8/5 p-3 rounded-lg border border-nord8/20 dark:bg-nord8/5 overflow-auto max-h-[300px]">
+                            <MessageContent role="user" content={task.workflow_data.strategy} isLatestTool={false} />
+                          </div>
+                        ) : (
+                          <span className="text-nord3 dark:text-nord4">-</span>
+                        )}
+                      </div>
+                    </div>
                   </>
                 )}
 
@@ -781,6 +832,7 @@ function ActionPanel({ taskId, workflowId, status }: { taskId: string; workflowI
 function MatrixPhasePanel({ taskId, currentPhase, status }: { taskId: string; currentPhase: number; status: string }) {
   const { mode } = useMode()
   const [phase, setPhase] = useState<number>(Math.max(1, currentPhase || 1))
+  const [autoScroll, setAutoScroll] = useState<boolean>(true)
   const { data, isLoading, error} = useMatrixConversation(taskId, phase)
   const convRef = useRef<HTMLDivElement | null>(null)
   const previousPhaseRef = useRef<number>(currentPhase)
@@ -794,6 +846,15 @@ function MatrixPhasePanel({ taskId, currentPhase, status }: { taskId: string; cu
       previousPhaseRef.current = currentPhase
     }
   }, [currentPhase])
+  
+  // Scroll to bottom on new messages if enabled
+  useEffect(() => {
+    if (!autoScroll) return
+    const el = convRef.current
+    if (el) {
+      setTimeout(() => { if (el) el.scrollTop = el.scrollHeight }, 50)
+    }
+  }, [data?.conversation, autoScroll])
   
   // Determine if we're viewing a past phase
   const isViewingPastPhase = phase < currentPhase && currentPhase > 0
@@ -812,6 +873,10 @@ function MatrixPhasePanel({ taskId, currentPhase, status }: { taskId: string; cu
               {data?.conversation?.length ?? 0}
             </span>
           </div>
+          <label className="flex items-center gap-2 text-sm text-nord3 dark:text-nord4 cursor-pointer hover:text-nord10 transition-colors">
+            <input type="checkbox" checked={autoScroll} onChange={e => setAutoScroll(e.target.checked)} className="rounded" /> 
+            Auto-scroll
+          </label>
         </div>
         <div className="flex items-center gap-2">
           {[1,2,3,4].map(p => {
