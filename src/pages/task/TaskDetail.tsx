@@ -8,7 +8,7 @@ import { formatTimestamp, formatMessageTimestamp } from '../../lib/time'
 import { useMode } from '../../state/ModeContext'
 import { useWebSocket } from '../../ws/WebSocketProvider'
 import { tasksApi } from '../../lib/api'
-import { Send, CheckCircle2, XCircle } from 'lucide-react'
+import { Send, CheckCircle2, XCircle, MessageSquare, X, ArrowLeft } from 'lucide-react'
 
 function StatusBadge({ status }: { status: string }) {
   const cls = status === 'completed' ? 'status-badge status--completed'
@@ -252,6 +252,7 @@ export default function TaskDetail() {
   const { data: task, isLoading, error } = useTask(id)
   const { data: conv } = useTaskConversation(id)
   const [autoScroll, setAutoScroll] = useState<boolean>(true)
+  const [isPanelOpen, setIsPanelOpen] = useState<boolean>(true)
   const convRef = useRef<HTMLDivElement | null>(null)
 
   useEffect(() => {
@@ -279,6 +280,13 @@ export default function TaskDetail() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
+          <Link 
+            to="/tasks" 
+            className="p-2 hover:bg-nord5/50 dark:hover:bg-nord3/30 rounded-lg transition-colors group"
+            title="Back to Tasks"
+          >
+            <ArrowLeft className="w-6 h-6 text-nord3 dark:text-nord4 group-hover:text-nord10 dark:group-hover:text-nord8 transition-colors" />
+          </Link>
           <h1 className="text-3xl font-bold bg-gradient-to-r from-nord10 to-nord8 bg-clip-text text-transparent">
             Task Detail
           </h1>
@@ -286,6 +294,18 @@ export default function TaskDetail() {
             {id?.slice(0,8)}
           </div>
         </div>
+        
+        {/* Toggle Chat Panel Button */}
+        {task && (
+          <button
+            onClick={() => setIsPanelOpen(!isPanelOpen)}
+            className="btn-primary flex items-center gap-2"
+            title={isPanelOpen ? 'Close Chat' : 'Open Chat'}
+          >
+            <MessageSquare className="w-4 h-4" />
+            {isPanelOpen ? 'Close Chat' : 'Open Chat'}
+          </button>
+        )}
       </div>
 
       {isLoading && (
@@ -302,9 +322,9 @@ export default function TaskDetail() {
       )}
 
       {task && (
-        <div className="flex gap-6 h-[calc(100vh-180px)]">
-          {/* LEFT COLUMN: Task Info */}
-          <div className="flex-1 space-y-6 overflow-auto pr-2">
+        <>
+          {/* Full-Width Task Info Panel */}
+          <div className="w-full space-y-6">
             {/* Main Task Info Card */}
             <div className="card p-6 bg-gradient-to-br from-nord6 to-nord5 dark:from-nord1 dark:to-nord2 border-2 space-y-4">
               {/* Header with badges */}
@@ -583,68 +603,86 @@ export default function TaskDetail() {
             )}
           </div>
 
-          {/* RIGHT COLUMN: Chat Panel or Matrix Phase Panel */}
-          {task.workflow_id === 'matrix' ? (
-            <MatrixPhasePanel taskId={task.id} currentPhase={task.workflow_data?.phase ?? 0} status={task.status} />
-          ) : (
-            <div className="w-[480px] flex flex-col card border-2 border-nord8/30 dark:border-nord8/20 bg-nord6 dark:bg-nord1 shadow-nord-xl">
-              {/* Chat Header */}
-              <div className="px-6 py-4 border-b-2 border-nord8/30 dark:border-nord8/20 bg-gradient-to-r from-nord8/10 to-nord9/10 dark:from-nord8/5 dark:to-nord9/5">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <svg className="w-6 h-6 text-nord8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                    </svg>
-                    <h2 className="text-lg font-bold text-nord0 dark:text-nord6">Conversation</h2>
-                    <span className="badge bg-nord8/30 text-nord10 border-nord8/40 dark:bg-nord8/20 dark:text-nord8 font-semibold">
-                      {conv?.conversation?.length ?? 0}
-                    </span>
+          {/* Overlay Chat/Phase Panel */}
+          <div className={`fixed top-10 right-0 h-[calc(100vh-2.5rem)] w-[750px] z-40 transition-transform duration-300 ease-in-out ${
+            isPanelOpen ? 'translate-x-0' : 'translate-x-full'
+          }`}>
+            {task.workflow_id === 'matrix' ? (
+              <MatrixPhasePanel 
+                taskId={task.id} 
+                currentPhase={task.workflow_data?.phase ?? 0} 
+                status={task.status}
+                onClose={() => setIsPanelOpen(false)}
+              />
+            ) : (
+              <div className="w-full h-full flex flex-col card border-2 border-nord8/30 dark:border-nord8/20 bg-nord6 dark:bg-nord1 shadow-nord-xl">
+                {/* Chat Header */}
+                <div className="px-6 py-4 border-b-2 border-nord8/30 dark:border-nord8/20 bg-gradient-to-r from-nord8/10 to-nord9/10 dark:from-nord8/5 dark:to-nord9/5">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <svg className="w-6 h-6 text-nord8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                      </svg>
+                      <h2 className="text-lg font-bold text-nord0 dark:text-nord6">Conversation</h2>
+                      <span className="badge bg-nord8/30 text-nord10 border-nord8/40 dark:bg-nord8/20 dark:text-nord8 font-semibold">
+                        {conv?.conversation?.length ?? 0}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <label className="flex items-center gap-2 text-sm text-nord3 dark:text-nord4 cursor-pointer hover:text-nord10 transition-colors">
+                        <input type="checkbox" checked={autoScroll} onChange={e => setAutoScroll(e.target.checked)} className="rounded" /> 
+                        Auto-scroll
+                      </label>
+                      <button
+                        onClick={() => setIsPanelOpen(false)}
+                        className="p-1 hover:bg-nord4/20 dark:hover:bg-nord3/20 rounded transition-colors"
+                        title="Close chat"
+                      >
+                        <X className="w-5 h-5 text-nord3 dark:text-nord4" />
+                      </button>
+                    </div>
                   </div>
-                  <label className="flex items-center gap-2 text-sm text-nord3 dark:text-nord4 cursor-pointer hover:text-nord10 transition-colors">
-                    <input type="checkbox" checked={autoScroll} onChange={e => setAutoScroll(e.target.checked)} className="rounded" /> 
-                    Auto-scroll
-                  </label>
                 </div>
-              </div>
-              
-              {/* Chat Messages */}
-              <div ref={convRef} className="flex-1 overflow-auto p-4 space-y-4 bg-nord5/30 dark:bg-nord0/50">
-                {(() => {
-                  const msgs = (conv?.conversation || []).filter((m: any) => mode === 'expert' ? true : (m.role !== 'system' && m.role !== 'developer'))
-                  const groups = groupMessages(msgs)
-                  
-                  return groups.map((group: any, idx: number) => {
-                    // Render assistant turns with grouped tool calls
-                    if (group.type === 'assistant') {
-                      return <AssistantTurn key={idx} group={group} mode={mode} />
-                    }
+                
+                {/* Chat Messages */}
+                <div ref={convRef} className="flex-1 overflow-auto p-4 pb-8 space-y-4 bg-nord5/30 dark:bg-nord0/50">
+                  {(() => {
+                    const msgs = (conv?.conversation || []).filter((m: any) => mode === 'expert' ? true : (m.role !== 'system' && m.role !== 'developer'))
+                    const groups = groupMessages(msgs)
                     
-                    // Render other message types normally
-                    const m = group.message
-                    return (
-                      <div key={idx} className={`message ${m.role==='user' ? 'message--user' : m.role==='system' ? 'message--system' : m.role==='developer' ? 'message--developer' : 'message--tool'}`}>
-                        <div className="message-header mb-2">
-                          <span className="uppercase font-bold text-xs tracking-wide">
-                            {m.role === 'user' ? 'USER' : m.role === 'system' ? 'SYSTEM' : m.role === 'developer' ? 'DEVELOPER' : 'TOOL'}
-                          </span>
-                          {m.created_at && (
-                            <span className="text-xs bg-nord5/70 px-2 py-0.5 rounded dark:bg-nord2">
-                              {formatMessageTimestamp(m.created_at)}
+                    return groups.map((group: any, idx: number) => {
+                      // Render assistant turns with grouped tool calls
+                      if (group.type === 'assistant') {
+                        return <AssistantTurn key={idx} group={group} mode={mode} />
+                      }
+                      
+                      // Render other message types normally
+                      const m = group.message
+                      return (
+                        <div key={idx} className={`message ${m.role==='user' ? 'message--user' : m.role==='system' ? 'message--system' : m.role==='developer' ? 'message--developer' : 'message--tool'}`}>
+                          <div className="message-header mb-2">
+                            <span className="uppercase font-bold text-xs tracking-wide">
+                              {m.role === 'user' ? 'USER' : m.role === 'system' ? 'SYSTEM' : m.role === 'developer' ? 'DEVELOPER' : 'TOOL'}
                             </span>
-                          )}
+                            {m.created_at && (
+                              <span className="text-xs bg-nord5/70 px-2 py-0.5 rounded dark:bg-nord2">
+                                {formatMessageTimestamp(m.created_at)}
+                              </span>
+                            )}
+                          </div>
+                          {m.content && <MessageContent role={m.role} content={m.content} isLatestTool={false} />}
                         </div>
-                        {m.content && <MessageContent role={m.role} content={m.content} isLatestTool={false} />}
-                      </div>
-                    )
-                  })
-                })()}
+                      )
+                    })
+                  })()}
+                </div>
+                
+                {/* Chat Input Area */}
+                <ChatInputPanel taskId={id!} workflowId={task.workflow_id} status={task.status} approvalReason={task.approval_reason} />
               </div>
-              
-              {/* Chat Input Area */}
-              <ChatInputPanel taskId={id!} workflowId={task.workflow_id} status={task.status} approvalReason={task.approval_reason} />
-            </div>
-          )}
-        </div>
+            )}
+          </div>
+        </>
       )}
     </div>
   )
@@ -714,7 +752,7 @@ function ChatInputPanel({ taskId, workflowId, status, approvalReason }: { taskId
     <div className="border-t-2 border-nord8/30 dark:border-nord8/20 bg-nord6 dark:bg-nord1">
       {/* Critical banners */}
       {status === 'action_required' && (
-        <div className="p-4 bg-nord13/20 border-b-2 border-nord13/40 dark:bg-nord13/10 dark:border-nord13/30">
+        <div className="p-4 pb-12 bg-nord13/20 border-b-2 border-nord13/40 dark:bg-nord13/10 dark:border-nord13/30">
           <div className="text-sm text-nord0 dark:text-nord6 font-semibold mb-2">Supervisor action required</div>
           {approvalReason && (
             <div className="text-xs text-nord0 dark:text-nord6 mb-3 p-2 bg-nord6/50 rounded dark:bg-nord2/50">
@@ -733,7 +771,7 @@ function ChatInputPanel({ taskId, workflowId, status, approvalReason }: { taskId
       )}
 
       {status === 'help_required' && approvalReason && (
-        <div className="p-4 bg-nord13/20 border-b-2 border-nord13/40 dark:bg-nord13/10 dark:border-nord13/30">
+        <div className="p-4 pb-12 bg-nord13/20 border-b-2 border-nord13/40 dark:bg-nord13/10 dark:border-nord13/30">
           <div className="text-xs text-nord13 dark:text-nord13 font-semibold mb-2 uppercase tracking-wide">Agent needs help</div>
           <div className="text-sm text-nord0 dark:text-nord6 mb-3 p-3 bg-nord6/70 rounded-lg border border-nord13/30 dark:bg-nord2/70 dark:border-nord13/20">
             <MessageContent role="user" content={approvalReason} isLatestTool={false} />
@@ -743,7 +781,7 @@ function ChatInputPanel({ taskId, workflowId, status, approvalReason }: { taskId
 
       {/* Interactive/Matrix user_turn message input */}
       {(workflowId === 'interactive' || workflowId === 'matrix') && status === 'user_turn' && (
-        <div className="p-4 space-y-2">
+        <div className="p-4 pb-12 space-y-2">
           <div className="flex gap-2">
             <textarea
               value={message}
@@ -773,7 +811,7 @@ function ChatInputPanel({ taskId, workflowId, status, approvalReason }: { taskId
 
       {/* Proactive/Ticket input box - dynamically show Guide or Help based on status */}
       {(workflowId === 'proactive' || workflowId === 'ticket') && (
-        <div className="p-4">
+        <div className="p-4 pb-12">
           {status === 'help_required' ? (
             <>
               <div className="text-sm text-nord0 dark:text-nord6 font-semibold mb-2">Provide Help</div>
@@ -835,7 +873,7 @@ function ActionPanel({ taskId, workflowId, status }: { taskId: string; workflowI
   )
 }
 
-function MatrixPhasePanel({ taskId, currentPhase, status }: { taskId: string; currentPhase: number; status: string }) {
+function MatrixPhasePanel({ taskId, currentPhase, status, onClose }: { taskId: string; currentPhase: number; status: string; onClose: () => void }) {
   const { mode } = useMode()
   const [phase, setPhase] = useState<number>(Math.max(1, currentPhase || 1))
   const [autoScroll, setAutoScroll] = useState<boolean>(true)
@@ -866,7 +904,7 @@ function MatrixPhasePanel({ taskId, currentPhase, status }: { taskId: string; cu
   const isViewingPastPhase = phase < currentPhase && currentPhase > 0
   
   return (
-    <div className="w-[480px] flex flex-col card border-2 border-nord8/30 dark:border-nord8/20 bg-nord6 dark:bg-nord1 shadow-nord-xl">
+    <div className="w-full h-full flex flex-col card border-2 border-nord8/30 dark:border-nord8/20 bg-nord6 dark:bg-nord1 shadow-nord-xl">
       {/* Phase Header */}
       <div className="px-6 py-4 border-b-2 border-nord8/30 dark:border-nord8/20 bg-gradient-to-r from-nord12/10 to-nord13/10 dark:from-nord12/5 dark:to-nord13/5">
         <div className="flex items-center justify-between mb-3">
@@ -879,10 +917,19 @@ function MatrixPhasePanel({ taskId, currentPhase, status }: { taskId: string; cu
               {data?.conversation?.length ?? 0}
             </span>
           </div>
-          <label className="flex items-center gap-2 text-sm text-nord3 dark:text-nord4 cursor-pointer hover:text-nord10 transition-colors">
-            <input type="checkbox" checked={autoScroll} onChange={e => setAutoScroll(e.target.checked)} className="rounded" /> 
-            Auto-scroll
-          </label>
+          <div className="flex items-center gap-3">
+            <label className="flex items-center gap-2 text-sm text-nord3 dark:text-nord4 cursor-pointer hover:text-nord10 transition-colors">
+              <input type="checkbox" checked={autoScroll} onChange={e => setAutoScroll(e.target.checked)} className="rounded" /> 
+              Auto-scroll
+            </label>
+            <button
+              onClick={onClose}
+              className="p-1 hover:bg-nord4/20 dark:hover:bg-nord3/20 rounded transition-colors"
+              title="Close panel"
+            >
+              <X className="w-5 h-5 text-nord3 dark:text-nord4" />
+            </button>
+          </div>
         </div>
         <div className="flex items-center gap-2">
           {[1,2,3,4].map(p => {
@@ -914,7 +961,7 @@ function MatrixPhasePanel({ taskId, currentPhase, status }: { taskId: string; cu
       </div>
       
       {/* Phase Messages */}
-      <div ref={convRef} className="flex-1 overflow-auto p-4 space-y-3 bg-nord5/30 dark:bg-nord0/50">
+      <div ref={convRef} className="flex-1 overflow-auto p-4 pb-8 space-y-3 bg-nord5/30 dark:bg-nord0/50">
         {isLoading && (
           <div className="text-center py-8">
             <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-nord12 border-t-transparent"></div>

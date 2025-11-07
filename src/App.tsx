@@ -18,6 +18,7 @@ import ConfigSystem from './pages/config/System'
 import ConfigAuth from './pages/config/Auth'
 import Events from './pages/Events'
 import Preferences from './pages/Preferences'
+import Settings from './pages/Settings'
 import GlobalShortcuts from './components/GlobalShortcuts'
 
 function Header() {
@@ -74,8 +75,8 @@ function Header() {
             </Link>
             <nav className="hidden md:flex items-center gap-1">
               {navItem('/', 'Inbox')}
-              <div className="relative" onMouseEnter={() => cancelClose('wf')} onMouseLeave={() => scheduleClose('wf')}>
-                <button onClick={() => setWfOpen(o => !o)} className={`nav-link ${wfOpen ? 'nav-link-active' : ''}`}>
+              <div className="relative" onMouseEnter={() => { cancelClose('wf'); setWfOpen(true); }} onMouseLeave={() => scheduleClose('wf')}>
+                <button className={`nav-link ${wfOpen ? 'nav-link-active' : ''}`}>
                   Workflows
                   <svg className={`w-4 h-4 ml-1 inline transition-transform ${wfOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -94,13 +95,13 @@ function Header() {
               </div>
               {navItem('/tasks', 'Tasks')}
               {navItem('/create', 'Create')}
-              <div className="relative" onMouseEnter={() => cancelClose('settings')} onMouseLeave={() => scheduleClose('settings')}>
-                <button onClick={() => setSettingsOpen(o => !o)} className={`nav-link ${settingsOpen ? 'nav-link-active' : ''}`}>
+              <div className="relative" onMouseEnter={() => { cancelClose('settings'); setSettingsOpen(true); }} onMouseLeave={() => scheduleClose('settings')}>
+                <NavLink to="/settings" className={({isActive}) => `${'nav-link'} ${settingsOpen || isActive ? 'nav-link-active' : ''}`}>
                   Settings
                   <svg className={`w-4 h-4 ml-1 inline transition-transform ${settingsOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                   </svg>
-                </button>
+                </NavLink>
                 {settingsOpen && (
                   <div className={`dropdown-menu w-52`} onMouseEnter={() => cancelClose('settings')} onMouseLeave={() => scheduleClose('settings')}>
                     <div className="py-1">
@@ -174,6 +175,8 @@ export default function App() {
             <Route path="/workflows/interactive" element={<WorkflowInteractive />} />
 
             <Route path="/task/:id" element={<TaskDetail />} />
+
+            <Route path="/settings" element={<Settings />} />
 
             <Route path="/config" element={<ConfigLayout />}>
               <Route path="models" element={<ConfigModels />} />
