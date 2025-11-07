@@ -55,8 +55,8 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
     const connect = () => {
       if (isUnmounting) return
       
-      const ws = new WebSocket(getWsUrl())
-      wsRef.current = ws
+    const ws = new WebSocket(getWsUrl())
+    wsRef.current = ws
       
       ws.onopen = () => {
         setConnected(true)
@@ -94,19 +94,19 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
         setConnected(false)
       }
       
-      ws.onmessage = (ev) => {
-        try {
-          const msg = JSON.parse(ev.data)
-          const evt = msg?.event ?? msg
-          subsRef.current.forEach(s => {
-            if (s.eventTypes && evt?.event_type && !s.eventTypes.includes(evt.event_type)) return
-            if (s.taskIds && evt?.task_id && !s.taskIds.includes(evt.task_id)) return
-            s.handler(evt)
-          })
-        } catch {
-          // ignore parse errors for scaffold
-        }
+    ws.onmessage = (ev) => {
+      try {
+        const msg = JSON.parse(ev.data)
+        const evt = msg?.event ?? msg
+        subsRef.current.forEach(s => {
+          if (s.eventTypes && evt?.event_type && !s.eventTypes.includes(evt.event_type)) return
+          if (s.taskIds && evt?.task_id && !s.taskIds.includes(evt.task_id)) return
+          s.handler(evt)
+        })
+      } catch {
+        // ignore parse errors for scaffold
       }
+    }
     }
     
     connect()
@@ -116,7 +116,7 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
       if (reconnectTimeout) clearTimeout(reconnectTimeout)
       if (wsRef.current) {
         wsRef.current.close(1000, 'Component unmounting')
-        wsRef.current = null
+      wsRef.current = null
       }
     }
   }, [])

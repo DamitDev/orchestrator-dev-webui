@@ -145,14 +145,48 @@ function AssistantTurn({
   const hasToolCalls = group.toolInteractions && group.toolInteractions.length > 0
   const firstMsg = group.assistantMessages[0]
   
+  // Track height to prevent shrinking when sections close
+  const containerRef = useRef<HTMLDivElement>(null)
+  const [minHeight, setMinHeight] = useState<number>(0)
+  const prevHasContentRef = useRef<boolean>(false)
+  const prevIsStreamingRef = useRef<boolean>(false)
+  
   // Determine what streaming phase we're in
   const isEmpty = isStreaming && streamingMessage && !streamingMessage.content && !streamingMessage.reasoning && (!streamingMessage.tool_calls || streamingMessage.tool_calls.length === 0)
   const isStreamingReasoning = isStreaming && streamingMessage?.reasoning && (!streamingMessage?.tool_calls || streamingMessage.tool_calls.length === 0) && !streamingMessage?.content
   const isStreamingToolCalls = isStreaming && streamingMessage?.tool_calls && streamingMessage.tool_calls.length > 0
   const isStreamingContent = isStreaming && streamingMessage?.content && streamingMessage.content.length > 0
   
+  // Track when sections are about to close
+  useEffect(() => {
+    const prevHasContent = prevHasContentRef.current
+    const prevIsStreaming = prevIsStreamingRef.current
+    
+    // Sections close when hasContent becomes true OR isStreaming becomes false
+    if ((!prevHasContent && hasContent) || (prevIsStreaming && !isStreaming)) {
+      // Capture current height before sections close
+      if (containerRef.current) {
+        const currentHeight = containerRef.current.getBoundingClientRect().height
+        setMinHeight(currentHeight)
+      }
+      
+      // Clear minHeight after sections finish closing
+      setTimeout(() => setMinHeight(0), 400)
+    } else if (!prevIsStreaming && isStreaming) {
+      // Streaming just started - clear minHeight
+      setMinHeight(0)
+    }
+    
+    prevHasContentRef.current = hasContent
+    prevIsStreamingRef.current = !!isStreaming
+  }, [hasContent, isStreaming])
+  
   return (
-    <div className="message message--assistant">
+    <div 
+      ref={containerRef}
+      className="message message--assistant"
+      style={{ minHeight: minHeight > 0 ? `${minHeight}px` : undefined }}
+    >
       <div className="message-header mb-3">
         <span className="uppercase font-bold text-xs tracking-wide">ASSISTANT</span>
         {firstMsg?.created_at && (
@@ -197,7 +231,7 @@ function AssistantTurn({
                 open={!hasContent && !isStreaming && idx === group.toolInteractions.length - 1}
                 summary={
                   <>
-                    ▸ Using tool: <code className="text-nord10 dark:text-nord8 font-medium">{toolName}</code>
+                  ▸ Using tool: <code className="text-nord10 dark:text-nord8 font-medium">{toolName}</code>
                   </>
                 }
               >
@@ -360,7 +394,7 @@ export default function TaskDetail() {
         
         // Only invalidate conversation for non-streaming events
         if (evt.event_type !== 'message_streaming') {
-          queryClient.invalidateQueries({ queryKey: taskKeys.conversation(id) })
+        queryClient.invalidateQueries({ queryKey: taskKeys.conversation(id) })
         }
       }
     }, { eventTypes: ['task_status_changed','message_added','message_streaming','approval_requested','help_requested','task_result_updated','task_workflow_data_changed'] })
@@ -490,14 +524,14 @@ export default function TaskDetail() {
                   </div>
                 ) : task.workflow_id === 'matrix' ? (
                   <>
-                    <div className="grid grid-cols-[120px_1fr] gap-2 items-start">
-                      <div className="text-xs font-semibold text-nord3 dark:text-nord4 uppercase tracking-wide">
-                        Phase
-                      </div>
-                      <div className="text-sm text-nord0 dark:text-nord6">
-                        <span className="font-bold text-nord12 dark:text-nord12">{task.workflow_data?.phase ?? 0}</span> / 4
-                      </div>
+                  <div className="grid grid-cols-[120px_1fr] gap-2 items-start">
+                    <div className="text-xs font-semibold text-nord3 dark:text-nord4 uppercase tracking-wide">
+                      Phase
                     </div>
+                    <div className="text-sm text-nord0 dark:text-nord6">
+                      <span className="font-bold text-nord12 dark:text-nord12">{task.workflow_data?.phase ?? 0}</span> / 4
+                    </div>
+                  </div>
                     
                     {/* Algorithm ID - shown when task is complete */}
                     {task.workflow_data?.algorithm_id && (
@@ -708,7 +742,7 @@ export default function TaskDetail() {
           <div className={`fixed top-10 right-0 h-[calc(100vh-2.5rem)] w-[750px] z-40 transition-transform duration-300 ease-in-out ${
             isPanelOpen ? 'translate-x-0' : 'translate-x-full'
           }`}>
-            {task.workflow_id === 'matrix' ? (
+          {task.workflow_id === 'matrix' ? (
               <MatrixPhasePanel 
                 taskId={task.id} 
                 currentPhase={task.workflow_data?.phase ?? 0} 
@@ -717,25 +751,25 @@ export default function TaskDetail() {
                 streamingMessage={streamingMessage}
                 blockInvalidateRef={blockInvalidateRef}
               />
-            ) : (
+          ) : (
               <div className="w-full h-full flex flex-col card border-2 border-nord8/30 dark:border-nord8/20 bg-nord6 dark:bg-nord1 shadow-nord-xl">
-                {/* Chat Header */}
-                <div className="px-6 py-4 border-b-2 border-nord8/30 dark:border-nord8/20 bg-gradient-to-r from-nord8/10 to-nord9/10 dark:from-nord8/5 dark:to-nord9/5">
-                  <div className="flex items-center justify-between">
+              {/* Chat Header */}
+              <div className="px-6 py-4 border-b-2 border-nord8/30 dark:border-nord8/20 bg-gradient-to-r from-nord8/10 to-nord9/10 dark:from-nord8/5 dark:to-nord9/5">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <svg className="w-6 h-6 text-nord8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                    </svg>
+                    <h2 className="text-lg font-bold text-nord0 dark:text-nord6">Conversation</h2>
+                    <span className="badge bg-nord8/30 text-nord10 border-nord8/40 dark:bg-nord8/20 dark:text-nord8 font-semibold">
+                      {conv?.conversation?.length ?? 0}
+                    </span>
+                  </div>
                     <div className="flex items-center gap-3">
-                      <svg className="w-6 h-6 text-nord8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                      </svg>
-                      <h2 className="text-lg font-bold text-nord0 dark:text-nord6">Conversation</h2>
-                      <span className="badge bg-nord8/30 text-nord10 border-nord8/40 dark:bg-nord8/20 dark:text-nord8 font-semibold">
-                        {conv?.conversation?.length ?? 0}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <label className="flex items-center gap-2 text-sm text-nord3 dark:text-nord4 cursor-pointer hover:text-nord10 transition-colors">
-                        <input type="checkbox" checked={autoScroll} onChange={e => setAutoScroll(e.target.checked)} className="rounded" /> 
-                        Auto-scroll
-                      </label>
+                  <label className="flex items-center gap-2 text-sm text-nord3 dark:text-nord4 cursor-pointer hover:text-nord10 transition-colors">
+                    <input type="checkbox" checked={autoScroll} onChange={e => setAutoScroll(e.target.checked)} className="rounded" /> 
+                    Auto-scroll
+                  </label>
                       <button
                         onClick={() => setIsPanelOpen(false)}
                         className="p-1 hover:bg-nord4/20 dark:hover:bg-nord3/20 rounded transition-colors"
@@ -744,15 +778,15 @@ export default function TaskDetail() {
                         <X className="w-5 h-5 text-nord3 dark:text-nord4" />
                       </button>
                     </div>
-                  </div>
                 </div>
-                
-                {/* Chat Messages */}
+              </div>
+              
+              {/* Chat Messages */}
                 <div ref={convRef} className="flex-1 overflow-auto p-4 pb-8 space-y-4 bg-nord5/30 dark:bg-nord0/50">
-                  {(() => {
-                    const msgs = (conv?.conversation || []).filter((m: any) => mode === 'expert' ? true : (m.role !== 'system' && m.role !== 'developer'))
-                    const groups = groupMessages(msgs)
-                    
+                {(() => {
+                  const msgs = (conv?.conversation || []).filter((m: any) => mode === 'expert' ? true : (m.role !== 'system' && m.role !== 'developer'))
+                  const groups = groupMessages(msgs)
+                  
                     // Check if we should show streaming for the last group
                     const isLastGroup = (idx: number) => idx === groups.length - 1
                     const shouldShowStreaming = streamingMessage && groups.length > 0
@@ -760,36 +794,36 @@ export default function TaskDetail() {
                     return (
                       <>
                         {groups.map((group: any, idx: number) => {
-                          // Render assistant turns with grouped tool calls
-                          if (group.type === 'assistant') {
+                    // Render assistant turns with grouped tool calls
+                    if (group.type === 'assistant') {
                             const isStreaming = shouldShowStreaming && isLastGroup(idx)
                             return <AssistantTurn key={idx} group={group} mode={mode} streamingMessage={streamingMessage} isStreaming={isStreaming} />
-                          }
-                          
-                          // Render other message types normally
-                          const m = group.message
-                          return (
-                            <div key={idx} className={`message ${m.role==='user' ? 'message--user' : m.role==='system' ? 'message--system' : m.role==='developer' ? 'message--developer' : 'message--tool'}`}>
-                              <div className="message-header mb-2">
-                                <span className="uppercase font-bold text-xs tracking-wide">
-                                  {m.role === 'user' ? 'USER' : m.role === 'system' ? 'SYSTEM' : m.role === 'developer' ? 'DEVELOPER' : 'TOOL'}
-                                </span>
-                                {m.created_at && (
-                                  <span className="text-xs bg-nord5/70 px-2 py-0.5 rounded dark:bg-nord2">
-                                    {formatMessageTimestamp(m.created_at)}
-                                  </span>
-                                )}
-                              </div>
-                              {m.content && <MessageContent role={m.role} content={m.content} isLatestTool={false} />}
-                            </div>
-                          )
+                    }
+                    
+                    // Render other message types normally
+                    const m = group.message
+                    return (
+                      <div key={idx} className={`message ${m.role==='user' ? 'message--user' : m.role==='system' ? 'message--system' : m.role==='developer' ? 'message--developer' : 'message--tool'}`}>
+                        <div className="message-header mb-2">
+                          <span className="uppercase font-bold text-xs tracking-wide">
+                            {m.role === 'user' ? 'USER' : m.role === 'system' ? 'SYSTEM' : m.role === 'developer' ? 'DEVELOPER' : 'TOOL'}
+                          </span>
+                          {m.created_at && (
+                            <span className="text-xs bg-nord5/70 px-2 py-0.5 rounded dark:bg-nord2">
+                              {formatMessageTimestamp(m.created_at)}
+                            </span>
+                          )}
+                        </div>
+                        {m.content && <MessageContent role={m.role} content={m.content} isLatestTool={false} />}
+                      </div>
+                    )
                         })}
                       </>
                     )
-                  })()}
-                </div>
-                
-                {/* Chat Input Area */}
+                })()}
+              </div>
+              
+              {/* Chat Input Area */}
                 {/* Only show when there's actually content to display */}
               <AnimatedMount
                 show={
@@ -802,9 +836,9 @@ export default function TaskDetail() {
               >
                 <ChatInputPanel taskId={id!} workflowId={task.workflow_id} status={task.status} approvalReason={task.approval_reason} blockInvalidateRef={blockInvalidateRef} />
               </AnimatedMount>
-              </div>
-            )}
-          </div>
+            </div>
+          )}
+        </div>
         </>
       )}
     </div>
@@ -836,7 +870,7 @@ function ChatInputPanel({ taskId, workflowId, status, approvalReason, blockInval
       // Delay invalidate to allow exit animation to play
       setTimeout(() => {
         blockInvalidateRef.current = false
-        invalidate()
+      invalidate()
       }, 350)
     }
   }
@@ -873,7 +907,7 @@ function ChatInputPanel({ taskId, workflowId, status, approvalReason, blockInval
     // Delay invalidate to allow exit animation to play
     setTimeout(() => {
       blockInvalidateRef.current = false
-      invalidate()
+    invalidate()
     }, 350)
   }
   
@@ -885,7 +919,7 @@ function ChatInputPanel({ taskId, workflowId, status, approvalReason, blockInval
     // Delay invalidate to allow exit animation to play
     setTimeout(() => {
       blockInvalidateRef.current = false
-      invalidate()
+    invalidate()
     }, 350)
   }
 
@@ -1126,29 +1160,29 @@ function MatrixPhasePanel({ taskId, currentPhase, status, onClose, streamingMess
           return (
             <>
               {groups.map((group: any, idx: number) => {
-                // Render assistant turns with grouped tool calls
-                if (group.type === 'assistant') {
+            // Render assistant turns with grouped tool calls
+            if (group.type === 'assistant') {
                   const isStreaming = shouldShowStreaming && isLastGroup(idx)
                   return <AssistantTurn key={idx} group={group} mode={mode} streamingMessage={streamingMessage} isStreaming={isStreaming} />
-                }
-                
-                // Render other message types normally
-                const m = group.message
-                return (
-                  <div key={idx} className={`message ${m.role==='user' ? 'message--user' : m.role==='system' ? 'message--system' : m.role==='developer' ? 'message--developer' : 'message--tool'}`}>
-                    <div className="message-header mb-2">
-                      <span className="uppercase font-bold text-xs tracking-wide">
-                        {m.role === 'user' ? 'USER' : m.role === 'system' ? 'SYSTEM' : m.role === 'developer' ? 'DEVELOPER' : 'TOOL'}
-                      </span>
-                      {m.created_at && (
-                        <span className="text-xs bg-nord5/70 px-2 py-0.5 rounded dark:bg-nord2">
-                          {formatMessageTimestamp(m.created_at)}
-                        </span>
-                      )}
-                    </div>
-                    {m.content && <MessageContent role={m.role} content={m.content} isLatestTool={false} />}
-                  </div>
-                )
+            }
+            
+            // Render other message types normally
+            const m = group.message
+            return (
+              <div key={idx} className={`message ${m.role==='user' ? 'message--user' : m.role==='system' ? 'message--system' : m.role==='developer' ? 'message--developer' : 'message--tool'}`}>
+                <div className="message-header mb-2">
+                  <span className="uppercase font-bold text-xs tracking-wide">
+                    {m.role === 'user' ? 'USER' : m.role === 'system' ? 'SYSTEM' : m.role === 'developer' ? 'DEVELOPER' : 'TOOL'}
+                  </span>
+                  {m.created_at && (
+                    <span className="text-xs bg-nord5/70 px-2 py-0.5 rounded dark:bg-nord2">
+                      {formatMessageTimestamp(m.created_at)}
+                    </span>
+                  )}
+                </div>
+                {m.content && <MessageContent role={m.role} content={m.content} isLatestTool={false} />}
+              </div>
+            )
               })}
             </>
           )
