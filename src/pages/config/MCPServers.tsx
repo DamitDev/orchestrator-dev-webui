@@ -10,7 +10,9 @@ export default function ConfigMCP() {
   return (
     <div className="space-y-4">
       <div className="card p-4">
-        <div className="text-sm text-gray-600 dark:text-gray-400 mb-3">Total: {data?.total_servers ?? 0}</div>
+        <div className="text-sm text-gray-600 dark:text-gray-400 mb-3">
+          Total: <span className="font-bold text-lg text-nord14 dark:text-nord14">{data?.total_servers ?? 0}</span>
+        </div>
         {isLoading && <div className="text-sm text-gray-500 dark:text-gray-400">Loading…</div>}
         {error && <div className="text-sm text-red-600">Failed to load</div>}
         <div className="space-y-3">
@@ -30,8 +32,8 @@ export default function ConfigMCP() {
                         {s.description}
                       </div>
                     )}
-                    <div className="text-xs text-nord10 dark:text-nord8 font-medium">
-                      {s.tools.length} tool{s.tools.length !== 1 ? 's' : ''} available
+                    <div className="text-xs text-nord14 dark:text-nord14 font-medium">
+                      <span className="font-bold">{s.tools.length}</span> tool{s.tools.length !== 1 ? 's' : ''} available
                     </div>
                   </div>
                   <button onClick={() => remove.mutate(s.base_url)} className="btn-danger text-sm">

@@ -78,7 +78,7 @@ export default function Settings() {
               <button
                 key={section.id}
                 onClick={() => scrollToSection(section.id)}
-                className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
+                className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-all ${
                   activeSection === section.id
                     ? 'bg-nord8/20 text-nord10 dark:bg-nord8/10 dark:text-nord8 font-medium'
                     : 'text-nord3 dark:text-nord4 hover:bg-nord5/50 dark:hover:bg-nord3/20'

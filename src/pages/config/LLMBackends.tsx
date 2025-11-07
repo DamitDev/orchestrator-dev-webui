@@ -33,15 +33,17 @@ export default function ConfigLLM() {
   return (
     <div className="space-y-4">
       <div className="card p-4">
-        <div className="text-sm text-gray-600 dark:text-gray-400 mb-3">Total: {data?.total_backends ?? 0}</div>
+        <div className="text-sm text-gray-600 dark:text-gray-400 mb-3">
+          Total: <span className="font-bold text-lg text-nord12 dark:text-nord12">{data?.total_backends ?? 0}</span>
+        </div>
         {isLoading && <div className="text-sm text-gray-500 dark:text-gray-400">Loading…</div>}
         {error && <div className="text-sm text-red-600">Failed to load</div>}
         <div className="space-y-2">
           {(data?.backends || []).map((b: any, idx: number) => (
-            <div key={idx} className="border rounded p-3 flex items-center justify-between dark:border-gray-700 dark:bg-gray-800">
+            <div key={idx} className="border-2 border-nord12/20 rounded-lg p-3 flex items-center justify-between dark:border-nord12/20 bg-nord12/5 dark:bg-nord12/5">
               <div>
                 <div className="text-sm font-medium text-gray-900 dark:text-gray-100">{b.base_url}</div>
-                <div className="text-xs text-gray-600 dark:text-gray-400">{b.models.length} model(s)</div>
+                <div className="text-xs text-nord12 dark:text-nord13 font-medium"><span className="font-bold">{b.models.length}</span> model{b.models.length !== 1 ? 's' : ''}</div>
               </div>
               <button onClick={() => remove.mutate(b.base_url)} className="btn-danger">Remove</button>
             </div>
@@ -52,7 +54,7 @@ export default function ConfigLLM() {
       <div className="card p-4">
         <h2 className="text-md font-medium mb-3 text-gray-900 dark:text-gray-100">Available Models</h2>
         <div className="text-sm text-gray-600 dark:text-gray-400 mb-3">
-          Total: {sortedModels.length} unique model{sortedModels.length !== 1 ? 's' : ''}
+          Total: <span className="font-bold text-lg text-nord13 dark:text-nord13">{sortedModels.length}</span> unique model{sortedModels.length !== 1 ? 's' : ''}
         </div>
         {sortedModels.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">

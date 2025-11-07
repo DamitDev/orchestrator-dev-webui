@@ -21,7 +21,9 @@ export default function ConfigTools() {
   return (
     <div className="space-y-4">
       <div className="card p-4">
-        <div className="text-sm text-gray-600 dark:text-gray-400 mb-3">Total: {data?.total_tools ?? 0}</div>
+        <div className="text-sm text-gray-600 dark:text-gray-400 mb-3">
+          Total: <span className="font-bold text-lg text-nord15 dark:text-nord15">{data?.total_tools ?? 0}</span>
+        </div>
         <input value={q} onChange={e => setQ(e.target.value)} placeholder="Search tools" className="input w-full" />
       </div>
       {isLoading && <div className="text-sm text-gray-500 dark:text-gray-400">Loading…</div>}
@@ -29,9 +31,9 @@ export default function ConfigTools() {
       <div className="space-y-3">
         {Object.entries(byServer).map(([server, list]) => (
           <div key={server} className="card">
-            <div className="px-3 py-2 border-b bg-gray-50 text-sm text-gray-700 flex items-center gap-2 dark:bg-gray-900 dark:text-gray-300 dark:border-gray-700">
+            <div className="px-3 py-2 border-b bg-nord15/10 text-sm text-gray-700 flex items-center gap-2 dark:bg-nord15/5 dark:text-gray-300 dark:border-nord15/20">
               <span className="font-medium">{server === 'builtin' ? 'Built-in' : server}</span>
-              <span className="text-xs text-gray-500 dark:text-gray-400">({(list as any[]).length} tools)</span>
+              <span className="text-xs text-nord15 dark:text-nord15 font-bold">({(list as any[]).length} tools)</span>
             </div>
             <div className="divide-y dark:divide-gray-700">
               {(list as any[]).map((t: any, idx: number) => (
