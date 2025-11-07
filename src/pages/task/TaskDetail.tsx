@@ -954,7 +954,7 @@ function MatrixPhasePanel({ taskId, currentPhase, status, onClose }: { taskId: s
           })}
         </div>
         {isViewingPastPhase && (
-          <div className="mt-3 text-xs text-nord13 dark:text-nord13 bg-nord13/10 px-3 py-1.5 rounded-lg border border-nord13/30">
+          <div className="mt-3 text-xs font-medium text-nord12 dark:text-nord13 bg-nord13/15 dark:bg-nord13/10 px-3 py-1.5 rounded-lg border border-nord13/40 dark:border-nord13/30">
             📜 Viewing past phase (read-only)
           </div>
         )}
