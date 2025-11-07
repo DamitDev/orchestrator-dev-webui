@@ -25,21 +25,20 @@ function Header() {
   const { mode, toggle } = useMode()
   const location = useLocation()
   const [wfOpen, setWfOpen] = useState(false)
-  const [settingsOpen, setSettingsOpen] = useState(false)
   const [isDark, setIsDark] = useState(false)
   const wfCloseTimeout = useRef<number | null>(null)
-  const settingsCloseTimeout = useRef<number | null>(null)
-  const scheduleClose = (which: 'wf'|'settings') => {
-    const ref = which === 'wf' ? wfCloseTimeout : settingsCloseTimeout
-    if (ref.current) clearTimeout(ref.current)
-    ref.current = window.setTimeout(() => {
-      if (which === 'wf') setWfOpen(false); else setSettingsOpen(false)
-      ref.current = null
+  const scheduleClose = () => {
+    if (wfCloseTimeout.current) clearTimeout(wfCloseTimeout.current)
+    wfCloseTimeout.current = window.setTimeout(() => {
+      setWfOpen(false)
+      wfCloseTimeout.current = null
     }, 200)
   }
-  const cancelClose = (which: 'wf'|'settings') => {
-    const ref = which === 'wf' ? wfCloseTimeout : settingsCloseTimeout
-    if (ref.current) { clearTimeout(ref.current); ref.current = null }
+  const cancelClose = () => {
+    if (wfCloseTimeout.current) { 
+      clearTimeout(wfCloseTimeout.current)
+      wfCloseTimeout.current = null 
+    }
   }
   useEffect(() => {
     const stored = localStorage.getItem('theme')
