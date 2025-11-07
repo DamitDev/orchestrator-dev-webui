@@ -1,4 +1,4 @@
-import { Link, NavLink, Outlet, Route, Routes, useLocation } from 'react-router-dom'
+import { Link, NavLink, Route, Routes, useLocation } from 'react-router-dom'
 import { useEffect, useRef, useState } from 'react'
 import { useMode } from './state/ModeContext'
 import Inbox from './pages/Inbox'
@@ -74,7 +74,7 @@ function Header() {
             </Link>
             <nav className="hidden md:flex items-center gap-1">
               {navItem('/', 'Inbox')}
-              <div className="relative" onMouseEnter={() => { cancelClose('wf'); setWfOpen(true); }} onMouseLeave={() => scheduleClose('wf')}>
+              <div className="relative" onMouseEnter={() => { cancelClose(); setWfOpen(true); }} onMouseLeave={() => scheduleClose()}>
                 <button className={`nav-link ${wfOpen ? 'nav-link-active' : ''}`}>
                   Workflows
                   <svg className={`w-4 h-4 ml-1 inline transition-transform ${wfOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -82,7 +82,7 @@ function Header() {
                   </svg>
                 </button>
                 {wfOpen && (
-                  <div className={`dropdown-menu w-44`} onMouseEnter={() => cancelClose('wf')} onMouseLeave={() => scheduleClose('wf')}>
+                  <div className={`dropdown-menu w-44`} onMouseEnter={() => cancelClose()} onMouseLeave={() => scheduleClose()}>
                     <div className="py-1">
                       <NavLink to="/workflows/tickets" className={({isActive}) => `${'dropdown-item'} ${isActive ? 'dropdown-item-active' : ''}`} onClick={() => setWfOpen(false)}>Tickets</NavLink>
                       <NavLink to="/workflows/matrix" className={({isActive}) => `${'dropdown-item'} ${isActive ? 'dropdown-item-active' : ''}`} onClick={() => setWfOpen(false)}>Matrix</NavLink>
@@ -94,27 +94,7 @@ function Header() {
               </div>
               {navItem('/tasks', 'Tasks')}
               {navItem('/create', 'Create')}
-              <div className="relative" onMouseEnter={() => { cancelClose('settings'); setSettingsOpen(true); }} onMouseLeave={() => scheduleClose('settings')}>
-                <NavLink to="/settings" className={({isActive}) => `${'nav-link'} ${settingsOpen || isActive ? 'nav-link-active' : ''}`}>
-                  Settings
-                  <svg className={`w-4 h-4 ml-1 inline transition-transform ${settingsOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
-                </NavLink>
-                {settingsOpen && (
-                  <div className={`dropdown-menu w-52`} onMouseEnter={() => cancelClose('settings')} onMouseLeave={() => scheduleClose('settings')}>
-                    <div className="py-1">
-                      <NavLink to="/config/models" className={({isActive}) => `${'dropdown-item'} ${isActive ? 'dropdown-item-active' : ''}`} onClick={() => setSettingsOpen(false)}>Models</NavLink>
-                      <NavLink to="/config/llm-backends" className={({isActive}) => `${'dropdown-item'} ${isActive ? 'dropdown-item-active' : ''}`} onClick={() => setSettingsOpen(false)}>LLM Backends</NavLink>
-                      <NavLink to="/config/mcp-servers" className={({isActive}) => `${'dropdown-item'} ${isActive ? 'dropdown-item-active' : ''}`} onClick={() => setSettingsOpen(false)}>MCP Servers</NavLink>
-                      <NavLink to="/config/task-handler" className={({isActive}) => `${'dropdown-item'} ${isActive ? 'dropdown-item-active' : ''}`} onClick={() => setSettingsOpen(false)}>Task Handler</NavLink>
-                      <NavLink to="/config/tools" className={({isActive}) => `${'dropdown-item'} ${isActive ? 'dropdown-item-active' : ''}`} onClick={() => setSettingsOpen(false)}>Tools Explorer</NavLink>
-                      <NavLink to="/config/system" className={({isActive}) => `${'dropdown-item'} ${isActive ? 'dropdown-item-active' : ''}`} onClick={() => setSettingsOpen(false)}>System</NavLink>
-                      <NavLink to="/config/auth" className={({isActive}) => `${'dropdown-item'} ${isActive ? 'dropdown-item-active' : ''}`} onClick={() => setSettingsOpen(false)}>Auth</NavLink>
-                    </div>
-                  </div>
-                )}
-              </div>
+              {navItem('/settings', 'Settings')}
             </nav>
           </div>
           <div className="flex items-center gap-2">
@@ -131,28 +111,6 @@ function Header() {
         </div>
       </div>
     </header>
-  )
-}
-
-function ConfigLayout() {
-  const tab = (to: string, label: string) => (
-    <NavLink to={to} className={({ isActive }) => `${'nav-link'} ${isActive ? 'nav-link-active' : ''}`}>
-      {label}
-    </NavLink>
-  )
-  return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap gap-2">
-        {tab('/config/models', 'Models')}
-        {tab('/config/llm-backends', 'LLM Backends')}
-        {tab('/config/mcp-servers', 'MCP Servers')}
-        {tab('/config/task-handler', 'Task Handler')}
-        {tab('/config/tools', 'Tools Explorer')}
-        {tab('/config/system', 'System')}
-        {tab('/config/auth', 'Auth')}
-      </div>
-      <Outlet />
-    </div>
   )
 }
 
@@ -176,16 +134,6 @@ export default function App() {
             <Route path="/task/:id" element={<TaskDetail />} />
 
             <Route path="/settings" element={<Settings />} />
-
-            <Route path="/config" element={<ConfigLayout />}>
-              <Route path="models" element={<ConfigModels />} />
-              <Route path="llm-backends" element={<ConfigLLM />} />
-              <Route path="mcp-servers" element={<ConfigMCP />} />
-              <Route path="task-handler" element={<ConfigTaskHandler />} />
-              <Route path="tools" element={<ConfigTools />} />
-              <Route path="system" element={<ConfigSystem />} />
-              <Route path="auth" element={<ConfigAuth />} />
-            </Route>
 
             <Route path="/events" element={<Events />} />
             <Route path="/preferences" element={<Preferences />} />
