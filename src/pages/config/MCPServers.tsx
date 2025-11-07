@@ -10,7 +10,6 @@ export default function ConfigMCP() {
   return (
     <div className="space-y-4">
       <div className="card p-4">
-        <h1 className="text-lg font-semibold mb-2 text-gray-900 dark:text-gray-100">MCP Servers</h1>
         <div className="text-sm text-gray-600 dark:text-gray-400 mb-3">Total: {data?.total_servers ?? 0}</div>
         {isLoading && <div className="text-sm text-gray-500 dark:text-gray-400">Loading…</div>}
         {error && <div className="text-sm text-red-600">Failed to load</div>}

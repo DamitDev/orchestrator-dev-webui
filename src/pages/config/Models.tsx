@@ -12,7 +12,6 @@ export default function ConfigModels() {
   const models: string[] = llm?.all_available_models || []
   return (
     <div className="card p-4 space-y-4">
-      <h1 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Models</h1>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="border rounded p-3 dark:border-gray-700 dark:bg-gray-800">
           <div className="text-sm text-gray-700 dark:text-gray-300 mb-2">Agent Model (current: <span className="font-mono">{status?.agent_model}</span>)</div>

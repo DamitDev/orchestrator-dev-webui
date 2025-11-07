@@ -21,7 +21,6 @@ export default function ConfigTools() {
   return (
     <div className="space-y-4">
       <div className="card p-4">
-        <h1 className="text-lg font-semibold mb-2 text-gray-900 dark:text-gray-100">Tools Explorer</h1>
         <div className="text-sm text-gray-600 dark:text-gray-400 mb-3">Total: {data?.total_tools ?? 0}</div>
         <input value={q} onChange={e => setQ(e.target.value)} placeholder="Search tools" className="input w-full" />
       </div>

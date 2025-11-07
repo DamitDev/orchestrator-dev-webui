@@ -4,7 +4,6 @@ export default function ConfigAuth() {
   const { data, isLoading, error } = useAuthConfig()
   return (
     <div className="card p-4 space-y-3">
-      <h1 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Auth</h1>
       {isLoading && <div className="text-sm text-gray-500 dark:text-gray-400">Loading…</div>}
       {error && <div className="text-sm text-red-600">Failed to load</div>}
       <div className="text-sm text-gray-800 dark:text-gray-200">
