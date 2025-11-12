@@ -64,4 +64,103 @@ export interface TaskCreateResponse {
   status: string
 }
 
+// Conversation message types
+export interface ToolCall {
+  id: string
+  type: string
+  function: {
+    name: string
+    arguments: string
+  }
+}
+
+export interface ConversationMessage {
+  id?: number
+  role: 'system' | 'user' | 'assistant' | 'tool' | 'developer'
+  content: string | null
+  name?: string | null
+  reasoning?: string | null
+  tool_calls?: ToolCall[] | null
+  tool_call_id?: string | null
+  // Summary fields (optional, generated asynchronously)
+  reasoning_summary?: string | null
+  tool_call_summary?: string | null
+  tool_output_summary?: string | null
+  created_at?: string
+}
+
+export interface ConversationResponse {
+  task_id: string
+  conversation: ConversationMessage[]
+}
+
+// WebSocket event types
+export interface BaseWebSocketEvent {
+  event_type: string
+  task_id: string
+  timestamp?: string
+}
+
+export interface MessageAddedEvent extends BaseWebSocketEvent {
+  event_type: 'message_added'
+  message_id: number
+  role: string
+  content: string
+  reasoning?: string
+  tool_calls?: ToolCall[]
+  has_tool_calls?: boolean
+}
+
+export interface MessageStreamingEvent extends BaseWebSocketEvent {
+  event_type: 'message_streaming'
+  message_id: number
+  role: string
+  content: string
+  reasoning: string
+  tool_calls: ToolCall[] | null
+  tool_call_id: string | null
+  name: string | null
+  is_complete: boolean
+  stream_index: number
+  has_tool_calls: boolean
+  tool_call_count: number
+}
+
+export interface MessageSummaryGeneratedEvent extends BaseWebSocketEvent {
+  event_type: 'message_summary_generated'
+  message_id: number
+  summary_id: number
+  reasoning_summary?: string | null
+  tool_call_summary?: string | null
+  tool_output_summary?: string | null
+  has_reasoning_summary: boolean
+  has_tool_call_summary: boolean
+  has_tool_output_summary: boolean
+}
+
+export interface TaskStatusChangedEvent extends BaseWebSocketEvent {
+  event_type: 'task_status_changed'
+  status: string
+  iteration?: number
+}
+
+export interface ApprovalRequestedEvent extends BaseWebSocketEvent {
+  event_type: 'approval_requested'
+  approval_reason: string
+}
+
+export interface HelpRequestedEvent extends BaseWebSocketEvent {
+  event_type: 'help_requested'
+  help_question: string
+}
+
+export type WebSocketEvent = 
+  | MessageAddedEvent
+  | MessageStreamingEvent
+  | MessageSummaryGeneratedEvent
+  | TaskStatusChangedEvent
+  | ApprovalRequestedEvent
+  | HelpRequestedEvent
+  | BaseWebSocketEvent
+
 

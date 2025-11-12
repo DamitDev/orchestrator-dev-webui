@@ -1,6 +1,6 @@
 import axios, { AxiosInstance } from 'axios'
 import { getRuntimeConfig } from './runtimeConfig'
-import type { TasksQueryParams, TasksResponse, TaskCreateRequest, TaskCreateResponse, Task } from '../types/api'
+import type { TasksQueryParams, TasksResponse, TaskCreateRequest, TaskCreateResponse, Task, ConversationResponse } from '../types/api'
 
 let apiClient: AxiosInstance | null = null
 
@@ -47,12 +47,12 @@ export const tasksApi = {
     return data
   },
 
-  async getConversation(taskId: string): Promise<{ task_id: string; conversation: any[] }> {
+  async getConversation(taskId: string): Promise<ConversationResponse> {
     const { data } = await getApi().get(`/task/conversation`, { params: { task_id: taskId } })
     return data
   },
 
-  async getMatrixConversationByPhase(taskId: string, phase: number): Promise<{ task_id: string; conversation: any[] }> {
+  async getMatrixConversationByPhase(taskId: string, phase: number): Promise<ConversationResponse> {
     const { data } = await getApi().get(`/task/matrix/conversation`, { params: { task_id: taskId, phase } })
     return data
   },
