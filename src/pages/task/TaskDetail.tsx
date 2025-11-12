@@ -16,6 +16,70 @@ import { StreamingContent } from '../../components/StreamingContent'
 import { AnimatedDetails } from '../../components/AnimatedDetails'
 import { AnimatedMount } from '../../components/AnimatedMount'
 
+// Icon components
+function LightBulbIcon({ className = "w-3.5 h-3.5" }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5" />
+      <path d="M9 18h6" />
+      <path d="M10 22h4" />
+    </svg>
+  )
+}
+
+function WrenchIcon({ className = "w-3.5 h-3.5" }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" />
+    </svg>
+  )
+}
+
+// Helper to parse markdown summary with title and content
+function parseSummary(summary: string | null | undefined): { title: string; sections: Array<{ subtitle?: string; content: string }> } | null {
+  if (!summary || !summary.trim()) return null
+  
+  const lines = summary.trim().split('\n')
+  let mainTitle = ''
+  const sections: Array<{ subtitle?: string; content: string }> = []
+  let currentSection: { subtitle?: string; content: string } = { content: '' }
+  
+  for (const line of lines) {
+    // Main title (# Title)
+    if (line.startsWith('# ')) {
+      mainTitle = line.substring(2).trim()
+    }
+    // Subtitle (## Subtitle)
+    else if (line.startsWith('## ')) {
+      // Save previous section if it has content
+      if (currentSection.content.trim() || currentSection.subtitle) {
+        sections.push(currentSection)
+      }
+      // Start new section
+      currentSection = { subtitle: line.substring(3).trim(), content: '' }
+    }
+    // Regular content
+    else if (line.trim()) {
+      currentSection.content += (currentSection.content ? '\n' : '') + line
+    }
+  }
+  
+  // Push last section
+  if (currentSection.content.trim() || currentSection.subtitle) {
+    sections.push(currentSection)
+  }
+  
+  // If no sections, treat all non-title content as single section
+  if (sections.length === 0 && lines.length > 1) {
+    const contentLines = lines.filter(l => !l.startsWith('# '))
+    if (contentLines.length > 0) {
+      sections.push({ content: contentLines.join('\n').trim() })
+    }
+  }
+  
+  return mainTitle ? { title: mainTitle, sections } : null
+}
+
 function StatusBadge({ status }: { status: string }) {
   const cls = status === 'completed' ? 'status-badge status--completed'
     : status === 'failed' ? 'status-badge status--failed'
@@ -75,16 +139,19 @@ function groupMessages(messages: any[]) {
           if (current.content && current.content.trim()) {
             group.finalContent = current.content
             group.finalReasoning = current.reasoning
+            group.finalReasoningSummary = current.reasoning_summary
             j++
             keepGoing = false
           } else if (current.tool_calls && Array.isArray(current.tool_calls) && current.tool_calls.length > 0) {
             // This assistant has tool calls, collect them and their responses
             const toolCallIds = new Set(current.tool_calls.map((tc: any) => tc.id))
             
-            // Add tool calls with their reasoning
+            // Add tool calls with their reasoning and summaries
             for (const tc of current.tool_calls) {
               group.toolInteractions.push({
                 reasoning: current.reasoning, // Reasoning before this tool call
+                reasoning_summary: current.reasoning_summary,
+                tool_call_summary: current.tool_call_summary,
                 toolCall: tc,
                 toolResponse: null
               })
@@ -100,6 +167,7 @@ function groupMessages(messages: any[]) {
                 const interaction = group.toolInteractions.find((ti: any) => ti.toolCall.id === toolMsg.tool_call_id)
                 if (interaction) {
                   interaction.toolResponse = toolMsg
+                  interaction.tool_output_summary = toolMsg.tool_output_summary
                 }
               }
               j++
@@ -132,14 +200,20 @@ function groupMessages(messages: any[]) {
 // Render a grouped assistant turn
 function AssistantTurn({ 
   group, 
+  groupIdx,
   mode, 
   streamingMessage, 
-  isStreaming 
+  isStreaming,
+  manuallyToggledTools,
+  setManuallyToggledTools
 }: { 
-  group: any; 
+  group: any;
+  groupIdx: number;
   mode: string; 
   streamingMessage?: any; 
-  isStreaming?: boolean 
+  isStreaming?: boolean;
+  manuallyToggledTools: Record<string, boolean>;
+  setManuallyToggledTools: (tools: Record<string, boolean>) => void;
 }) {
   const hasContent = group.finalContent && group.finalContent.trim()
   const hasToolCalls = group.toolInteractions && group.toolInteractions.length > 0
@@ -209,49 +283,95 @@ function AssistantTurn({
             ? (toolResponse.content.length > 80 ? toolResponse.content.slice(0, 80) + '...' : toolResponse.content)
             : 'No response'
           
+          // Create unique key for this tool call
+          const toolKey = `${groupIdx}-${idx}`
+          
+          // Determine if this tool should be auto-opened
+          const shouldAutoOpen = !hasContent && !isStreaming && idx === group.toolInteractions.length - 1
+          
+          // Get the open state: use manual state if it exists, otherwise use auto-open logic
+          const isToolOpen = manuallyToggledTools[toolKey] !== undefined 
+            ? manuallyToggledTools[toolKey] 
+            : shouldAutoOpen
+          
           return (
             <div key={idx}>
               {/* Show reasoning before this tool call if it exists */}
-              {reasoning && mode === 'expert' && (
-                <AnimatedDetails 
-                  className="text-xs mb-2"
-                  summaryClassName="text-nord3 dark:text-nord4 hover:text-nord10 dark:hover:text-nord8"
-                  defaultOpen={false}
-                  summary={<>▸ Thought</>}
-                >
-                  <div className="reasoning mt-2">{reasoning}</div>
-                </AnimatedDetails>
-              )}
+              {reasoning && (() => {
+                const parsed = interaction.reasoning_summary ? parseSummary(interaction.reasoning_summary) : null
+                return parsed ? (
+                  <AnimatedDetails 
+                    className="text-xs mb-2"
+                    summaryClassName="text-nord3 dark:text-nord4 hover:text-nord10 dark:hover:text-nord8"
+                    defaultOpen={false}
+                    summary={<span className="flex items-center gap-1.5">▸ <LightBulbIcon />{parsed.title}</span>}
+                  >
+                    <div className="reasoning mt-2">
+                      {mode === 'simple' ? (
+                        <div className="space-y-2">
+                          {parsed.sections.map((section, sidx) => (
+                            <div key={sidx}>
+                              {section.subtitle && (
+                                <div className="font-medium text-nord10 dark:text-nord8 mb-1">{section.subtitle}</div>
+                              )}
+                              <MessageContent role="assistant" content={section.content} isLatestTool={false} />
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        reasoning
+                      )}
+                    </div>
+                  </AnimatedDetails>
+                ) : (
+                  <AnimatedDetails 
+                    className="text-xs mb-2"
+                    summaryClassName="text-nord3 dark:text-nord4 hover:text-nord10 dark:hover:text-nord8"
+                    defaultOpen={false}
+                    summary={<span className="flex items-center gap-1.5">▸ <LightBulbIcon />Thought</span>}
+                  >
+                    <div className="reasoning mt-2">{reasoning}</div>
+                  </AnimatedDetails>
+                )
+              })()}
               
               {/* Tool call + response in one collapsible */}
               {/* Only keep last tool open if there's no final content yet and not streaming */}
               <AnimatedDetails 
                 className="text-xs mb-2"
                 summaryClassName="text-nord3 dark:text-nord4 hover:text-nord10 dark:hover:text-nord8"
-                open={!hasContent && !isStreaming && idx === group.toolInteractions.length - 1}
+                open={isToolOpen}
+                onToggle={(newState) => {
+                  setManuallyToggledTools({ ...manuallyToggledTools, [toolKey]: newState })
+                }}
                 summary={
-                  <>
-                  ▸ Using tool: <code className="text-nord10 dark:text-nord8 font-medium">{toolName}</code>
-                  </>
+                  mode === 'simple' && interaction.tool_call_summary ? (() => {
+                    const parsed = parseSummary(interaction.tool_call_summary)
+                    return parsed ? <span className="flex items-center gap-1.5">▸ <WrenchIcon />{parsed.title}</span> : <span className="flex items-center gap-1.5">▸ <WrenchIcon />Using tool: <code className="text-nord10 dark:text-nord8 font-medium">{toolName}</code></span>
+                  })() : <span className="flex items-center gap-1.5">▸ <WrenchIcon />Using tool: <code className="text-nord10 dark:text-nord8 font-medium">{toolName}</code></span>
                 }
               >
                 <div className="mt-2 ml-4 space-y-2">
-                  {/* Tool call parameters */}
+                  {/* Tool call summary content in simple mode */}
+                  {mode === 'simple' && interaction.tool_call_summary && (() => {
+                    const parsed = parseSummary(interaction.tool_call_summary)
+                    return parsed && parsed.sections.length > 0 && (
+                      <div className="text-nord3 dark:text-nord4 whitespace-pre-wrap">{parsed.sections[0].content}</div>
+                    )
+                  })()}
+                  
+                  {/* Tool call parameters - always visible in expert mode */}
                   {mode === 'expert' && toolCall?.function?.arguments && (
-                    <AnimatedDetails 
-                      className="text-xs"
-                      summaryClassName="text-nord3 dark:text-nord4 hover:text-nord10 dark:hover:text-nord8"
-                      open={!hasContent && !isStreaming && idx === group.toolInteractions.length - 1}
-                      summary={<>Parameters</>}
-                    >
-                      <pre className="mt-1 overflow-auto bg-nord5 rounded-lg p-2 text-nord0 dark:bg-nord2 dark:text-nord6 text-xs">
+                    <div className="text-xs">
+                      <div className="text-xs text-nord3 dark:text-nord4 mb-1">Parameters:</div>
+                      <pre className="overflow-auto bg-nord5 rounded-lg p-2 text-nord0 dark:bg-nord2 dark:text-nord6 text-xs">
                         {toolCall.function.arguments}
                       </pre>
-                    </AnimatedDetails>
+                    </div>
                   )}
                   
-                  {/* Tool response - simple box with limited height (5 lines) */}
-                  {toolResponse && (
+                  {/* Tool response - expert mode shows full content */}
+                  {toolResponse && mode === 'expert' && (
                     <div className="mt-2 content-expanding">
                       <div className="text-xs text-nord3 dark:text-nord4 mb-1">Response:</div>
                       <div className="tool-response-box p-3 bg-nord5/30 rounded-lg border border-nord4/50 dark:bg-nord2/30 dark:border-nord3/50 text-xs max-h-[7.5rem] overflow-y-auto">
@@ -261,6 +381,23 @@ function AssistantTurn({
                       </div>
                     </div>
                   )}
+                  
+                  {/* Tool output summary in simple mode - with markdown formatting */}
+                  {toolResponse && mode === 'simple' && interaction.tool_output_summary && (() => {
+                    const parsed = parseSummary(interaction.tool_output_summary)
+                    return parsed && (
+                      <div className="mt-2 content-expanding">
+                        <div className="text-xs text-nord3 dark:text-nord4 mb-1 font-medium">{parsed.title}:</div>
+                        <div className="p-3 bg-nord5/30 rounded-lg border border-nord4/50 dark:bg-nord2/30 dark:border-nord3/50 text-xs">
+                          {parsed.sections.map((section, sidx) => (
+                            <div key={sidx}>
+                              <MessageContent role="assistant" content={section.content} isLatestTool={false} />
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )
+                  })()}
                 </div>
               </AnimatedDetails>
             </div>
@@ -268,16 +405,43 @@ function AssistantTurn({
         })}
         
         {/* Final reasoning before the response */}
-        {hasContent && group.finalReasoning && mode === 'expert' && (
-          <AnimatedDetails 
-            className="text-xs mb-2"
-            summaryClassName="text-nord3 dark:text-nord4 hover:text-nord10 dark:hover:text-nord8"
-            defaultOpen={false}
-            summary={<>▸ Thought</>}
-          >
-            <div className="reasoning mt-2">{group.finalReasoning}</div>
-          </AnimatedDetails>
-        )}
+        {hasContent && group.finalReasoning && (() => {
+          const parsed = group.finalReasoningSummary ? parseSummary(group.finalReasoningSummary) : null
+          return parsed ? (
+            <AnimatedDetails 
+              className="text-xs mb-2"
+              summaryClassName="text-nord3 dark:text-nord4 hover:text-nord10 dark:hover:text-nord8"
+              defaultOpen={false}
+              summary={<span className="flex items-center gap-1.5">▸ <LightBulbIcon />{parsed.title}</span>}
+            >
+              <div className="reasoning mt-2">
+                {mode === 'simple' ? (
+                  <div className="space-y-2">
+                    {parsed.sections.map((section, sidx) => (
+                      <div key={sidx}>
+                        {section.subtitle && (
+                          <div className="font-medium text-nord10 dark:text-nord8 mb-1">{section.subtitle}</div>
+                        )}
+                        <MessageContent role="assistant" content={section.content} isLatestTool={false} />
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  group.finalReasoning
+                )}
+              </div>
+            </AnimatedDetails>
+          ) : (
+            <AnimatedDetails 
+              className="text-xs mb-2"
+              summaryClassName="text-nord3 dark:text-nord4 hover:text-nord10 dark:hover:text-nord8"
+              defaultOpen={false}
+              summary={<span className="flex items-center gap-1.5">▸ <LightBulbIcon />Thought</span>}
+            >
+              <div className="reasoning mt-2">{group.finalReasoning}</div>
+            </AnimatedDetails>
+          )
+        })()}
         
         {/* Streaming content */}
         {isStreamingContent && (
@@ -351,6 +515,9 @@ export default function TaskDetail() {
   const [streamingMessage, setStreamingMessage] = useState<any>(null)
   const blockInvalidateRef = useRef<boolean>(false)
   const convRef = useRef<HTMLDivElement | null>(null)
+  
+  // Track manually toggled tool calls: key is `${groupIdx}-${toolIdx}`, value is open state
+  const [manuallyToggledTools, setManuallyToggledTools] = useState<Record<string, boolean>>({})
 
   useEffect(() => {
     const unsub = subscribe((evt) => {
@@ -383,6 +550,13 @@ export default function TaskDetail() {
         return
       }
       
+      // Handle summary generation
+      if (evt.event_type === 'message_summary_generated' && evt.task_id === id) {
+        // Invalidate conversation to show updated summaries
+        queryClient.invalidateQueries({ queryKey: taskKeys.conversation(id) })
+        return
+      }
+      
       // Handle other task updates
       if (evt.task_id === id) {
         // Skip invalidation if we're in the middle of an exit animation
@@ -397,7 +571,7 @@ export default function TaskDetail() {
         queryClient.invalidateQueries({ queryKey: taskKeys.conversation(id) })
         }
       }
-    }, { eventTypes: ['task_status_changed','message_added','message_streaming','approval_requested','help_requested','task_result_updated','task_workflow_data_changed'] })
+    }, { eventTypes: ['task_status_changed','message_added','message_streaming','message_summary_generated','approval_requested','help_requested','task_result_updated','task_workflow_data_changed'] })
     return () => { /* ws provider handles cleanup */ }
   }, [subscribe, queryClient, id])
 
@@ -797,7 +971,7 @@ export default function TaskDetail() {
                     // Render assistant turns with grouped tool calls
                     if (group.type === 'assistant') {
                             const isStreaming = shouldShowStreaming && isLastGroup(idx)
-                            return <AssistantTurn key={idx} group={group} mode={mode} streamingMessage={streamingMessage} isStreaming={isStreaming} />
+                            return <AssistantTurn key={idx} groupIdx={idx} group={group} mode={mode} streamingMessage={streamingMessage} isStreaming={isStreaming} manuallyToggledTools={manuallyToggledTools} setManuallyToggledTools={setManuallyToggledTools} />
                     }
                     
                     // Render other message types normally
@@ -1056,6 +1230,9 @@ function MatrixPhasePanel({ taskId, currentPhase, status, onClose, streamingMess
   const convRef = useRef<HTMLDivElement | null>(null)
   const previousPhaseRef = useRef<number>(currentPhase)
   
+  // Track manually toggled tool calls: key is `${groupIdx}-${toolIdx}`, value is open state
+  const [manuallyToggledTools, setManuallyToggledTools] = useState<Record<string, boolean>>({})
+  
   // Auto-advance to next phase when current phase changes (but not when user manually selects a phase)
   useEffect(() => {
     if (currentPhase > 0 && currentPhase > previousPhaseRef.current) {
@@ -1163,7 +1340,7 @@ function MatrixPhasePanel({ taskId, currentPhase, status, onClose, streamingMess
             // Render assistant turns with grouped tool calls
             if (group.type === 'assistant') {
                   const isStreaming = shouldShowStreaming && isLastGroup(idx)
-                  return <AssistantTurn key={idx} group={group} mode={mode} streamingMessage={streamingMessage} isStreaming={isStreaming} />
+                  return <AssistantTurn key={idx} groupIdx={idx} group={group} mode={mode} streamingMessage={streamingMessage} isStreaming={isStreaming} manuallyToggledTools={manuallyToggledTools} setManuallyToggledTools={setManuallyToggledTools} />
             }
             
             // Render other message types normally
