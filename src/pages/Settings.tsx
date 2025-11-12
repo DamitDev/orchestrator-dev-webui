@@ -3,6 +3,7 @@ import ConfigModels from './config/Models'
 import ConfigLLM from './config/LLMBackends'
 import ConfigMCP from './config/MCPServers'
 import ConfigTaskHandler from './config/TaskHandler'
+import ConfigSummaryWorker from './config/SummaryWorker'
 import ConfigTools from './config/ToolsExplorer'
 import ConfigSystem from './config/System'
 import ConfigAuth from './config/Auth'
@@ -12,6 +13,7 @@ const sections = [
   { id: 'llm-backends', title: 'LLM Backends', component: ConfigLLM },
   { id: 'mcp-servers', title: 'MCP Servers', component: ConfigMCP },
   { id: 'task-handler', title: 'Task Handler', component: ConfigTaskHandler },
+  { id: 'summary-worker', title: 'AI Summary Worker', component: ConfigSummaryWorker },
   { id: 'tools', title: 'Tools Explorer', component: ConfigTools },
   { id: 'system', title: 'System', component: ConfigSystem },
   { id: 'auth', title: 'Auth', component: ConfigAuth },

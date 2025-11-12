@@ -94,6 +94,18 @@ export interface ConversationResponse {
   conversation: ConversationMessage[]
 }
 
+// Summary Worker Status
+export interface SummaryWorkerStatus {
+  running: boolean
+  uptime_seconds: number | null
+  max_concurrent_summaries: number
+  processed_count: number
+  queued_count: number
+  pending_count: number
+  queue_size: number
+  error_count: number
+}
+
 // WebSocket event types
 export interface BaseWebSocketEvent {
   event_type: string
@@ -154,6 +166,11 @@ export interface HelpRequestedEvent extends BaseWebSocketEvent {
   help_question: string
 }
 
+export interface SummaryWorkerStatusEvent {
+  event_type: 'summary_worker_status'
+  data: SummaryWorkerStatus
+}
+
 export type WebSocketEvent = 
   | MessageAddedEvent
   | MessageStreamingEvent
@@ -161,6 +178,7 @@ export type WebSocketEvent =
   | TaskStatusChangedEvent
   | ApprovalRequestedEvent
   | HelpRequestedEvent
+  | SummaryWorkerStatusEvent
   | BaseWebSocketEvent
 
 

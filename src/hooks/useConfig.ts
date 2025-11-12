@@ -6,6 +6,7 @@ export const configKeys = {
   llm: ['config','llm'] as const,
   mcp: ['config','mcp'] as const,
   taskHandler: ['config','taskHandler'] as const,
+  summaryWorker: ['config','summaryWorker'] as const,
   tools: ['config','tools'] as const,
   auth: ['config','auth'] as const,
   health: ['config','health'] as const,
@@ -26,6 +27,14 @@ export function useMCPServers() {
 
 export function useTaskHandlerStatus() {
   return useQuery({ queryKey: configKeys.taskHandler, queryFn: () => configApi.getTaskHandlerStatus() })
+}
+
+export function useSummaryWorkerStatus() {
+  return useQuery({ 
+    queryKey: configKeys.summaryWorker, 
+    queryFn: () => configApi.getSummaryWorkerStatus(),
+    refetchInterval: 5000 // Refetch every 5 seconds
+  })
 }
 
 export function useToolsAll() {

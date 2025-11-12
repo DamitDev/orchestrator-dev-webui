@@ -1,6 +1,6 @@
 import axios, { AxiosInstance } from 'axios'
 import { getRuntimeConfig } from './runtimeConfig'
-import type { TasksQueryParams, TasksResponse, TaskCreateRequest, TaskCreateResponse, Task, ConversationResponse } from '../types/api'
+import type { TasksQueryParams, TasksResponse, TaskCreateRequest, TaskCreateResponse, Task, ConversationResponse, SummaryWorkerStatus } from '../types/api'
 
 let apiClient: AxiosInstance | null = null
 
@@ -162,6 +162,10 @@ export const configApi = {
   },
   async setMaxConcurrentTasks(max: number): Promise<void> {
     await getApi().post('/configuration/taskhandler/concurrent', undefined, { params: { max_tasks: max } })
+  },
+  async getSummaryWorkerStatus(): Promise<SummaryWorkerStatus> {
+    const { data } = await getApi().get('/configuration/summary-worker/status')
+    return data
   },
   async getTools(): Promise<any> {
     const { data } = await getApi().get('/tools/all')
