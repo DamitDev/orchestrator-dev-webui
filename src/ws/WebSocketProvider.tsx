@@ -1,4 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
+import { useAuth } from '../context/AuthContext'
 
 type EventHandler = (event: any) => void
 
@@ -19,17 +20,30 @@ const WSContext = createContext<WSContextValue | null>(null)
 
 import { getRuntimeConfig } from '../lib/runtimeConfig'
 
-function getWsUrl(): string {
+function getWsUrl(token?: string): string {
   try {
-    return getRuntimeConfig().wsUrl
+    const baseUrl = getRuntimeConfig().wsUrl
+    // Add token as query parameter if available
+    if (token) {
+      const url = new URL(baseUrl.replace('ws://', 'http://').replace('wss://', 'https://'))
+      url.searchParams.set('token', token)
+      return url.toString().replace('http://', 'ws://').replace('https://', 'wss://')
+    }
+    return baseUrl
   } catch {
     const host = window.location.hostname
     const port = '8080'
-    return `ws://${host}:${port}/ws?client_id=webui`
+    const baseUrl = `ws://${host}:${port}/ws?client_id=webui`
+    // Add token if available
+    if (token) {
+      return `${baseUrl}&token=${token}`
+    }
+    return baseUrl
   }
 }
 
 export function WebSocketProvider({ children }: { children: React.ReactNode }) {
+  const { token, isAuthenticated } = useAuth()
   const [isConnected, setConnected] = useState(false)
   const wsRef = useRef<WebSocket | null>(null)
   const subsRef = useRef<Map<string, Subscription>>(new Map())
@@ -47,6 +61,11 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
   }, [])
 
   useEffect(() => {
+    // Don't connect if not authenticated
+    if (!isAuthenticated) {
+      return
+    }
+
     let reconnectTimeout: number | null = null
     let isUnmounting = false
     let reconnectAttempts = 0
@@ -55,7 +74,7 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
     const connect = () => {
       if (isUnmounting) return
       
-    const ws = new WebSocket(getWsUrl())
+    const ws = new WebSocket(getWsUrl(token))
     wsRef.current = ws
       
       ws.onopen = () => {
@@ -119,7 +138,7 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
       wsRef.current = null
       }
     }
-  }, [])
+  }, [isAuthenticated, token])
 
   const value = useMemo<WSContextValue>(() => ({
     isConnected,

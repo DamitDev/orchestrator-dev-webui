@@ -7,6 +7,7 @@ import './index.css'
 import App from './App'
 import { ModeProvider } from './state/ModeContext'
 import { WebSocketProvider } from './ws/WebSocketProvider'
+import { AuthProvider } from './context/AuthContext'
 import { loadRuntimeConfig } from './lib/runtimeConfig'
 
 const queryClient = new QueryClient({
@@ -23,14 +24,16 @@ async function bootstrap() {
   createRoot(document.getElementById('root')!).render(
     <StrictMode>
       <QueryClientProvider client={queryClient}>
-        <ModeProvider>
-          <WebSocketProvider>
-            <BrowserRouter>
-              <App />
-              <Toaster position="top-right" />
-            </BrowserRouter>
-          </WebSocketProvider>
-        </ModeProvider>
+        <AuthProvider>
+          <ModeProvider>
+            <WebSocketProvider>
+              <BrowserRouter>
+                <App />
+                <Toaster position="top-right" />
+              </BrowserRouter>
+            </WebSocketProvider>
+          </ModeProvider>
+        </AuthProvider>
       </QueryClientProvider>
     </StrictMode>
   )

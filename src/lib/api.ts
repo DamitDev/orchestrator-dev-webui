@@ -1,13 +1,46 @@
-import axios, { AxiosInstance } from 'axios'
+import axios, { AxiosInstance, InternalAxiosRequestConfig } from 'axios'
 import { getRuntimeConfig } from './runtimeConfig'
 import type { TasksQueryParams, TasksResponse, TaskCreateRequest, TaskCreateResponse, Task, ConversationResponse, SummaryWorkerStatus } from '../types/api'
 
 let apiClient: AxiosInstance | null = null
+let tokenGetter: (() => string | undefined) | null = null
+
+// Set the token getter function from AuthContext
+export function setTokenGetter(getter: () => string | undefined) {
+  tokenGetter = getter
+}
 
 function getApi(): AxiosInstance {
   if (apiClient) return apiClient
   const baseURL = getRuntimeConfig().apiBaseUrl
   apiClient = axios.create({ baseURL, timeout: 30000, headers: { 'Content-Type': 'application/json' } })
+  
+  // Add request interceptor to include auth token
+  apiClient.interceptors.request.use(
+    (config: InternalAxiosRequestConfig) => {
+      const token = tokenGetter?.()
+      if (token && config.headers) {
+        config.headers.Authorization = `Bearer ${token}`
+      }
+      return config
+    },
+    (error) => {
+      return Promise.reject(error)
+    }
+  )
+
+  // Add response interceptor to handle 401 errors
+  apiClient.interceptors.response.use(
+    (response) => response,
+    (error) => {
+      if (error.response?.status === 401) {
+        console.error('Unauthorized access - authentication required')
+        // The auth context will handle redirecting to login
+      }
+      return Promise.reject(error)
+    }
+  )
+  
   return apiClient
 }
 
