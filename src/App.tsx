@@ -2,7 +2,7 @@ import { Link, NavLink, Route, Routes, useLocation } from 'react-router-dom'
 import { useEffect, useRef, useState } from 'react'
 import { useMode } from './state/ModeContext'
 import { useAuth } from './context/AuthContext'
-import { setTokenGetter } from './lib/api'
+import { setTokenGetter, configApi } from './lib/api'
 import Inbox from './pages/Inbox'
 import Tasks from './pages/Tasks'
 import CreateTask from './pages/CreateTask'
@@ -30,6 +30,7 @@ function Header() {
   const [wfOpen, setWfOpen] = useState(false)
   const [userOpen, setUserOpen] = useState(false)
   const [isDark, setIsDark] = useState(false)
+  const [version, setVersion] = useState<string | null>(null)
   const wfCloseTimeout = useRef<number | null>(null)
   const userCloseTimeout = useRef<number | null>(null)
   
@@ -66,6 +67,17 @@ function Header() {
     setIsDark(initialDark)
     document.documentElement.classList.toggle('dark', initialDark)
   }, [])
+  
+  useEffect(() => {
+    // Fetch version from API
+    configApi.getHealth().then(health => {
+      if (health.version) {
+        setVersion(health.version)
+      }
+    }).catch(() => {
+      // Silently fail if health endpoint is not available
+    })
+  }, [])
   const toggleTheme = () => {
     const next = !isDark
     setIsDark(next)
@@ -88,9 +100,16 @@ function Header() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
                 </svg>
               </div>
-              <span className="text-xl font-bold bg-gradient-to-r from-nord10 to-nord8 bg-clip-text text-transparent">
-                Orchestrator
-              </span>
+              <div className="flex flex-col">
+                <span className="text-xl font-bold bg-gradient-to-r from-nord10 to-nord8 bg-clip-text text-transparent leading-tight">
+                  Orchestrator
+                </span>
+                {version && (
+                  <span className="text-[10px] text-nord3 dark:text-nord4 font-mono leading-none">
+                    v{version}
+                  </span>
+                )}
+              </div>
             </Link>
             <nav className="hidden md:flex items-center gap-1">
               {navItem('/', 'Inbox')}

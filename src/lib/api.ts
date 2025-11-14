@@ -208,7 +208,7 @@ export const configApi = {
     const { data } = await getApi().get('/auth/config')
     return data
   },
-  async getHealth(): Promise<any> {
+  async getHealth(): Promise<{ status: string; message: string; version?: string; components?: any }> {
     const { data } = await getApi().get('/health')
     return data
   },
