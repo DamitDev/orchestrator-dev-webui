@@ -69,9 +69,20 @@ function getMarkdownComponents(animate: boolean) {
     ul: ({ children }: any) => <ul className={`list-disc list-outside ml-5 mb-3 space-y-1 ${animationClass}`}>{children}</ul>,
     ol: ({ children }: any) => <ol className={`list-decimal list-outside ml-5 mb-3 space-y-1 ${animationClass}`}>{children}</ol>,
     li: ({ children }: any) => <li className={`leading-relaxed ${animationClass}`}>{children}</li>,
-    code: ({ inline, children }: any) => {
-      if (inline) {
-        return <code className={`bg-nord5/50 dark:bg-nord2 px-1.5 py-0.5 rounded text-xs font-mono text-nord10 dark:text-nord8 ${animationClass}`}>{children}</code>
+    code: ({ node, inline, className, children, ...props }: any) => {
+      // Check if this is inline code (has parent that's not <pre>)
+      const isInline = inline !== false && !className
+      
+      if (isInline) {
+        return (
+          <code 
+            className={`bg-nord10/10 dark:bg-nord8/20 px-1 py-0.5 rounded text-xs font-mono text-nord10 dark:text-nord8 border border-nord10/20 dark:border-nord8/40 ${animationClass}`}
+            style={{ display: 'inline', verticalAlign: 'middle', position: 'relative', top: '-0.05em' }}
+            {...props}
+          >
+            {children}
+          </code>
+        )
       }
       return (
         <pre className={`bg-nord5 dark:bg-nord2 p-3 rounded-lg overflow-x-auto mb-3 border border-nord4 dark:border-nord3 ${animationClass}`}>

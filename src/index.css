@@ -203,4 +203,14 @@ body {
   }
 }
 
+/* Ensure inline code elements stay inline */
+p code, li code, span code, div code {
+  display: inline !important;
+}
+
+/* Ensure block code/pre elements stay block */
+pre, pre code {
+  display: block !important;
+}
+
 

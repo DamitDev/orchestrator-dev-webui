@@ -54,7 +54,12 @@ export function MessageContent({ role, content, isLatestTool }: { role: string; 
           remarkPlugins={[remarkGfm, remarkBreaks]}
           components={{
             p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
-            code: ({ children }) => <code className="text-xs bg-nord4/30 dark:bg-nord1 px-1 py-0.5 rounded">{children}</code>,
+            code: ({ node, inline, className, children, ...props }: any) => {
+              const isInline = inline !== false && !className
+              return isInline 
+                ? <code className="text-xs bg-nord10/10 dark:bg-nord8/20 px-1 py-0.5 rounded border border-nord10/20 dark:border-nord8/40 text-nord10 dark:text-nord8" style={{ display: 'inline', verticalAlign: 'middle', position: 'relative', top: '-0.05em' }} {...props}>{children}</code>
+                : <code className="block text-xs bg-nord4 dark:bg-nord1 px-2 py-1 rounded border border-nord4/50 dark:border-nord2/30">{children}</code>
+            },
           }}
         >
           {content}
@@ -85,9 +90,20 @@ export function MessageContent({ role, content, isLatestTool }: { role: string; 
           li: ({ children }) => <li className="leading-relaxed">{children}</li>,
           
           // Code blocks and inline code
-          code: ({ inline, children }: any) => {
-            if (inline) {
-              return <code className="bg-nord5/50 dark:bg-nord2 px-1.5 py-0.5 rounded text-xs font-mono text-nord10 dark:text-nord8">{children}</code>
+          code: ({ node, inline, className, children, ...props }: any) => {
+            // Check if this is inline code (has parent that's not <pre>)
+            const isInline = inline !== false && !className
+            
+            if (isInline) {
+              return (
+                <code 
+                  className="bg-nord10/10 dark:bg-nord8/20 px-1 py-0.5 rounded text-xs font-mono text-nord10 dark:text-nord8 border border-nord10/20 dark:border-nord8/40"
+                  style={{ display: 'inline', verticalAlign: 'middle', position: 'relative', top: '-0.05em' }}
+                  {...props}
+                >
+                  {children}
+                </code>
+              )
             }
             return (
               <pre className="bg-nord5 dark:bg-nord2 p-3 rounded-lg overflow-x-auto mb-3 border border-nord4 dark:border-nord3">
