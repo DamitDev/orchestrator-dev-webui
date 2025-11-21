@@ -2,6 +2,8 @@ import express from 'express';
 import { createProxyMiddleware } from 'http-proxy-middleware';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import http from 'http';
+import https from 'https';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -13,6 +15,28 @@ const wsTarget = process.env.VITE_ORCHESTRATOR_WS_URL || 'ws://localhost:8080';
 
 console.log(`Configuring proxy: API -> ${apiTarget}, WS -> ${wsTarget}`);
 
+// Optimize Express for performance
+app.disable('x-powered-by'); // Remove unnecessary header
+app.set('etag', false); // Disable ETag generation for proxied requests
+
+// Create HTTP/HTTPS agents with keep-alive for connection reuse
+// This significantly reduces latency by reusing TCP connections
+const httpAgent = new http.Agent({
+  keepAlive: true,
+  keepAliveMsecs: 30000,
+  maxSockets: 50,
+  maxFreeSockets: 10,
+  timeout: 30000
+});
+
+const httpsAgent = new https.Agent({
+  keepAlive: true,
+  keepAliveMsecs: 30000,
+  maxSockets: 50,
+  maxFreeSockets: 10,
+  timeout: 30000
+});
+
 // Serve static files from dist directory
 app.use(express.static(path.join(__dirname, 'dist')));
 
@@ -20,14 +44,31 @@ app.use(express.static(path.join(__dirname, 'dist')));
 const apiProxy = createProxyMiddleware({
   target: apiTarget,
   changeOrigin: true,
+  // Use keep-alive agents for connection reuse
+  agent: apiTarget.startsWith('https') ? httpsAgent : httpAgent,
   pathRewrite: {
     '^/api': '' // Remove /api prefix when forwarding to backend
   },
+  // Performance optimizations
+  followRedirects: false, // Don't follow redirects automatically
+  xfwd: true, // Add X-Forwarded-* headers
+  // Increase timeout and socket settings for better performance
+  proxyTimeout: 30000,
+  timeout: 30000,
   onProxyReq: (proxyReq, req, res) => {
-    // console.log(`[Proxy] ${req.method} ${req.path} -> ${apiTarget}${proxyReq.path}`);
+    const startTime = Date.now();
+    req._proxyStartTime = startTime;
+    // Uncomment to debug timing:
+    // console.log(`[Proxy Start] ${req.method} ${req.path}`);
+  },
+  onProxyRes: (proxyRes, req, res) => {
+    const duration = Date.now() - (req._proxyStartTime || 0);
+    // Uncomment to debug timing:
+    // console.log(`[Proxy Complete] ${req.method} ${req.path} - ${duration}ms`);
   },
   onError: (err, req, res) => {
-    console.error('[Proxy Error]', err);
+    const duration = Date.now() - (req._proxyStartTime || 0);
+    console.error(`[Proxy Error] ${req.method} ${req.path} after ${duration}ms:`, err.message);
     res.status(500).send('Proxy Error');
   }
 });
@@ -42,6 +83,9 @@ const wsProxy = createProxyMiddleware({
   pathRewrite: {
      // Keep /ws as /ws because the backend expects it
   },
+  // Performance optimizations
+  followRedirects: false,
+  xfwd: true,
   onProxyReqWs: (proxyReq, req, socket, options, head) => {
     console.log('[Proxy WS] Connection upgrade request');
   },
