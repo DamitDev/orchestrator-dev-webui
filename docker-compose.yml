@@ -4,13 +4,18 @@ services:
       context: .
       dockerfile: Dockerfile
       args:
-        VITE_ORCHESTRATOR_API_URL: ${VITE_ORCHESTRATOR_API_URL:-http://host.docker.internal:8080}
-        VITE_ORCHESTRATOR_WS_URL: ${VITE_ORCHESTRATOR_WS_URL:-ws://host.docker.internal:8080/ws?client_id=webui}
+        # Set to relative paths so the frontend uses the proxy
+        VITE_ORCHESTRATOR_API_URL: /api
+        VITE_ORCHESTRATOR_WS_URL: /ws
         PORT: ${PORT:-5173}
     container_name: orchestrator-webui
     ports:
       - "${PORT:-5173}:${PORT:-5173}"
+    environment:
+      # Configure the Node.js server to proxy to the backend
+      - VITE_ORCHESTRATOR_API_URL=${VITE_ORCHESTRATOR_API_URL:-http://host.docker.internal:8080}
+      - VITE_ORCHESTRATOR_WS_URL=${VITE_ORCHESTRATOR_WS_URL:-ws://host.docker.internal:8080}
+      - PORT=${PORT:-5173}
     restart: unless-stopped
     extra_hosts:
       - "host.docker.internal:host-gateway"
-

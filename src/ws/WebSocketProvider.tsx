@@ -21,25 +21,26 @@ const WSContext = createContext<WSContextValue | null>(null)
 import { getRuntimeConfig } from '../lib/runtimeConfig'
 
 function getWsUrl(token?: string): string {
-  try {
-    const baseUrl = getRuntimeConfig().wsUrl
-    // Add token as query parameter if available
-    if (token) {
-      const url = new URL(baseUrl.replace('ws://', 'http://').replace('wss://', 'https://'))
-      url.searchParams.set('token', token)
-      return url.toString().replace('http://', 'ws://').replace('https://', 'wss://')
-    }
-    return baseUrl
-  } catch {
-    const host = window.location.hostname
-    const port = '8080'
-    const baseUrl = `ws://${host}:${port}/ws?client_id=webui`
-    // Add token if available
-    if (token) {
-      return `${baseUrl}&token=${token}`
-    }
-    return baseUrl
+  let baseUrl = getRuntimeConfig().wsUrl
+  
+  // Handle relative URLs (e.g., '/ws')
+  if (baseUrl.startsWith('/')) {
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
+    const host = window.location.host
+    baseUrl = `${protocol}//${host}${baseUrl}`
   }
+  
+  // Add client_id if not present
+  if (!baseUrl.includes('client_id=')) {
+    baseUrl += baseUrl.includes('?') ? '&client_id=webui' : '?client_id=webui'
+  }
+  
+  // Add token if available
+  if (token) {
+    baseUrl += `&token=${token}`
+  }
+  
+  return baseUrl
 }
 
 export function WebSocketProvider({ children }: { children: React.ReactNode }) {
