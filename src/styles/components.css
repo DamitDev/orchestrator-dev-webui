@@ -203,4 +203,74 @@
     @apply border-nord8 bg-nord8/5 ring-2 ring-nord8/20
            dark:bg-nord8/5; 
   }
+
+  /* Ticket message HTML formatting */
+  .ticket-message {
+    @apply text-sm;
+  }
+  
+  .ticket-message br {
+    display: block;
+    content: "";
+    margin: 0.5em 0;
+  }
+  
+  .ticket-message b,
+  .ticket-message strong {
+    @apply font-bold text-nord0 dark:text-nord6;
+  }
+  
+  .ticket-message i,
+  .ticket-message em {
+    @apply italic;
+  }
+  
+  .ticket-message u {
+    @apply underline decoration-1;
+  }
+  
+  .ticket-message a {
+    @apply text-nord10 hover:text-nord8 underline transition-colors
+           dark:text-nord8 dark:hover:text-nord7;
+  }
+  
+  .ticket-message p {
+    @apply mb-2;
+  }
+  
+  .ticket-message p:last-child {
+    @apply mb-0;
+  }
+  
+  .ticket-message ul,
+  .ticket-message ol {
+    @apply ml-4 mb-2;
+  }
+  
+  .ticket-message ul {
+    @apply list-disc;
+  }
+  
+  .ticket-message ol {
+    @apply list-decimal;
+  }
+  
+  .ticket-message li {
+    @apply mb-1;
+  }
+  
+  .ticket-message code {
+    @apply px-1.5 py-0.5 bg-nord5 rounded text-nord0 font-mono text-xs
+           dark:bg-nord2 dark:text-nord6;
+  }
+  
+  .ticket-message pre {
+    @apply p-3 bg-nord5 rounded-lg text-nord0 font-mono text-xs overflow-x-auto my-2
+           dark:bg-nord2 dark:text-nord6;
+  }
+  
+  .ticket-message blockquote {
+    @apply border-l-4 border-nord8 pl-4 my-2 italic text-nord3
+           dark:border-nord8 dark:text-nord4;
+  }
 }

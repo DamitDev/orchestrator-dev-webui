@@ -80,6 +80,133 @@ function parseSummary(summary: string | null | undefined): { title: string; sect
   return mainTitle ? { title: mainTitle, sections } : null
 }
 
+// Helper to parse ticket text with pipe-separated fields
+interface ParsedTicket {
+  partner?: string
+  name?: string
+  operationServiceLevel?: string
+  type?: string
+  priority?: string
+  supportGrade?: string
+  subject?: string
+  message?: string
+}
+
+function parseTicketText(ticketText: string | null | undefined): ParsedTicket | null {
+  if (!ticketText || !ticketText.trim()) return null
+  
+  const parsed: ParsedTicket = {}
+  
+  // Split by pipe and parse each field
+  const parts = ticketText.split('|').map(p => p.trim())
+  
+  for (const part of parts) {
+    const colonIndex = part.indexOf(':')
+    if (colonIndex === -1) continue
+    
+    const key = part.substring(0, colonIndex).trim().toLowerCase()
+    const value = part.substring(colonIndex + 1).trim()
+    
+    if (!value) continue
+    
+    switch (key) {
+      case 'partner':
+        parsed.partner = value
+        break
+      case 'name':
+        parsed.name = value
+        break
+      case 'operation service level':
+        parsed.operationServiceLevel = value
+        break
+      case 'type':
+        parsed.type = value
+        break
+      case 'priority':
+        parsed.priority = value
+        break
+      case 'support grade':
+        parsed.supportGrade = value
+        break
+      case 'subject':
+        parsed.subject = value
+        break
+      case 'message':
+        // Keep HTML but clean up inline styles for security
+        parsed.message = value
+          .replace(/style="[^"]*"/g, '')
+          .replace(/on\w+="[^"]*"/gi, '') // Remove event handlers for security
+          .trim()
+        break
+    }
+  }
+  
+  return Object.keys(parsed).length > 0 ? parsed : null
+}
+
+// Component to display parsed ticket fields
+function TicketFields({ ticketText }: { ticketText: string }) {
+  const parsed = parseTicketText(ticketText)
+  
+  if (!parsed) {
+    // Fallback to plain text display if parsing fails
+    return <div className="whitespace-pre-wrap break-words overflow-auto max-h-[300px]">{ticketText}</div>
+  }
+  
+  const Field = ({ label, value, highlight = false }: { label: string; value?: string; highlight?: boolean }) => {
+    if (!value) return null
+    return (
+      <div className={`flex gap-3 min-w-0 ${highlight ? 'col-span-2' : ''}`}>
+        <div className="text-xs font-semibold text-nord3 dark:text-nord4 uppercase tracking-wide min-w-[140px] flex-shrink-0">
+          {label}
+        </div>
+        <div className={`text-sm text-nord0 dark:text-nord6 break-words min-w-0 ${highlight ? 'font-medium' : ''}`}>
+          {value}
+        </div>
+      </div>
+    )
+  }
+  
+  return (
+    <div className="space-y-3 min-w-0">
+      {/* Header fields in a grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 p-4 bg-nord6/30 dark:bg-nord1/30 rounded-lg border border-nord4/50 dark:border-nord3/50 min-w-0">
+        <Field label="Partner" value={parsed.partner} />
+        <Field label="Contact" value={parsed.name} />
+        <Field label="Service Level" value={parsed.operationServiceLevel} />
+        <Field label="Support Grade" value={parsed.supportGrade} />
+        <Field label="Type" value={parsed.type} />
+        <Field label="Priority" value={parsed.priority} />
+      </div>
+      
+      {/* Subject - highlighted */}
+      {parsed.subject && (
+        <div className="p-4 bg-nord8/10 dark:bg-nord8/5 rounded-lg border border-nord8/30 dark:border-nord8/20 min-w-0">
+          <div className="text-xs font-semibold text-nord8 uppercase tracking-wide mb-2">
+            Subject
+          </div>
+          <div className="text-base font-medium text-nord0 dark:text-nord6 break-words">
+            {parsed.subject}
+          </div>
+        </div>
+      )}
+      
+      {/* Message - main content */}
+      {parsed.message && (
+        <div className="p-4 bg-nord5/20 dark:bg-nord2/20 rounded-lg border border-nord4/50 dark:border-nord3/50 min-w-0 overflow-auto max-h-[400px]">
+          <div className="text-xs font-semibold text-nord3 dark:text-nord4 uppercase tracking-wide mb-2">
+            Message
+          </div>
+          <div 
+            className="text-sm text-nord0 dark:text-nord6 break-words leading-relaxed ticket-message"
+            dangerouslySetInnerHTML={{ __html: parsed.message }}
+          />
+        </div>
+      )}
+    </div>
+  )
+}
+
 function StatusBadge({ status }: { status: string }) {
   const cls = status === 'completed' ? 'status-badge status--completed'
     : status === 'failed' ? 'status-badge status--failed'
@@ -756,12 +883,12 @@ export default function TaskDetail() {
                     )}
                     
                     {task.workflow_data?.ticket_text && (
-                      <div className="grid grid-cols-[120px_1fr] gap-2 items-start">
+                      <div className="space-y-2">
                         <div className="text-xs font-semibold text-nord3 dark:text-nord4 uppercase tracking-wide">
-                          Ticket
+                          Ticket Details
                         </div>
-                        <div className="text-sm text-nord0 dark:text-nord6 bg-nord5/50 p-3 rounded-lg border border-nord4 dark:bg-nord2/50 dark:border-nord3">
-                          {task.workflow_data.ticket_text}
+                        <div className="min-w-0">
+                          <TicketFields ticketText={task.workflow_data.ticket_text} />
                         </div>
                       </div>
                     )}
