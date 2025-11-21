@@ -42,10 +42,9 @@ COPY --from=builder /app/dist ./dist
 COPY server.js ./
 
 # Set port from build arg
+# Note: EXPOSE is just metadata; actual port mapping is handled by docker-compose
 ARG PORT=5173
 ENV PORT=${PORT}
-
-# Expose port
 EXPOSE ${PORT}
 
 # Serve the application using the custom server

@@ -105,19 +105,21 @@ PORT=5173
 
 ### Docker Environment Variables
 
-When using Docker, configure via build args:
+When using Docker Compose, you can configure via environment variables:
 
-- `VITE_ORCHESTRATOR_API_URL` - Orchestrator API base URL (default: `http://host.docker.internal:8080`)
-- `VITE_ORCHESTRATOR_WS_URL` - Orchestrator WebSocket URL (default: `ws://host.docker.internal:8080/ws?client_id=webui`)
-- `PORT` - Port to run the webui on (default: `5173`)
+- `VITE_ORCHESTRATOR_API_URL` - Backend API URL for the proxy server (default: `http://host.docker.internal:8080`)
+- `VITE_ORCHESTRATOR_WS_URL` - Backend WebSocket URL for the proxy server (default: `ws://host.docker.internal:8080`)
+- `PORT` - Port to run the webui on (default: `5173`). This sets both the container port and host port mapping.
 
 You can set these in a `.env` file in the same directory as `docker-compose.yml`:
 
 ```bash
 VITE_ORCHESTRATOR_API_URL=http://my-orchestrator:8080
-VITE_ORCHESTRATOR_WS_URL=ws://my-orchestrator:8080/ws?client_id=webui
+VITE_ORCHESTRATOR_WS_URL=ws://my-orchestrator:8080
 PORT=8000
 ```
+
+**Note**: With the proxy setup, the frontend uses relative paths (`/api` and `/ws`) by default. The `VITE_ORCHESTRATOR_API_URL` and `VITE_ORCHESTRATOR_WS_URL` environment variables configure where the proxy forwards requests to the backend.
 
 ## Connecting to Orchestrator
 
