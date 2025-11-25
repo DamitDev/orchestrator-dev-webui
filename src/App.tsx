@@ -10,7 +10,9 @@ import WorkflowTickets from './pages/workflows/Tickets'
 import WorkflowMatrix from './pages/workflows/Matrix'
 import WorkflowProactive from './pages/workflows/Proactive'
 import WorkflowInteractive from './pages/workflows/Interactive'
+import WorkflowMio from './pages/workflows/Mio'
 import TaskDetail from './pages/task/TaskDetail'
+import MioDetail from './pages/mio/MioDetail'
 import ConfigModels from './pages/config/Models'
 import ConfigLLM from './pages/config/LLMBackends'
 import ConfigMCP from './pages/config/MCPServers'
@@ -123,6 +125,7 @@ function Header() {
                 {wfOpen && (
                   <div className={`dropdown-menu w-44`} onMouseEnter={() => cancelClose()} onMouseLeave={() => scheduleClose()}>
                     <div className="py-1">
+                      <NavLink to="/workflows/mio" className={({isActive}) => `${'dropdown-item'} ${isActive ? 'dropdown-item-active' : ''}`} onClick={() => setWfOpen(false)}>Mio</NavLink>
                       <NavLink to="/workflows/tickets" className={({isActive}) => `${'dropdown-item'} ${isActive ? 'dropdown-item-active' : ''}`} onClick={() => setWfOpen(false)}>Tickets</NavLink>
                       <NavLink to="/workflows/matrix" className={({isActive}) => `${'dropdown-item'} ${isActive ? 'dropdown-item-active' : ''}`} onClick={() => setWfOpen(false)}>Matrix</NavLink>
                       <NavLink to="/workflows/proactive" className={({isActive}) => `${'dropdown-item'} ${isActive ? 'dropdown-item-active' : ''}`} onClick={() => setWfOpen(false)}>Proactive</NavLink>
@@ -251,8 +254,10 @@ export default function App() {
             <Route path="/workflows/matrix" element={<WorkflowMatrix />} />
             <Route path="/workflows/proactive" element={<WorkflowProactive />} />
             <Route path="/workflows/interactive" element={<WorkflowInteractive />} />
+            <Route path="/workflows/mio" element={<WorkflowMio />} />
 
             <Route path="/task/:id" element={<TaskDetail />} />
+            <Route path="/mio/:id" element={<MioDetail />} />
 
             <Route path="/settings" element={<Settings />} />
 
