@@ -593,13 +593,19 @@ export default function MioDetail() {
         return
       }
       
+      // Handle memory events
+      if (['mio_memory_created', 'mio_memory_updated', 'mio_memory_deleted'].includes(evt.event_type) && evt.task_id === id) {
+        queryClient.invalidateQueries({ queryKey: ['mio-memories', id] })
+        return
+      }
+      
       if (evt.task_id === id) {
         queryClient.invalidateQueries({ queryKey: taskKeys.byId(id) })
         if (evt.event_type !== 'message_streaming') {
           queryClient.invalidateQueries({ queryKey: taskKeys.conversation(id) })
         }
       }
-    }, { eventTypes: ['task_status_changed', 'message_added', 'message_streaming', 'message_summary_generated', 'approval_requested', 'task_workflow_data_changed'] })
+    }, { eventTypes: ['task_status_changed', 'message_added', 'message_streaming', 'message_summary_generated', 'approval_requested', 'task_workflow_data_changed', 'mio_memory_created', 'mio_memory_updated', 'mio_memory_deleted'] })
     return () => {}
   }, [subscribe, queryClient, id])
   
@@ -762,6 +768,26 @@ export default function MioDetail() {
             </Link>
             <h2 className="text-lg font-bold text-nord0 dark:text-nord6">Mio</h2>
             <div className="text-xs text-nord3 dark:text-nord4 font-mono">{id?.slice(0, 8)}</div>
+          </div>
+          
+          {/* Task Status */}
+          <div className="p-4 border-b border-nord4 dark:border-nord3">
+            <div className="text-xs text-nord3 dark:text-nord4 uppercase tracking-wide mb-2">State</div>
+            <div className="flex items-center gap-2">
+              <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${
+                task.status === 'sleeping' ? 'bg-nord3/20 text-nord3 dark:text-nord4' :
+                task.status === 'user_turn' ? 'bg-nord14/20 text-nord14' :
+                task.status === 'agent_turn' || task.status === 'background_turn' ? 'bg-nord8/20 text-nord8' :
+                task.status === 'queued' || task.status === 'queued_for_function_execution' ? 'bg-nord13/20 text-nord13' :
+                task.status === 'action_required' ? 'bg-nord12/20 text-nord12' :
+                task.status === 'completed' ? 'bg-nord14/20 text-nord14' :
+                task.status === 'failed' ? 'bg-nord11/20 text-nord11' :
+                task.status === 'archived' ? 'bg-nord3/20 text-nord3 dark:text-nord4' :
+                'bg-nord4/20 text-nord3 dark:text-nord4'
+              }`}>
+                {task.status.replace(/_/g, ' ')}
+              </span>
+            </div>
           </div>
           
           {/* Mode indicator */}
