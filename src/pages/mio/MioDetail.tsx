@@ -98,6 +98,7 @@ function groupMessages(messages: any[]) {
         type: 'assistant',
         assistantMessages: [],
         toolInteractions: [],
+        orphanToolMessages: [], // Tool messages without matching tool calls
         finalContent: null,
         finalReasoning: null
       }
@@ -140,6 +141,9 @@ function groupMessages(messages: any[]) {
                   interaction.toolResponse = toolMsg
                   interaction.tool_output_summary = toolMsg.tool_output_summary
                 }
+              } else {
+                // Orphan tool message - no matching tool call
+                group.orphanToolMessages.push(toolMsg)
               }
               j++
             }
@@ -310,6 +314,50 @@ function AssistantTurn({
                       </div>
                     )
                   })()}
+                </div>
+              </AnimatedDetails>
+            </div>
+          )
+        })}
+        
+        {/* Orphan tool messages (system-injected, like wake notifications) */}
+        {group.orphanToolMessages && group.orphanToolMessages.length > 0 && group.orphanToolMessages.map((toolMsg: any, idx: number) => {
+          const toolKey = `${groupIdx}-orphan-${idx}`
+          const isToolOpen = manuallyToggledTools[toolKey] !== undefined 
+            ? manuallyToggledTools[toolKey] 
+            : true // Default open for notifications
+          
+          // Try to get a title from the summary or use a default
+          const summaryParsed = toolMsg.tool_output_summary ? parseSummary(toolMsg.tool_output_summary) : null
+          const title = summaryParsed?.title || 'System Notification'
+          
+          return (
+            <div key={toolKey}>
+              <AnimatedDetails 
+                className="text-xs mb-2"
+                summaryClassName="text-nord3 dark:text-nord4 hover:text-nord10 dark:hover:text-nord8"
+                open={isToolOpen}
+                onToggle={(newState) => {
+                  setManuallyToggledTools({ ...manuallyToggledTools, [toolKey]: newState })
+                }}
+                summary={<span className="flex items-center gap-1.5">▸ <WrenchIcon />{title}</span>}
+              >
+                <div className="mt-2 ml-4 space-y-2">
+                  {mode === 'simple' && summaryParsed && summaryParsed.sections.length > 0 ? (
+                    <div className="p-3 bg-nord5/30 rounded-lg border border-nord4/50 dark:bg-nord2/30 dark:border-nord3/50 text-xs">
+                      {summaryParsed.sections.map((section, sidx) => (
+                        <div key={sidx}>
+                          <MessageContent role="assistant" content={section.content} isLatestTool={false} />
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="tool-response-box p-3 bg-nord5/30 rounded-lg border border-nord4/50 dark:bg-nord2/30 dark:border-nord3/50 text-xs max-h-[7.5rem] overflow-y-auto">
+                      <div className="text-sm text-gray-900 dark:text-gray-100 whitespace-pre-wrap break-words">
+                        {toolMsg.content}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </AnimatedDetails>
             </div>
@@ -728,7 +776,7 @@ export default function MioDetail() {
   
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-[calc(100vh-10rem)]">
+      <div className="flex items-center justify-center h-[calc(100vh-4rem)]">
         <div className="text-center">
           <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-nord8 border-t-transparent"></div>
           <p className="mt-4 text-nord3 dark:text-nord4">Loading Mio...</p>
@@ -739,7 +787,7 @@ export default function MioDetail() {
   
   if (error || !task) {
     return (
-      <div className="flex items-center justify-center h-[calc(100vh-10rem)]">
+      <div className="flex items-center justify-center h-[calc(100vh-4rem)]">
         <div className="card p-8 text-center max-w-md">
           <AlertCircle className="w-12 h-12 text-nord11 mx-auto mb-4" />
           <div className="text-nord11 font-semibold mb-2">Failed to load Mio</div>
@@ -756,10 +804,10 @@ export default function MioDetail() {
   }
   
   return (
-    <div className="h-[calc(100vh-7rem)] flex">
-      {/* Left Panel: Status & Controls */}
-      <div className={`${leftPanelOpen ? 'w-64' : 'w-0'} transition-all duration-300 flex-shrink-0 overflow-hidden`}>
-        <div className="h-full w-64 border-r border-nord4 dark:border-nord3 bg-nord6/50 dark:bg-nord1/50 flex flex-col">
+    <div className="h-[calc(100vh-4rem)] relative">
+      {/* Left Panel: Status & Controls - Absolute positioned from left edge */}
+      <div className={`absolute left-0 top-0 h-full z-10 transition-transform duration-300 ${leftPanelOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+        <div className="h-full w-64 border-r border-nord4 dark:border-nord3 bg-nord6/90 dark:bg-nord1/90 backdrop-blur-sm flex flex-col shadow-lg relative">
           {/* Header */}
           <div className="p-4 border-b border-nord4 dark:border-nord3">
             <Link to="/workflows/mio" className="flex items-center gap-2 text-sm text-nord3 dark:text-nord4 hover:text-nord10 dark:hover:text-nord8 mb-3">
@@ -880,18 +928,22 @@ export default function MioDetail() {
             )}
           </div>
         </div>
+        
+        {/* Toggle button - Attached to panel's right edge */}
+        <button 
+          onClick={() => setLeftPanelOpen(!leftPanelOpen)}
+          className={`absolute -right-10 top-1/2 -translate-y-1/2 w-10 h-20 flex items-center justify-center rounded-r-lg shadow-xl transition-all border border-l-0 ${
+            leftPanelOpen 
+              ? 'bg-nord4 dark:bg-nord3 hover:bg-nord4/80 dark:hover:bg-nord3/80 border-nord4 dark:border-nord3' 
+              : 'bg-gradient-to-r from-nord8 to-nord10 hover:from-nord8/90 hover:to-nord10/90 border-nord8'
+          }`}
+        >
+          {leftPanelOpen ? <ChevronLeft className={`w-5 h-5 ${leftPanelOpen ? 'text-nord3 dark:text-nord4' : 'text-nord6'}`} /> : <ChevronRight className="w-5 h-5 text-nord6" />}
+        </button>
       </div>
       
-      {/* Left panel toggle */}
-      <button 
-        onClick={() => setLeftPanelOpen(!leftPanelOpen)}
-        className="w-6 flex-shrink-0 bg-nord5/50 dark:bg-nord2/50 hover:bg-nord4 dark:hover:bg-nord3 flex items-center justify-center border-r border-nord4 dark:border-nord3 transition-colors"
-      >
-        {leftPanelOpen ? <ChevronLeft className="w-4 h-4 text-nord3" /> : <ChevronRight className="w-4 h-4 text-nord3" />}
-      </button>
-      
-      {/* Center: Chat */}
-      <div className="flex-1 flex flex-col min-w-0">
+      {/* Center: Chat - Fixed width, always centered */}
+      <div className="h-full flex flex-col max-w-5xl mx-auto w-full">
         {/* Chat header */}
         <div className="px-4 py-3 border-b border-nord4 dark:border-nord3 bg-nord6/30 dark:bg-nord1/30 flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -1005,17 +1057,9 @@ export default function MioDetail() {
         )}
       </div>
       
-      {/* Right panel toggle */}
-      <button 
-        onClick={() => setRightPanelOpen(!rightPanelOpen)}
-        className="w-6 flex-shrink-0 bg-nord5/50 dark:bg-nord2/50 hover:bg-nord4 dark:hover:bg-nord3 flex items-center justify-center border-l border-nord4 dark:border-nord3 transition-colors"
-      >
-        {rightPanelOpen ? <ChevronRight className="w-4 h-4 text-nord3" /> : <ChevronLeft className="w-4 h-4 text-nord3" />}
-      </button>
-      
-      {/* Right Panel: Memory & Jobs */}
-      <div className={`${rightPanelOpen ? 'w-80' : 'w-0'} transition-all duration-300 flex-shrink-0 overflow-hidden`}>
-        <div className="h-full w-80 border-l border-nord4 dark:border-nord3 bg-nord6/50 dark:bg-nord1/50 flex flex-col">
+      {/* Right Panel: Memory & Jobs - Absolute positioned from right edge */}
+      <div className={`absolute right-0 top-0 h-full z-10 transition-transform duration-300 ${rightPanelOpen ? 'translate-x-0' : 'translate-x-full'}`}>
+        <div className="h-full w-80 border-l border-nord4 dark:border-nord3 bg-nord6/90 dark:bg-nord1/90 backdrop-blur-sm flex flex-col shadow-lg relative">
           {/* Jobs Section */}
           <div className="border-b border-nord4 dark:border-nord3">
             <div className="p-4 flex items-center gap-2 border-b border-nord4/50 dark:border-nord3/50">
@@ -1069,6 +1113,18 @@ export default function MioDetail() {
             </div>
           </div>
         </div>
+        
+        {/* Toggle button - Attached to panel's left edge */}
+        <button 
+          onClick={() => setRightPanelOpen(!rightPanelOpen)}
+          className={`absolute -left-10 top-1/2 -translate-y-1/2 w-10 h-20 flex items-center justify-center rounded-l-lg shadow-xl transition-all border border-r-0 ${
+            rightPanelOpen 
+              ? 'bg-nord4 dark:bg-nord3 hover:bg-nord4/80 dark:hover:bg-nord3/80 border-nord4 dark:border-nord3' 
+              : 'bg-gradient-to-l from-nord8 to-nord10 hover:from-nord8/90 hover:to-nord10/90 border-nord8'
+          }`}
+        >
+          {rightPanelOpen ? <ChevronRight className={`w-5 h-5 ${rightPanelOpen ? 'text-nord3 dark:text-nord4' : 'text-nord6'}`} /> : <ChevronLeft className="w-5 h-5 text-nord6" />}
+        </button>
       </div>
     </div>
   )

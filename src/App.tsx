@@ -239,32 +239,39 @@ export default function App() {
     )
   }
 
+  const isMioDetail = location.pathname.startsWith('/mio/')
+
   return (
     <div className="min-h-full flex flex-col">
       <GlobalShortcuts />
       <Header />
       <main className="flex-1">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {isMioDetail ? (
           <Routes>
-            <Route path="/" element={<Inbox />} />
-            <Route path="/tasks" element={<Tasks />} />
-            <Route path="/create" element={<CreateTask />} />
-
-            <Route path="/workflows/tickets" element={<WorkflowTickets />} />
-            <Route path="/workflows/matrix" element={<WorkflowMatrix />} />
-            <Route path="/workflows/proactive" element={<WorkflowProactive />} />
-            <Route path="/workflows/interactive" element={<WorkflowInteractive />} />
-            <Route path="/workflows/mio" element={<WorkflowMio />} />
-
-            <Route path="/task/:id" element={<TaskDetail />} />
             <Route path="/mio/:id" element={<MioDetail />} />
-
-            <Route path="/settings" element={<Settings />} />
-
-            <Route path="/events" element={<Events />} />
-            <Route path="/preferences" element={<Preferences />} />
           </Routes>
-        </div>
+        ) : (
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <Routes>
+              <Route path="/" element={<Inbox />} />
+              <Route path="/tasks" element={<Tasks />} />
+              <Route path="/create" element={<CreateTask />} />
+
+              <Route path="/workflows/tickets" element={<WorkflowTickets />} />
+              <Route path="/workflows/matrix" element={<WorkflowMatrix />} />
+              <Route path="/workflows/proactive" element={<WorkflowProactive />} />
+              <Route path="/workflows/interactive" element={<WorkflowInteractive />} />
+              <Route path="/workflows/mio" element={<WorkflowMio />} />
+
+              <Route path="/task/:id" element={<TaskDetail />} />
+
+              <Route path="/settings" element={<Settings />} />
+
+              <Route path="/events" element={<Events />} />
+              <Route path="/preferences" element={<Preferences />} />
+            </Routes>
+          </div>
+        )}
       </main>
     </div>
   )
