@@ -42,7 +42,7 @@ export interface TasksQueryParams {
 export type ReasoningEffort = 'low' | 'medium' | 'high'
 
 export interface TaskCreateRequest {
-  workflow_id: 'proactive' | 'interactive' | 'ticket' | 'matrix'
+  workflow_id: 'proactive' | 'interactive' | 'ticket' | 'matrix' | 'self_managed'
   goal_prompt?: string
   max_iterations?: number
   reasoning_effort?: ReasoningEffort
@@ -92,6 +92,23 @@ export interface ConversationMessage {
 export interface ConversationResponse {
   task_id: string
   conversation: ConversationMessage[]
+}
+
+// Mio Memory types
+export interface MioMemory {
+  id: string
+  task_id: string | null
+  title: string
+  content: string
+  tags: string[]
+  linked_task_id: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface MioMemoriesResponse {
+  memories: MioMemory[]
+  total: number
 }
 
 // Summary Worker Status

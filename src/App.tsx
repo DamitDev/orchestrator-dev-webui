@@ -10,7 +10,9 @@ import WorkflowTickets from './pages/workflows/Tickets'
 import WorkflowMatrix from './pages/workflows/Matrix'
 import WorkflowProactive from './pages/workflows/Proactive'
 import WorkflowInteractive from './pages/workflows/Interactive'
+import WorkflowMio from './pages/workflows/Mio'
 import TaskDetail from './pages/task/TaskDetail'
+import MioDetail from './pages/mio/MioDetail'
 import ConfigModels from './pages/config/Models'
 import ConfigLLM from './pages/config/LLMBackends'
 import ConfigMCP from './pages/config/MCPServers'
@@ -123,6 +125,7 @@ function Header() {
                 {wfOpen && (
                   <div className={`dropdown-menu w-44`} onMouseEnter={() => cancelClose()} onMouseLeave={() => scheduleClose()}>
                     <div className="py-1">
+                      <NavLink to="/workflows/mio" className={({isActive}) => `${'dropdown-item'} ${isActive ? 'dropdown-item-active' : ''}`} onClick={() => setWfOpen(false)}>Mio</NavLink>
                       <NavLink to="/workflows/tickets" className={({isActive}) => `${'dropdown-item'} ${isActive ? 'dropdown-item-active' : ''}`} onClick={() => setWfOpen(false)}>Tickets</NavLink>
                       <NavLink to="/workflows/matrix" className={({isActive}) => `${'dropdown-item'} ${isActive ? 'dropdown-item-active' : ''}`} onClick={() => setWfOpen(false)}>Matrix</NavLink>
                       <NavLink to="/workflows/proactive" className={({isActive}) => `${'dropdown-item'} ${isActive ? 'dropdown-item-active' : ''}`} onClick={() => setWfOpen(false)}>Proactive</NavLink>
@@ -194,6 +197,15 @@ function Header() {
   )
 }
 
+/** Wrapper for pages that need the standard container layout */
+function PageContainer({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      {children}
+    </div>
+  )
+}
+
 export default function App() {
   const { isLoading, isAuthenticated, token, login } = useAuth()
 
@@ -241,25 +253,28 @@ export default function App() {
       <GlobalShortcuts />
       <Header />
       <main className="flex-1">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <Routes>
-            <Route path="/" element={<Inbox />} />
-            <Route path="/tasks" element={<Tasks />} />
-            <Route path="/create" element={<CreateTask />} />
+        <Routes>
+          {/* MioDetail uses full-width layout without container */}
+          <Route path="/mio/:id" element={<MioDetail />} />
+          
+          {/* All other routes use the standard container layout */}
+          <Route path="/" element={<PageContainer><Inbox /></PageContainer>} />
+          <Route path="/tasks" element={<PageContainer><Tasks /></PageContainer>} />
+          <Route path="/create" element={<PageContainer><CreateTask /></PageContainer>} />
 
-            <Route path="/workflows/tickets" element={<WorkflowTickets />} />
-            <Route path="/workflows/matrix" element={<WorkflowMatrix />} />
-            <Route path="/workflows/proactive" element={<WorkflowProactive />} />
-            <Route path="/workflows/interactive" element={<WorkflowInteractive />} />
+          <Route path="/workflows/tickets" element={<PageContainer><WorkflowTickets /></PageContainer>} />
+          <Route path="/workflows/matrix" element={<PageContainer><WorkflowMatrix /></PageContainer>} />
+          <Route path="/workflows/proactive" element={<PageContainer><WorkflowProactive /></PageContainer>} />
+          <Route path="/workflows/interactive" element={<PageContainer><WorkflowInteractive /></PageContainer>} />
+          <Route path="/workflows/mio" element={<PageContainer><WorkflowMio /></PageContainer>} />
 
-            <Route path="/task/:id" element={<TaskDetail />} />
+          <Route path="/task/:id" element={<PageContainer><TaskDetail /></PageContainer>} />
 
-            <Route path="/settings" element={<Settings />} />
+          <Route path="/settings" element={<PageContainer><Settings /></PageContainer>} />
 
-            <Route path="/events" element={<Events />} />
-            <Route path="/preferences" element={<Preferences />} />
-          </Routes>
-        </div>
+          <Route path="/events" element={<PageContainer><Events /></PageContainer>} />
+          <Route path="/preferences" element={<PageContainer><Preferences /></PageContainer>} />
+        </Routes>
       </main>
     </div>
   )

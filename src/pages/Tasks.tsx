@@ -11,7 +11,15 @@ import { TaskIdBadge } from '../components/TaskIdBadge'
 import toast from 'react-hot-toast'
 import { XCircle } from 'lucide-react'
 
-type WorkflowFilter = 'all' | 'ticket' | 'matrix' | 'proactive' | 'interactive'
+type WorkflowFilter = 'all' | 'ticket' | 'matrix' | 'proactive' | 'interactive' | 'self_managed'
+
+/** Get the correct detail page URL for a task based on its workflow */
+function getTaskDetailUrl(task: Task): string {
+  if (task.workflow_id === 'self_managed') {
+    return `/mio/${task.id}`
+  }
+  return `/task/${task.id}`
+}
 
 function StatusBadge({ status }: { status: string }) {
   return <span className={`status-badge ${
@@ -19,7 +27,9 @@ function StatusBadge({ status }: { status: string }) {
     : status === 'failed' ? 'status--failed'
     : status === 'action_required' ? 'status--action_required'
     : status === 'help_required' ? 'status--help_required'
-    : ['in_progress','validation','function_execution','agent_turn'].includes(status) ? 'status--running'
+    : status === 'sleeping' ? 'status--sleeping'
+    : status === 'background_active' ? 'status--background_active'
+    : ['in_progress','validation','function_execution','agent_turn','queued','queued_for_function_execution'].includes(status) ? 'status--running'
     : 'badge'
   }`}>{status.replace(/_/g,' ')}</span>
 }
@@ -43,7 +53,7 @@ function TaskCard({ task, selected, onToggle, onCancel }: { task: Task; selected
               </span>
             )}
           </div>
-          <Link to={`/task/${task.id}`} className="block text-sm font-medium link-muted truncate hover:text-nord8">
+          <Link to={getTaskDetailUrl(task)} className="block text-sm font-medium link-muted truncate hover:text-nord8">
             {task.goal_prompt || task.ticket_id || task.id}
           </Link>
           <div className="flex items-center gap-3 mt-2 text-xs">
@@ -124,7 +134,7 @@ function TasksTable({ tasks, selected, onToggle, onCancel }: { tasks: Task[]; se
               </td>
               <td className="px-4 py-3"><StatusBadge status={t.status} /></td>
               <td className="px-4 py-3 max-w-[420px]">
-                <Link to={`/task/${t.id}`} className="link-muted truncate inline-block max-w-full align-top hover:text-nord8 font-medium">
+                <Link to={getTaskDetailUrl(t)} className="link-muted truncate inline-block max-w-full align-top hover:text-nord8 font-medium">
                   {t.ticket_id || t.goal_prompt || t.id}
                 </Link>
               </td>
@@ -284,6 +294,7 @@ export default function Tasks() {
         <div className="flex flex-wrap items-center gap-3">
           <select value={workflow} onChange={e => { setWorkflow(e.target.value as WorkflowFilter); setPage(1) }} className="select">
             <option value="all">All workflows</option>
+            <option value="self_managed">Mio</option>
             <option value="ticket">Ticket</option>
             <option value="matrix">Matrix</option>
             <option value="proactive">Proactive</option>

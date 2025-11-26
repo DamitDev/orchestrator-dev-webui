@@ -7,6 +7,14 @@ import { useWebSocket } from '../ws/WebSocketProvider'
 import { TaskIdBadge } from '../components/TaskIdBadge'
 import { CheckCircle2, AlertCircle, MessageCircle, Play } from 'lucide-react'
 
+/** Get the correct detail page URL for a task based on its workflow */
+function getTaskDetailUrl(task: Task): string {
+  if (task.workflow_id === 'self_managed') {
+    return `/mio/${task.id}`
+  }
+  return `/task/${task.id}`
+}
+
 const sectionIcons = {
   'Pending Approvals': '●',
   'Help Required': '●',
@@ -50,7 +58,7 @@ function Section({ title, tasks }: { title: string; tasks: Task[] }) {
           {top.map(t => (
             <li key={t.id} className="group">
               <Link 
-                to={`/task/${t.id}`} 
+                to={getTaskDetailUrl(t)} 
                 className="block p-3 rounded-lg bg-nord6/50 hover:bg-nord6 border border-nord5 hover:border-nord8/30 
                            dark:bg-nord1/50 dark:hover:bg-nord2 dark:border-nord2 dark:hover:border-nord8/30
                            transition-all hover:shadow-md"

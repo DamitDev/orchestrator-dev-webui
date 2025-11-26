@@ -1,6 +1,6 @@
 import axios, { AxiosInstance, InternalAxiosRequestConfig } from 'axios'
 import { getRuntimeConfig } from './runtimeConfig'
-import type { TasksQueryParams, TasksResponse, TaskCreateRequest, TaskCreateResponse, Task, ConversationResponse, SummaryWorkerStatus } from '../types/api'
+import type { TasksQueryParams, TasksResponse, TaskCreateRequest, TaskCreateResponse, Task, ConversationResponse, SummaryWorkerStatus, MioMemoriesResponse } from '../types/api'
 
 let apiClient: AxiosInstance | null = null
 let tokenGetter: (() => string | undefined) | null = null
@@ -80,8 +80,10 @@ export const tasksApi = {
     return data
   },
 
-  async getConversation(taskId: string): Promise<ConversationResponse> {
-    const { data } = await getApi().get(`/task/conversation`, { params: { task_id: taskId } })
+  async getConversation(taskId: string, excludeArchived: boolean = false): Promise<ConversationResponse> {
+    const { data } = await getApi().get(`/task/conversation`, { 
+      params: { task_id: taskId, exclude_archived: excludeArchived } 
+    })
     return data
   },
 
@@ -152,6 +154,42 @@ export const tasksApi = {
       },
       async action(taskId: string, approved: boolean): Promise<{ message: string }> {
         const { data } = await getApi().post('/task/matrix/action', { task_id: taskId, approved })
+        return data
+      }
+    },
+    selfManaged: {
+      async sendMessage(taskId: string, message: string): Promise<{ message: string }> {
+        const { data } = await getApi().post('/task/self_managed/message', { task_id: taskId, message })
+        return data
+      },
+      async markComplete(taskId: string): Promise<{ message: string }> {
+        const { data } = await getApi().post('/task/self_managed/mark_complete', { task_id: taskId })
+        return data
+      },
+      async markFailed(taskId: string): Promise<{ message: string }> {
+        const { data } = await getApi().post('/task/self_managed/mark_failed', { task_id: taskId })
+        return data
+      },
+      async archive(taskId: string): Promise<{ message: string }> {
+        const { data } = await getApi().post('/task/self_managed/archive', { task_id: taskId })
+        return data
+      },
+      async wake(taskId: string): Promise<{ message: string }> {
+        const { data } = await getApi().post('/task/self_managed/wake', { task_id: taskId })
+        return data
+      },
+      async userAway(taskId: string): Promise<{ message: string }> {
+        const { data } = await getApi().post('/task/self_managed/user_away', { task_id: taskId })
+        return data
+      },
+      async action(taskId: string, approved: boolean): Promise<{ message: string }> {
+        const { data } = await getApi().post('/task/self_managed/action', { task_id: taskId, approved })
+        return data
+      },
+      async getMemories(taskId: string, includeCommon: boolean = true): Promise<MioMemoriesResponse> {
+        const { data } = await getApi().get('/task/self_managed/memories', { 
+          params: { task_id: taskId, include_common: includeCommon } 
+        })
         return data
       }
     }

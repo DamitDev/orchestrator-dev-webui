@@ -50,6 +50,7 @@ export default function CreateTask() {
 
   const canContinueStep2 = useMemo(() => {
     if (workflow === 'ticket') return ticketId.trim().length > 0
+    if (workflow === 'self_managed') return true // Goal is optional for Mio
     return goalPrompt.trim().length > 0
   }, [workflow, ticketId, goalPrompt])
 
@@ -83,7 +84,12 @@ export default function CreateTask() {
       const res = await tasksApi.create(payload)
       toast.success('Task created')
       queryClient.invalidateQueries({ queryKey: tasksKeys.list() })
-      navigate(`/task/${res.task_id}`)
+      // Navigate to Mio dedicated page for self_managed, generic task page for others
+      if (workflow === 'self_managed') {
+        navigate(`/mio/${res.task_id}`)
+      } else {
+        navigate(`/task/${res.task_id}`)
+      }
     } catch (e: any) {
       const msg = e?.response?.data?.error || e?.message || 'Failed to create task'
       toast.error(msg)
@@ -96,10 +102,11 @@ export default function CreateTask() {
 
       {/* Workflow selection */}
       <div className="space-y-3">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3">
           <WorkflowCard id="ticket" title="Ticket" desc="Ticket-based task" active={workflow==='ticket'} onClick={() => setWorkflow('ticket')} />
           <WorkflowCard id="matrix" title="Matrix" desc="Algorithm development" active={workflow==='matrix'} onClick={() => setWorkflow('matrix')} />
           <WorkflowCard id="proactive" title="Proactive" desc="Autonomous" active={workflow==='proactive'} onClick={() => setWorkflow('proactive')} />
+          <WorkflowCard id="self_managed" title="Mio" desc="Long-lived companion" active={workflow==='self_managed'} onClick={() => setWorkflow('self_managed')} />
           <WorkflowCard id="interactive" title="Interactive" desc="Chat-driven" active={workflow==='interactive'} onClick={() => setWorkflow('interactive')} />
         </div>
       </div>
@@ -108,8 +115,17 @@ export default function CreateTask() {
       <div className="space-y-4">
         {workflow !== 'ticket' ? (
           <div>
-            <label className="block text-sm font-medium text-nord0 dark:text-nord6 mb-1">{workflow==='matrix' ? 'Aspect Goal' : 'Goal Prompt'} <span className="text-nord11">*</span></label>
-            <textarea value={goalPrompt} onChange={e => setGoalPrompt(e.target.value)} rows={4} className="textarea" placeholder="Describe the task goal..." />
+            <label className="block text-sm font-medium text-nord0 dark:text-nord6 mb-1">
+              {workflow==='matrix' ? 'Aspect Goal' : workflow==='self_managed' ? 'Initial Goal (optional)' : 'Goal Prompt'} 
+              {workflow !== 'self_managed' && <span className="text-nord11">*</span>}
+            </label>
+            <textarea 
+              value={goalPrompt} 
+              onChange={e => setGoalPrompt(e.target.value)} 
+              rows={4} 
+              className="textarea" 
+              placeholder={workflow === 'self_managed' ? "Say hello or describe what you'd like Mio to help with..." : "Describe the task goal..."} 
+            />
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
