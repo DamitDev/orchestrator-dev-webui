@@ -103,10 +103,10 @@ export default function CreateTask() {
       {/* Workflow selection */}
       <div className="space-y-3">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3">
-          <WorkflowCard id="self_managed" title="Mio" desc="Long-lived companion" active={workflow==='self_managed'} onClick={() => setWorkflow('self_managed')} />
           <WorkflowCard id="ticket" title="Ticket" desc="Ticket-based task" active={workflow==='ticket'} onClick={() => setWorkflow('ticket')} />
           <WorkflowCard id="matrix" title="Matrix" desc="Algorithm development" active={workflow==='matrix'} onClick={() => setWorkflow('matrix')} />
           <WorkflowCard id="proactive" title="Proactive" desc="Autonomous" active={workflow==='proactive'} onClick={() => setWorkflow('proactive')} />
+          <WorkflowCard id="self_managed" title="Mio" desc="Long-lived companion" active={workflow==='self_managed'} onClick={() => setWorkflow('self_managed')} />
           <WorkflowCard id="interactive" title="Interactive" desc="Chat-driven" active={workflow==='interactive'} onClick={() => setWorkflow('interactive')} />
         </div>
       </div>

@@ -1094,6 +1094,9 @@ export default function TaskDetail() {
                     const isLastGroup = (idx: number) => idx === groups.length - 1
                     const shouldShowStreaming = streamingMessage && groups.length > 0
                     
+                    // Show thinking indicator when agent is processing but no streaming yet
+                    const isThinking = ['agent_turn', 'queued', 'queued_for_function_execution', 'function_execution', 'validation', 'in_progress'].includes(task?.status || '') && !streamingMessage
+                    
                     return (
                       <>
                         {groups.map((group: any, idx: number) => {
@@ -1121,6 +1124,14 @@ export default function TaskDetail() {
                       </div>
                     )
                         })}
+                        <AnimatedMount show={isThinking} duration={200}>
+                          <div className="flex justify-center py-4">
+                            <div className="flex items-center gap-3 px-4 py-2 bg-nord8/10 rounded-full border border-nord8/30 dark:bg-nord8/5">
+                              <div className="animate-spin rounded-full h-5 w-5 border-2 border-nord8 border-t-transparent"></div>
+                              <span className="text-sm text-nord10 dark:text-nord8 font-medium">Agent is thinking...</span>
+                            </div>
+                          </div>
+                        </AnimatedMount>
                       </>
                     )
                 })()}
@@ -1463,6 +1474,9 @@ function MatrixPhasePanel({ taskId, currentPhase, status, onClose, streamingMess
           const isLastGroup = (idx: number) => idx === groups.length - 1
           const shouldShowStreaming = streamingMessage && groups.length > 0 && !isViewingPastPhase
           
+          // Show thinking indicator when agent is processing but no streaming yet
+          const isThinking = ['agent_turn', 'queued', 'queued_for_function_execution', 'function_execution', 'validation', 'in_progress'].includes(status || '') && !streamingMessage && !isViewingPastPhase
+          
           return (
             <>
               {groups.map((group: any, idx: number) => {
@@ -1490,6 +1504,14 @@ function MatrixPhasePanel({ taskId, currentPhase, status, onClose, streamingMess
               </div>
             )
               })}
+              <AnimatedMount show={isThinking} duration={200}>
+                <div className="flex justify-center py-4">
+                  <div className="flex items-center gap-3 px-4 py-2 bg-nord8/10 rounded-full border border-nord8/30 dark:bg-nord8/5">
+                    <div className="animate-spin rounded-full h-5 w-5 border-2 border-nord8 border-t-transparent"></div>
+                    <span className="text-sm text-nord10 dark:text-nord8 font-medium">Agent is thinking...</span>
+                  </div>
+                </div>
+              </AnimatedMount>
             </>
           )
         })()}

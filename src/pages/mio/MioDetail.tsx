@@ -28,6 +28,7 @@ import { StreamingReasoning } from '../../components/StreamingReasoning'
 import { StreamingToolCall } from '../../components/StreamingToolCall'
 import { StreamingContent } from '../../components/StreamingContent'
 import { AnimatedDetails } from '../../components/AnimatedDetails'
+import { AnimatedMount } from '../../components/AnimatedMount'
 import toast from 'react-hot-toast'
 
 // Icon components (from TaskDetail)
@@ -430,79 +431,6 @@ function AssistantTurn({
       </div>
     </div>
   )
-}
-
-// Render markdown TODO list (from TaskDetail)
-function renderMarkdownTodo(markdown: string) {
-  if (!markdown || !markdown.trim()) return null
-  
-  const lines = markdown.split('\n')
-  const elements: JSX.Element[] = []
-  
-  lines.forEach((line, idx) => {
-    const match = line.match(/^(\s*)(.*)$/)
-    if (!match) return
-    const indent = match[1].length
-    const content = match[2]
-    
-    const todoMatch = content.match(/^-\s*\[([ xX])\]\s*(.+)$/)
-    if (todoMatch) {
-      const checked = todoMatch[1].toLowerCase() === 'x'
-      const text = todoMatch[2]
-      elements.push(
-        <div key={idx} className="flex items-start gap-2 py-1" style={{ paddingLeft: `${indent * 8}px` }}>
-          <input 
-            type="checkbox" 
-            checked={checked} 
-            readOnly 
-            className="mt-1 rounded border-nord4 text-nord8 cursor-default dark:border-nord3"
-          />
-          <span className={`text-sm ${checked ? 'line-through text-nord3 dark:text-nord4' : 'text-nord0 dark:text-nord6'}`}>
-            {text}
-          </span>
-        </div>
-      )
-      return
-    }
-    
-    const listMatch = content.match(/^-\s+(.+)$/)
-    if (listMatch) {
-      elements.push(
-        <div key={idx} className="flex items-start gap-2 py-1" style={{ paddingLeft: `${indent * 8}px` }}>
-          <span className="text-nord8 dark:text-nord8 mt-0.5">•</span>
-          <span className="text-sm text-nord0 dark:text-nord6">{listMatch[1]}</span>
-        </div>
-      )
-      return
-    }
-    
-    const headingMatch = content.match(/^(#{1,6})\s+(.+)$/)
-    if (headingMatch) {
-      const level = headingMatch[1].length
-      const text = headingMatch[2]
-      const sizes = ['text-xl', 'text-lg', 'text-base', 'text-sm', 'text-sm', 'text-xs']
-      const className = `${sizes[level - 1]} font-semibold text-nord0 dark:text-nord6 mt-3 mb-2`
-      elements.push(
-        <div key={idx} className={className} style={{ paddingLeft: `${indent * 8}px` }}>
-          {text}
-        </div>
-      )
-      return
-    }
-    
-    if (!content.trim()) {
-      elements.push(<div key={idx} className="h-2" />)
-      return
-    }
-    
-    elements.push(
-      <div key={idx} className="text-sm text-nord0 dark:text-nord6 py-0.5" style={{ paddingLeft: `${indent * 8}px` }}>
-        {content}
-      </div>
-    )
-  })
-  
-  return <div className="space-y-0.5">{elements}</div>
 }
 
 // Mode indicator badge
@@ -999,7 +927,7 @@ export default function MioDetail() {
             const groups = groupMessages(msgs)
             const shouldShowStreaming = streamingMessage && groups.length > 0
             
-            return groups.map((group: any, idx: number) => {
+            const elements = groups.map((group: any, idx: number) => {
               if (group.type === 'assistant') {
                 const isStreaming = shouldShowStreaming && idx === groups.length - 1
                 return (
@@ -1033,6 +961,23 @@ export default function MioDetail() {
                 </div>
               )
             })
+            
+            // Show thinking indicator when agent is processing but no streaming yet
+            const isThinking = ['agent_turn', 'background_turn', 'queued', 'queued_for_function_execution', 'function_execution', 'validation'].includes(task?.status || '') && !streamingMessage
+            elements.push(
+              <AnimatedMount key="thinking" show={isThinking} duration={200}>
+                <div className="flex justify-center py-4">
+                  <div className="flex items-center gap-3 px-4 py-2 bg-nord8/10 rounded-full border border-nord8/30 dark:bg-nord8/5">
+                    <div className="animate-spin rounded-full h-5 w-5 border-2 border-nord8 border-t-transparent"></div>
+                    <span className="text-sm text-nord10 dark:text-nord8 font-medium">
+                      {task?.status === 'background_turn' ? 'Mio is thinking in background...' : 'Mio is thinking...'}
+                    </span>
+                  </div>
+                </div>
+              </AnimatedMount>
+            )
+            
+            return elements
           })()}
         </div>
         
@@ -1095,7 +1040,9 @@ export default function MioDetail() {
             </div>
             <div className="p-4 max-h-48 overflow-auto">
               {jobList ? (
-                renderMarkdownTodo(jobList)
+                <div className="text-sm">
+                  <MessageContent role="assistant" content={jobList} isLatestTool={false} />
+                </div>
               ) : (
                 <div className="text-sm text-nord3 dark:text-nord4 italic">No jobs</div>
               )}
