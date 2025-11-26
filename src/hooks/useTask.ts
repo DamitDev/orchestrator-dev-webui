@@ -23,6 +23,18 @@ export function useTaskConversation(id: string | undefined) {
   })
 }
 
+/**
+ * Hook for Mio conversation that excludes archived messages.
+ * This shows the conversation as Mio sees it.
+ */
+export function useMioConversation(id: string | undefined) {
+  return useQuery<ConversationResponse>({
+    queryKey: ['task', id || '', 'mio-conversation'] as const,
+    queryFn: () => tasksApi.getConversation(id!, true), // exclude_archived = true
+    enabled: !!id
+  })
+}
+
 export function useMatrixConversation(id: string | undefined, phase: number) {
   return useQuery<ConversationResponse>({
     queryKey: ['task', id || '', 'matrix', 'phase', phase],

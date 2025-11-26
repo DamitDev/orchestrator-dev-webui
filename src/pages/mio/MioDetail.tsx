@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { useQueryClient, useQuery } from '@tanstack/react-query'
-import { useTask, useTaskConversation, taskKeys } from '../../hooks/useTask'
+import { useTask, useMioConversation, taskKeys } from '../../hooks/useTask'
 import { MessageContent } from '../../lib/markdown'
 import { formatTimestamp, formatMessageTimestamp } from '../../lib/time'
 import { useMode } from '../../state/ModeContext'
@@ -571,7 +571,7 @@ export default function MioDetail() {
   const { subscribe } = useWebSocket()
   const queryClient = useQueryClient()
   const { data: task, isLoading, error } = useTask(id)
-  const { data: conv } = useTaskConversation(id)
+  const { data: conv } = useMioConversation(id)
   
   // Panel state
   const [leftPanelOpen, setLeftPanelOpen] = useState(true)
@@ -647,13 +647,19 @@ export default function MioDetail() {
         return
       }
       
+      // Handle messages_archived event - refresh conversation when Mio archives old messages
+      if (evt.event_type === 'messages_archived' && evt.task_id === id) {
+        queryClient.invalidateQueries({ queryKey: ['task', id, 'mio-conversation'] })
+        return
+      }
+      
       if (evt.task_id === id) {
         queryClient.invalidateQueries({ queryKey: taskKeys.byId(id) })
         if (evt.event_type !== 'message_streaming') {
-          queryClient.invalidateQueries({ queryKey: taskKeys.conversation(id) })
+          queryClient.invalidateQueries({ queryKey: ['task', id, 'mio-conversation'] })
         }
       }
-    }, { eventTypes: ['task_status_changed', 'message_added', 'message_streaming', 'message_summary_generated', 'approval_requested', 'task_workflow_data_changed', 'mio_memory_created', 'mio_memory_updated', 'mio_memory_deleted'] })
+    }, { eventTypes: ['task_status_changed', 'message_added', 'message_streaming', 'message_summary_generated', 'approval_requested', 'task_workflow_data_changed', 'mio_memory_created', 'mio_memory_updated', 'mio_memory_deleted', 'messages_archived'] })
     return () => {}
   }, [subscribe, queryClient, id])
   

@@ -80,8 +80,10 @@ export const tasksApi = {
     return data
   },
 
-  async getConversation(taskId: string): Promise<ConversationResponse> {
-    const { data } = await getApi().get(`/task/conversation`, { params: { task_id: taskId } })
+  async getConversation(taskId: string, excludeArchived: boolean = false): Promise<ConversationResponse> {
+    const { data } = await getApi().get(`/task/conversation`, { 
+      params: { task_id: taskId, exclude_archived: excludeArchived } 
+    })
     return data
   },
 
