@@ -27,7 +27,9 @@ function StatusBadge({ status }: { status: string }) {
     : status === 'failed' ? 'status--failed'
     : status === 'action_required' ? 'status--action_required'
     : status === 'help_required' ? 'status--help_required'
-    : ['in_progress','validation','function_execution','agent_turn'].includes(status) ? 'status--running'
+    : status === 'sleeping' ? 'status--sleeping'
+    : status === 'background_active' ? 'status--background_active'
+    : ['in_progress','validation','function_execution','agent_turn','queued','queued_for_function_execution'].includes(status) ? 'status--running'
     : 'badge'
   }`}>{status.replace(/_/g,' ')}</span>
 }

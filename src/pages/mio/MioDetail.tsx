@@ -516,6 +516,18 @@ function ModeIndicator({ status, workflowData }: { status: string; workflowData?
     )
   }
   
+  // Background active state - user is away, Mio is working
+  if (status === 'background_active') {
+    return (
+      <div className="flex items-center gap-2 px-3 py-2 bg-nord15/20 rounded-lg dark:bg-nord15/30">
+        <svg className="w-5 h-5 text-nord15 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+        </svg>
+        <span className="text-sm font-medium text-nord15">Background Active</span>
+      </div>
+    )
+  }
+  
   const lastMode = workflowData?.last_mode
   if (lastMode === 'background') {
     return (
@@ -777,6 +789,8 @@ export default function MioDetail() {
   
   const workflowData = task?.workflow_data || {}
   const isSleeping = task?.status === 'sleeping'
+  const isBackgroundActive = task?.status === 'background_active'
+  const canWake = isSleeping || isBackgroundActive  // Both states can be woken
   const isActionRequired = task?.status === 'action_required'
   const isTerminal = ['completed', 'failed', 'cancelled', 'archived'].includes(task?.status || '')
   
@@ -830,6 +844,7 @@ export default function MioDetail() {
             <div className="flex items-center gap-2">
               <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${
                 task.status === 'sleeping' ? 'bg-nord3/20 text-nord3 dark:text-nord4' :
+                task.status === 'background_active' ? 'bg-nord15/20 text-nord15' :
                 task.status === 'user_turn' ? 'bg-nord14/20 text-nord14' :
                 task.status === 'agent_turn' || task.status === 'background_turn' ? 'bg-nord8/20 text-nord8' :
                 task.status === 'queued' || task.status === 'queued_for_function_execution' ? 'bg-nord13/20 text-nord13' :
@@ -867,6 +882,12 @@ export default function MioDetail() {
                 </div>
               </div>
             )}
+            {isBackgroundActive && (
+              <div>
+                <div className="text-xs text-nord3 dark:text-nord4 mb-1">Status</div>
+                <div className="text-sm text-nord0 dark:text-nord6">User away, working in background</div>
+              </div>
+            )}
             {workflowData.safety_profile && (
               <div>
                 <div className="text-xs text-nord3 dark:text-nord4 mb-1">Safety Profile</div>
@@ -879,18 +900,18 @@ export default function MioDetail() {
           <div className="p-4 space-y-2 flex-1">
             <div className="text-xs text-nord3 dark:text-nord4 uppercase tracking-wide mb-2">Actions</div>
             
-            {isSleeping && (
+            {canWake && (
               <button 
                 onClick={onWake} 
                 disabled={busy}
                 className="w-full btn-primary flex items-center justify-center gap-2"
               >
                 <Sun className="w-4 h-4" />
-                Wake Mio
+                {isSleeping ? 'Wake Mio' : 'Return to Chat'}
               </button>
             )}
             
-            {!isTerminal && !isSleeping && (
+            {!isTerminal && !canWake && (
               <button 
                 onClick={onMarkAway} 
                 disabled={busy}
@@ -1049,7 +1070,7 @@ export default function MioDetail() {
                 rows={2}
                 disabled={isSleeping}
                 className="textarea flex-1 disabled:opacity-50"
-                placeholder={isSleeping ? "Mio is sleeping. Wake to chat." : "Type a message... (Enter to send)"}
+                placeholder={isSleeping ? "Mio is sleeping. Wake to chat." : isBackgroundActive ? "Send a message to return to interactive mode..." : "Type a message... (Enter to send)"}
               />
               <button 
                 onClick={onSendMessage} 

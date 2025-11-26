@@ -212,7 +212,9 @@ function StatusBadge({ status }: { status: string }) {
     : status === 'failed' ? 'status-badge status--failed'
     : status === 'action_required' ? 'status-badge status--action_required'
     : status === 'help_required' ? 'status-badge status--help_required'
-    : ['in_progress','validation','function_execution','agent_turn'].includes(status) ? 'status-badge status--running'
+    : status === 'sleeping' ? 'status-badge status--sleeping'
+    : status === 'background_active' ? 'status-badge status--background_active'
+    : ['in_progress','validation','function_execution','agent_turn','queued','queued_for_function_execution'].includes(status) ? 'status-badge status--running'
     : 'badge'
   return <span className={cls}>{status.replace(/_/g,' ')}</span>
 }

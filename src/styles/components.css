@@ -174,6 +174,16 @@
            dark:from-nord8/10 dark:to-nord9/10 dark:text-nord8 dark:border-nord8/30
            animate-pulse; 
   }
+  
+  .status--sleeping { 
+    @apply bg-nord3/20 text-nord3 border border-nord3/40
+           dark:bg-nord4/10 dark:text-nord4 dark:border-nord4/30; 
+  }
+  
+  .status--background_active { 
+    @apply bg-nord15/20 text-nord15 border border-nord15/40
+           dark:bg-nord15/10 dark:text-nord15 dark:border-nord15/30; 
+  }
 
   /* Progress bars with Nord styling */
   .progress {
