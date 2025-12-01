@@ -7,6 +7,7 @@ export const configKeys = {
   mcp: ['config','mcp'] as const,
   taskHandler: ['config','taskHandler'] as const,
   summaryWorker: ['config','summaryWorker'] as const,
+  slots: ['config','slots'] as const,
   tools: ['config','tools'] as const,
   auth: ['config','auth'] as const,
   health: ['config','health'] as const,
@@ -33,6 +34,14 @@ export function useSummaryWorkerStatus() {
   return useQuery({ 
     queryKey: configKeys.summaryWorker, 
     queryFn: () => configApi.getSummaryWorkerStatus(),
+    refetchInterval: 5000 // Refetch every 5 seconds
+  })
+}
+
+export function useSlotStatus() {
+  return useQuery({ 
+    queryKey: configKeys.slots, 
+    queryFn: () => configApi.getSlotStatus(),
     refetchInterval: 5000 // Refetch every 5 seconds
   })
 }

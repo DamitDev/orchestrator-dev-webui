@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useMode } from './state/ModeContext'
 import { useAuth } from './context/AuthContext'
 import { setTokenGetter, configApi } from './lib/api'
-import Inbox from './pages/Inbox'
+import Dashboard from './pages/Dashboard'
 import Tasks from './pages/Tasks'
 import CreateTask from './pages/CreateTask'
 import WorkflowTickets from './pages/workflows/Tickets'
@@ -114,7 +114,7 @@ function Header() {
               </div>
             </Link>
             <nav className="hidden md:flex items-center gap-1">
-              {navItem('/', 'Inbox')}
+              {navItem('/', 'Dashboard')}
               <div className="relative" onMouseEnter={() => { cancelClose(); setWfOpen(true); }} onMouseLeave={() => scheduleClose()}>
                 <button className={`nav-link ${wfOpen ? 'nav-link-active' : ''}`}>
                   Workflows
@@ -258,7 +258,7 @@ export default function App() {
           <Route path="/mio/:id" element={<MioDetail />} />
           
           {/* All other routes use the standard container layout */}
-          <Route path="/" element={<PageContainer><Inbox /></PageContainer>} />
+          <Route path="/" element={<PageContainer><Dashboard /></PageContainer>} />
           <Route path="/tasks" element={<PageContainer><Tasks /></PageContainer>} />
           <Route path="/create" element={<PageContainer><CreateTask /></PageContainer>} />
 

@@ -1,6 +1,6 @@
 import axios, { AxiosInstance, InternalAxiosRequestConfig } from 'axios'
 import { getRuntimeConfig } from './runtimeConfig'
-import type { TasksQueryParams, TasksResponse, TaskCreateRequest, TaskCreateResponse, Task, ConversationResponse, SummaryWorkerStatus, MioMemoriesResponse } from '../types/api'
+import type { TasksQueryParams, TasksResponse, TaskCreateRequest, TaskCreateResponse, Task, ConversationResponse, SummaryWorkerStatus, MioMemoriesResponse, SlotStatusResponse, MCPServersResponse, TaskHandlerStatus } from '../types/api'
 
 let apiClient: AxiosInstance | null = null
 let tokenGetter: (() => string | undefined) | null = null
@@ -217,7 +217,7 @@ export const configApi = {
   async removeLLMBackend(host: string): Promise<void> {
     await getApi().post('/configuration/llmbackend/remove', { host })
   },
-  async getMCPServers(): Promise<any> {
+  async getMCPServers(): Promise<MCPServersResponse> {
     const { data } = await getApi().get('/configuration/mcpserver/status')
     return data
   },
@@ -227,7 +227,7 @@ export const configApi = {
   async removeMCPServer(host: string): Promise<void> {
     await getApi().post('/configuration/mcpserver/remove', { host })
   },
-  async getTaskHandlerStatus(): Promise<any> {
+  async getTaskHandlerStatus(): Promise<TaskHandlerStatus> {
     const { data } = await getApi().get('/configuration/taskhandler/status')
     return data
   },
@@ -236,6 +236,10 @@ export const configApi = {
   },
   async getSummaryWorkerStatus(): Promise<SummaryWorkerStatus> {
     const { data } = await getApi().get('/configuration/summary-worker/status')
+    return data
+  },
+  async getSlotStatus(): Promise<SlotStatusResponse> {
+    const { data } = await getApi().get('/configuration/slots/status')
     return data
   },
   async getTools(): Promise<any> {
