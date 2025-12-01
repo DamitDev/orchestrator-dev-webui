@@ -346,7 +346,8 @@ function AssistantTurn({
 }) {
   const hasContent = group.finalContent && group.finalContent.trim()
   const hasToolCalls = group.toolInteractions && group.toolInteractions.length > 0
-  const firstMsg = group.assistantMessages[0]
+  // Use the last message's timestamp so it updates as new messages arrive
+  const lastMsg = group.assistantMessages[group.assistantMessages.length - 1]
   
   // Track height to prevent shrinking when sections close
   const containerRef = useRef<HTMLDivElement>(null)
@@ -392,9 +393,9 @@ function AssistantTurn({
     >
       <div className="message-header mb-3">
         <span className="uppercase font-bold text-xs tracking-wide">ASSISTANT</span>
-        {firstMsg?.created_at && (
+        {lastMsg?.created_at && (
           <span className="text-xs bg-nord5/70 px-2 py-0.5 rounded dark:bg-nord2">
-            {formatMessageTimestamp(firstMsg.created_at)}
+            {formatMessageTimestamp(lastMsg.created_at)}
           </span>
         )}
       </div>

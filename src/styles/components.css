@@ -283,4 +283,412 @@
     @apply border-l-4 border-nord8 pl-4 my-2 italic text-nord3
            dark:border-nord8 dark:text-nord4;
   }
+
+  /* ========== Dashboard Components ========== */
+
+  /* Dashboard header */
+  .dashboard-header {
+    @apply text-3xl font-bold bg-gradient-to-r from-nord10 via-nord8 to-nord7 bg-clip-text text-transparent;
+  }
+
+  .dashboard-subtitle {
+    @apply text-nord3 dark:text-nord4 mt-1 text-sm;
+  }
+
+  /* Dashboard section containers - uses card base styling */
+  .dashboard-section {
+    @apply card p-5;
+  }
+
+  .dashboard-section--system {
+    @apply space-y-4;
+  }
+
+  .section-header {
+    @apply flex items-center justify-between mb-4;
+  }
+
+  .section-title {
+    @apply text-lg font-semibold text-nord0 dark:text-nord6;
+  }
+
+  /* Stat cards - Base follows card pattern */
+  .stat-card {
+    @apply bg-nord6 border rounded-lg p-3 transition-all duration-200
+           dark:bg-nord1 hover:shadow-nord-lg;
+  }
+
+  .stat-card-label {
+    @apply text-xs text-nord3 dark:text-nord4 mb-1 font-medium uppercase tracking-wide;
+  }
+
+  .stat-card-value {
+    @apply text-2xl font-bold;
+  }
+
+  .stat-card-subtext {
+    @apply text-xs text-nord3/80 dark:text-nord4/80 mt-1;
+  }
+
+  /* Stat card color variants - clean card styling with colored values */
+  .stat-card.stat-card--frost {
+    @apply border-nord4 dark:border-nord3;
+  }
+  .stat-card--frost .stat-card-value {
+    @apply text-nord10 dark:text-nord8;
+  }
+
+  .stat-card.stat-card--green {
+    @apply border-nord4 dark:border-nord3;
+  }
+  .stat-card--green .stat-card-value {
+    @apply text-nord14;
+  }
+
+  .stat-card.stat-card--yellow {
+    @apply border-nord4 dark:border-nord3;
+  }
+  .stat-card--yellow .stat-card-value {
+    @apply text-amber-600 dark:text-nord13;
+  }
+
+  .stat-card.stat-card--red {
+    @apply border-nord4 dark:border-nord3;
+  }
+  .stat-card--red .stat-card-value {
+    @apply text-nord11;
+  }
+
+  .stat-card.stat-card--purple {
+    @apply border-nord4 dark:border-nord3;
+  }
+  .stat-card--purple .stat-card-value {
+    @apply text-nord15;
+  }
+
+  .stat-card.stat-card--teal {
+    @apply border-nord4 dark:border-nord3;
+  }
+  .stat-card--teal .stat-card-value {
+    @apply text-nord7;
+  }
+
+  .stat-card.stat-card--muted {
+    @apply border-nord4 dark:border-nord3;
+  }
+  .stat-card--muted .stat-card-value {
+    @apply text-nord3 dark:text-nord4;
+  }
+
+  /* Triage sections - card style with colored left accent */
+  .triage-section {
+    @apply bg-nord6 rounded-lg p-4 transition-all duration-200
+           dark:bg-nord1 hover:shadow-nord-lg
+           border-t border-r border-b border-nord4 dark:border-nord3
+           border-l-[3px];
+  }
+
+  .triage-section.triage-section--yellow {
+    @apply border-l-nord13;
+  }
+
+  .triage-section.triage-section--frost {
+    @apply border-l-nord8;
+  }
+
+  .triage-section.triage-section--purple {
+    @apply border-l-nord15;
+  }
+
+  .triage-section.triage-section--green {
+    @apply border-l-nord14;
+  }
+
+  .triage-header {
+    @apply flex items-center justify-between mb-3;
+  }
+
+  .triage-title {
+    @apply flex items-center gap-2;
+  }
+
+  .triage-title-icon {
+    @apply text-nord3 dark:text-nord4;
+  }
+
+  .triage-title-text {
+    @apply font-semibold text-nord0 dark:text-nord6 text-sm;
+  }
+
+  .triage-badge {
+    @apply text-xs font-bold px-2 py-0.5 rounded-full;
+  }
+
+  .triage-badge--yellow {
+    @apply bg-nord13/20 text-amber-800 dark:text-nord13;
+  }
+
+  .triage-badge--frost {
+    @apply bg-nord8/20 text-nord10 dark:text-nord8;
+  }
+
+  .triage-badge--purple {
+    @apply bg-nord15/20 text-nord15;
+  }
+
+  .triage-badge--green {
+    @apply bg-nord14/20 text-nord14;
+  }
+
+  .triage-empty {
+    @apply text-center py-4 text-nord3 dark:text-nord4 text-xs;
+  }
+
+  .triage-item {
+    @apply block p-2 rounded-md bg-white/50 hover:bg-white border border-nord4/50 
+           dark:bg-nord1/50 dark:hover:bg-nord2 dark:border-nord3/50
+           transition-all duration-300 hover:shadow-sm dark:hover:shadow-[0_0_12px_rgba(136,192,208,0.1)];
+  }
+
+  .triage-item-content {
+    @apply flex items-center gap-2;
+  }
+
+  .triage-item-workflow {
+    @apply text-[10px] font-medium px-1.5 py-0.5 rounded bg-nord8/20 text-nord10 
+           dark:bg-nord8/10 dark:text-nord8 flex-shrink-0;
+  }
+
+  .triage-item-text {
+    @apply text-xs font-medium text-nord0 dark:text-nord6 truncate flex-1 
+           group-hover:text-nord10 dark:group-hover:text-nord8 transition-colors;
+  }
+
+  .triage-more {
+    @apply mt-2 pt-2 border-t border-nord4/30 dark:border-nord3/30 text-center;
+  }
+
+  .triage-more-link {
+    @apply text-xs text-nord10 hover:text-nord8 dark:text-nord8 dark:hover:text-nord7 transition-colors;
+  }
+
+  /* Dashboard panels - standard card style */
+  .dashboard-panel {
+    @apply card p-4;
+  }
+
+  .dashboard-panel-header {
+    @apply flex items-center justify-between mb-3;
+  }
+
+  .dashboard-panel-title {
+    @apply font-semibold text-nord0 dark:text-nord6 text-sm flex items-center gap-2;
+  }
+
+  .dashboard-panel-subtitle {
+    @apply text-xs text-nord3 dark:text-nord4;
+  }
+
+  /* Slot status cards */
+  .slot-card {
+    @apply rounded-md border px-3 py-2 transition-all duration-200;
+  }
+
+  .slot-card.slot-card--available {
+    @apply border-nord4 bg-nord5/50 dark:border-nord3 dark:bg-nord2/50;
+  }
+
+  .slot-card.slot-card--occupied {
+    @apply border-nord15/40 bg-nord15/5 dark:border-nord15/30 dark:bg-nord15/5;
+  }
+
+  .slot-card.slot-card--error {
+    @apply border-nord11/40 bg-nord11/5 dark:border-nord11/30 dark:bg-nord11/5;
+  }
+
+  /* Main row - all elements aligned in a grid */
+  .slot-card-row {
+    @apply grid items-center gap-2;
+    grid-template-columns: auto 1fr auto auto;
+  }
+
+  .slot-indicator {
+    @apply w-2 h-2 rounded-full flex-shrink-0;
+  }
+
+  .slot-indicator--available {
+    @apply bg-nord14;
+  }
+
+  .slot-indicator--occupied {
+    @apply bg-nord15 animate-pulse;
+  }
+
+  .slot-indicator--error {
+    @apply bg-nord11;
+  }
+
+  .slot-id {
+    @apply text-sm font-medium text-nord0 dark:text-nord6;
+  }
+
+  .slot-ip {
+    @apply text-xs text-nord3 dark:text-nord4 text-right font-mono tabular-nums;
+  }
+
+  .slot-status-badge {
+    @apply text-xs px-2 py-0.5 rounded font-medium;
+  }
+
+  .slot-status-badge--available {
+    @apply bg-nord14/20 text-nord14;
+  }
+
+  .slot-status-badge--occupied {
+    @apply bg-nord15/20 text-nord15;
+  }
+
+  .slot-status-badge--error {
+    @apply bg-nord11/20 text-nord11;
+  }
+
+  /* Occupied slot metadata row */
+  .slot-card-meta {
+    @apply flex items-center gap-3 mt-2 pt-2 border-t border-nord4/50 dark:border-nord3/50
+           text-xs text-nord3 dark:text-nord4;
+  }
+
+  .slot-task-link {
+    @apply font-mono text-nord10 dark:text-nord8 hover:underline;
+  }
+
+  .slot-idle {
+    @apply text-nord3/80 dark:text-nord4/70;
+  }
+
+  .slot-tools-section {
+    @apply mt-3 pt-3 border-t border-nord7/40 dark:border-nord7/30;
+  }
+
+  .slot-tools-label {
+    @apply text-xs text-nord3 dark:text-nord4 mb-1;
+  }
+
+  .slot-tools-list {
+    @apply flex flex-wrap gap-1;
+  }
+
+  .slot-tool-tag {
+    @apply text-xs px-1.5 py-0.5 rounded bg-nord7/30 text-nord7 font-mono 
+           dark:bg-nord7/20;
+  }
+
+  /* Summary worker panel */
+  .summary-status {
+    @apply flex items-center gap-1.5;
+  }
+
+  .summary-indicator {
+    @apply w-2 h-2 rounded-full;
+  }
+
+  .summary-indicator--active {
+    @apply bg-nord14;
+  }
+
+  .summary-indicator--inactive {
+    @apply bg-nord11;
+  }
+
+  .summary-grid {
+    @apply grid grid-cols-2 gap-2 text-xs;
+  }
+
+  .summary-stat {
+    @apply rounded bg-white/50 dark:bg-nord2/40 p-2 border border-nord4/30 dark:border-nord3/30;
+  }
+
+  .summary-stat-label {
+    @apply text-nord3 dark:text-nord4;
+  }
+
+  .summary-stat-value {
+    @apply font-semibold text-nord0 dark:text-nord6;
+  }
+
+  .summary-stat-value--error {
+    @apply text-nord11;
+  }
+
+  /* MCP Server cards */
+  .mcp-card {
+    @apply rounded-md border border-nord4 bg-nord5/50 p-3 
+           transition-all duration-200 dark:border-nord3 dark:bg-nord2/50;
+  }
+  .mcp-card:hover {
+    @apply shadow-nord;
+  }
+
+  .mcp-card-header {
+    @apply flex items-start justify-between gap-2 mb-2;
+  }
+
+  .mcp-card-content {
+    @apply flex-1 min-w-0;
+  }
+
+  .mcp-card-name {
+    @apply font-medium text-sm text-nord0 dark:text-nord6 truncate;
+  }
+
+  .mcp-card-description {
+    @apply text-xs text-nord3 dark:text-nord4 mt-0.5 line-clamp-2;
+  }
+
+  .mcp-card-badge {
+    @apply flex-shrink-0 text-xs font-bold px-2 py-0.5 rounded-full bg-nord8/20 text-nord10 dark:text-nord8;
+  }
+
+  .mcp-tools-toggle {
+    @apply text-xs text-nord10 hover:text-nord8 dark:text-nord8 dark:hover:text-nord7 transition-colors flex items-center gap-1;
+  }
+
+  .mcp-tools-toggle-icon {
+    @apply w-3 h-3 transition-transform;
+  }
+
+  .mcp-tools-toggle-icon--expanded {
+    @apply rotate-90;
+  }
+
+  .mcp-tools-list {
+    @apply mt-2 flex flex-wrap gap-1;
+  }
+
+  .mcp-tool-tag {
+    @apply text-xs px-1.5 py-0.5 rounded bg-nord4/40 text-nord0 dark:bg-nord3/40 dark:text-nord5 font-mono;
+  }
+
+  /* Dashboard link styles */
+  .dashboard-link {
+    @apply text-xs text-nord10 hover:text-nord8 dark:text-nord8 dark:hover:text-nord7 transition-colors;
+  }
+
+  .dashboard-link--task {
+    @apply font-mono;
+  }
+
+  /* Section header */
+  .section-header {
+    @apply flex items-center justify-between;
+  }
+
+  .section-title {
+    @apply text-lg font-semibold text-nord0 dark:text-nord6;
+  }
+
+  /* Loading spinner */
+  .dashboard-spinner {
+    @apply w-8 h-8 border-2 border-nord8 border-t-transparent rounded-full animate-spin;
+  }
 }

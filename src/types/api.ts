@@ -94,8 +94,8 @@ export interface ConversationResponse {
   conversation: ConversationMessage[]
 }
 
-// Mio Memory types
-export interface MioMemory {
+// Self-Managed Memory types
+export interface SelfManagedMemory {
   id: string
   task_id: string | null
   title: string
@@ -106,8 +106,8 @@ export interface MioMemory {
   updated_at: string
 }
 
-export interface MioMemoriesResponse {
-  memories: MioMemory[]
+export interface SelfManagedMemoriesResponse {
+  memories: SelfManagedMemory[]
   total: number
 }
 
@@ -121,6 +121,46 @@ export interface SummaryWorkerStatus {
   pending_count: number
   queue_size: number
   error_count: number
+}
+
+// Slot Status Types
+export interface SlotInfo {
+  id: string
+  ip: string
+  status: 'available' | 'occupied' | 'error'
+  task_id: string | null
+  last_activity: string | null
+  idle_seconds: number | null
+}
+
+export interface SlotStatusResponse {
+  enabled: boolean
+  total_slots: number
+  available_slots: number
+  slot_tools: string[]
+  acquire_timeout_seconds: number
+  slots: SlotInfo[]
+}
+
+// MCP Server Status
+export interface MCPServerInfo {
+  base_url: string
+  name: string
+  description: string
+  tools: string[]
+}
+
+export interface MCPServersResponse {
+  servers: MCPServerInfo[]
+  total_servers: number
+  all_available_tools: string[]
+}
+
+// Task Handler Status
+export interface TaskHandlerStatus {
+  running: boolean
+  max_concurrent_tasks: number
+  current_running_tasks: number
 }
 
 // WebSocket event types

@@ -50,7 +50,7 @@ function ModeIndicator({ status, workflowData }: { status: string; workflowData?
   )
 }
 
-function MioCard({ t }: { t: Task }) {
+function SelfManagedCard({ t }: { t: Task }) {
   const workflowData = t.workflow_data || {}
   const nextWakeup = workflowData.next_wakeup_at
   const lastActivity = workflowData.last_user_activity_at
@@ -72,10 +72,10 @@ function MioCard({ t }: { t: Task }) {
       </div>
       
       <Link 
-        to={`/mio/${t.id}`} 
+        to={`/self-managed/${t.id}`} 
         className="text-base font-medium text-nord0 dark:text-nord6 hover:text-nord10 dark:hover:text-nord8 transition-colors block mb-3"
       >
-        {t.goal_prompt || 'Mio Instance'}
+        {t.goal_prompt || 'Self-Managed Session'}
       </Link>
       
       <div className="space-y-1 text-xs text-nord3 dark:text-nord4">
@@ -106,7 +106,7 @@ function MioCard({ t }: { t: Task }) {
   )
 }
 
-export default function WorkflowMio() {
+export default function WorkflowSelfManaged() {
   const queryClient = useQueryClient()
   const { subscribe } = useWebSocket()
   const [filter, setFilter] = useState<'all' | 'active' | 'sleeping' | 'action_required'>('all')
@@ -139,11 +139,11 @@ export default function WorkflowMio() {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <h1 className="text-2xl font-semibold bg-gradient-to-r from-nord10 to-nord8 bg-clip-text text-transparent">
-            Mio
+            Self-Managed
           </h1>
-          <span className="text-sm text-nord3 dark:text-nord4">Self-Managed Workflow</span>
+          <span className="text-sm text-nord3 dark:text-nord4">Long-lived assistant workflow</span>
         </div>
-        <div className="text-sm text-gray-500">{items.length} instance{items.length !== 1 ? 's' : ''}</div>
+        <div className="text-sm text-gray-500">{items.length} session{items.length !== 1 ? 's' : ''}</div>
       </div>
       
       <div className="toolbar flex items-center gap-3">
@@ -163,7 +163,7 @@ export default function WorkflowMio() {
       {isLoading && (
         <div className="text-center py-12">
           <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-nord8 border-t-transparent"></div>
-          <p className="mt-2 text-sm text-nord3 dark:text-nord4">Loading Mio instances…</p>
+          <p className="mt-2 text-sm text-nord3 dark:text-nord4">Loading sessions…</p>
         </div>
       )}
       
@@ -180,7 +180,7 @@ export default function WorkflowMio() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
             </svg>
           </div>
-          <div className="text-nord0 dark:text-nord6 font-medium mb-2">No Mio instances found</div>
+          <div className="text-nord0 dark:text-nord6 font-medium mb-2">No sessions found</div>
           <div className="text-sm text-nord3 dark:text-nord4 mb-4">
             {filter !== 'all' ? 'Try changing the filter or ' : ''}
             Create a new self-managed task to get started.
@@ -195,7 +195,7 @@ export default function WorkflowMio() {
       )}
       
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {items.map(t => <MioCard key={t.id} t={t} />)}
+        {items.map(t => <SelfManagedCard key={t.id} t={t} />)}
       </div>
     </div>
   )

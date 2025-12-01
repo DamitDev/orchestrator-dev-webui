@@ -30,7 +30,7 @@ export default function CreateTask() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
 
-  const [workflow, setWorkflow] = useState<Workflow>('ticket')
+  const [workflow, setWorkflow] = useState<Workflow>('proactive')
   const [maxIterations, setMaxIterations] = useState(50)
   const [reasoning, setReasoning] = useState<ReasoningEffort>('medium')
 
@@ -50,7 +50,7 @@ export default function CreateTask() {
 
   const canContinueStep2 = useMemo(() => {
     if (workflow === 'ticket') return ticketId.trim().length > 0
-    if (workflow === 'self_managed') return true // Goal is optional for Mio
+    if (workflow === 'self_managed') return true // Goal is optional for Self-Managed
     return goalPrompt.trim().length > 0
   }, [workflow, ticketId, goalPrompt])
 
@@ -84,9 +84,9 @@ export default function CreateTask() {
       const res = await tasksApi.create(payload)
       toast.success('Task created')
       queryClient.invalidateQueries({ queryKey: tasksKeys.list() })
-      // Navigate to Mio dedicated page for self_managed, generic task page for others
+      // Navigate to Self-Managed dedicated page for self_managed, generic task page for others
       if (workflow === 'self_managed') {
-        navigate(`/mio/${res.task_id}`)
+        navigate(`/self-managed/${res.task_id}`)
       } else {
         navigate(`/task/${res.task_id}`)
       }
@@ -103,11 +103,11 @@ export default function CreateTask() {
       {/* Workflow selection */}
       <div className="space-y-3">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3">
+          <WorkflowCard id="proactive" title="Proactive" desc="Autonomous" active={workflow==='proactive'} onClick={() => setWorkflow('proactive')} />
+          <WorkflowCard id="interactive" title="Interactive" desc="Chat-driven" active={workflow==='interactive'} onClick={() => setWorkflow('interactive')} />
           <WorkflowCard id="ticket" title="Ticket" desc="Ticket-based task" active={workflow==='ticket'} onClick={() => setWorkflow('ticket')} />
           <WorkflowCard id="matrix" title="Matrix" desc="Algorithm development" active={workflow==='matrix'} onClick={() => setWorkflow('matrix')} />
-          <WorkflowCard id="proactive" title="Proactive" desc="Autonomous" active={workflow==='proactive'} onClick={() => setWorkflow('proactive')} />
-          <WorkflowCard id="self_managed" title="Mio" desc="Long-lived companion" active={workflow==='self_managed'} onClick={() => setWorkflow('self_managed')} />
-          <WorkflowCard id="interactive" title="Interactive" desc="Chat-driven" active={workflow==='interactive'} onClick={() => setWorkflow('interactive')} />
+          <WorkflowCard id="self_managed" title="Self-Managed" desc="Long-lived assistant" active={workflow==='self_managed'} onClick={() => setWorkflow('self_managed')} />
         </div>
       </div>
 
@@ -124,7 +124,7 @@ export default function CreateTask() {
               onChange={e => setGoalPrompt(e.target.value)} 
               rows={4} 
               className="textarea" 
-              placeholder={workflow === 'self_managed' ? "Say hello or describe what you'd like Mio to help with..." : "Describe the task goal..."} 
+              placeholder={workflow === 'self_managed' ? "Describe what you'd like the assistant to help with..." : "Describe the task goal..."} 
             />
           </div>
         ) : (

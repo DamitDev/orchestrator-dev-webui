@@ -14,8 +14,10 @@ body {
 }
 
 .dark body {
-  @apply bg-gradient-nord-dark text-nord6;
+  /* Darker Nord gradient: slightly darker than nord0 → nord0 → between nord0/nord1 */
+  background: linear-gradient(135deg, #252a33 0%, #2e3440 50%, #353c4a 100%);
   background-attachment: fixed;
+  @apply text-nord6;
 }
 
 /* Custom scrollbar with Nord colors */

@@ -10,6 +10,7 @@ export default {
       colors: {
         // Nord Color Palette
         // Polar Night (dark backgrounds)
+        'nord-deep': '#1a1d23', // Deeper than nord0 for better contrast
         nord0: '#2e3440',
         nord1: '#3b4252',
         nord2: '#434c5e',
@@ -59,7 +60,7 @@ export default {
       },
       backgroundImage: {
         'gradient-nord-light': 'linear-gradient(135deg, #eceff4 0%, #e5e9f0 50%, #d8dee9 100%)',
-        'gradient-nord-dark': 'linear-gradient(135deg, #2e3440 0%, #3b4252 50%, #434c5e 100%)',
+        'gradient-nord-dark': 'linear-gradient(135deg, #14161a 0%, #1a1d23 50%, #22262e 100%)',
         'gradient-frost': 'linear-gradient(135deg, #8fbcbb 0%, #88c0d0 50%, #81a1c1 100%)',
         'gradient-aurora': 'linear-gradient(135deg, #bf616a 0%, #d08770 33%, #ebcb8b 66%, #a3be8c 100%)'
       },

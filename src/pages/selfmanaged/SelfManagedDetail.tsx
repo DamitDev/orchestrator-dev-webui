@@ -1,13 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { useQueryClient, useQuery } from '@tanstack/react-query'
-import { useTask, useMioConversation, taskKeys } from '../../hooks/useTask'
+import { useTask, useSelfManagedConversation, taskKeys } from '../../hooks/useTask'
 import { MessageContent } from '../../lib/markdown'
 import { formatTimestamp, formatMessageTimestamp } from '../../lib/time'
 import { useMode } from '../../state/ModeContext'
 import { useWebSocket } from '../../ws/WebSocketProvider'
 import { tasksApi } from '../../lib/api'
-import type { MioMemory } from '../../types/api'
+import type { SelfManagedMemory } from '../../types/api'
 import { 
   Send, 
   CheckCircle2, 
@@ -187,7 +187,8 @@ function AssistantTurn({
 }) {
   const hasContent = group.finalContent && group.finalContent.trim()
   const hasToolCalls = group.toolInteractions && group.toolInteractions.length > 0
-  const firstMsg = group.assistantMessages[0]
+  // Use the last message's timestamp so it updates as new messages arrive
+  const lastMsg = group.assistantMessages[group.assistantMessages.length - 1]
   
   const isEmpty = isStreaming && streamingMessage && !streamingMessage.content && !streamingMessage.reasoning && (!streamingMessage.tool_calls || streamingMessage.tool_calls.length === 0)
   const isStreamingReasoning = isStreaming && streamingMessage?.reasoning && (!streamingMessage?.tool_calls || streamingMessage.tool_calls.length === 0) && !streamingMessage?.content
@@ -197,10 +198,10 @@ function AssistantTurn({
   return (
     <div className="message message--assistant">
       <div className="message-header mb-3">
-        <span className="uppercase font-bold text-xs tracking-wide text-nord10 dark:text-nord8">MIO</span>
-        {firstMsg?.created_at && (
+        <span className="uppercase font-bold text-xs tracking-wide text-nord10 dark:text-nord8">ASSISTANT</span>
+        {lastMsg?.created_at && (
           <span className="text-xs bg-nord5/70 px-2 py-0.5 rounded dark:bg-nord2">
-            {formatMessageTimestamp(firstMsg.created_at)}
+            {formatMessageTimestamp(lastMsg.created_at)}
           </span>
         )}
       </div>
@@ -444,7 +445,7 @@ function ModeIndicator({ status, workflowData }: { status: string; workflowData?
     )
   }
   
-  // Background active state - user is away, Mio is working
+  // Background active state - user is away, assistant is working
   if (status === 'background_active') {
     return (
       <div className="flex items-center gap-2 px-3 py-2 bg-nord15/20 rounded-lg dark:bg-nord15/30">
@@ -478,20 +479,46 @@ function ModeIndicator({ status, workflowData }: { status: string; workflowData?
 }
 
 // Memory item component
-function MemoryItem({ memory }: { memory: MioMemory }) {
+function MemoryItem({ memory }: { memory: SelfManagedMemory }) {
+  const [expanded, setExpanded] = useState(false)
   const isCommon = !memory.task_id
+  const isLongContent = memory.content.length > 100
   
   return (
-    <div className="p-3 bg-nord5/30 rounded-lg border border-nord4/50 dark:bg-nord2/30 dark:border-nord3/50">
+    <div 
+      className={`p-3 bg-nord5/30 rounded-lg border border-nord4/50 dark:bg-nord2/30 dark:border-nord3/50 transition-all ${
+        isLongContent ? 'cursor-pointer hover:border-nord8/50 dark:hover:border-nord8/30' : ''
+      }`}
+      onClick={() => isLongContent && setExpanded(!expanded)}
+    >
       <div className="flex items-start justify-between gap-2 mb-2">
-        <h4 className="text-sm font-medium text-nord0 dark:text-nord6">{memory.title}</h4>
+        <div className="flex items-center gap-2 flex-1 min-w-0">
+          {isLongContent && (
+            <svg 
+              className={`w-3 h-3 text-nord3 dark:text-nord4 flex-shrink-0 transition-transform ${expanded ? 'rotate-90' : ''}`} 
+              fill="none" 
+              stroke="currentColor" 
+              viewBox="0 0 24 24"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+          )}
+          <h4 className="text-sm font-medium text-nord0 dark:text-nord6 truncate">{memory.title}</h4>
+        </div>
         {isCommon && (
-          <span className="text-[10px] bg-nord8/20 text-nord10 px-1.5 py-0.5 rounded dark:bg-nord8/30 dark:text-nord8">
+          <span className="text-[10px] bg-nord8/20 text-nord10 px-1.5 py-0.5 rounded dark:bg-nord8/30 dark:text-nord8 flex-shrink-0">
             Common
           </span>
         )}
       </div>
-      <p className="text-xs text-nord3 dark:text-nord4 line-clamp-2 mb-2">{memory.content}</p>
+      <div className="mb-2">
+        <div className={`text-xs text-nord3 dark:text-nord4 overflow-hidden transition-all ${expanded ? 'max-h-[1000px]' : 'max-h-[2.5rem]'}`}>
+          <MessageContent role="assistant" content={memory.content} isLatestTool={false} />
+        </div>
+        {!expanded && isLongContent && (
+          <span className="text-[10px] text-nord8/60 dark:text-nord8/50 mt-0.5 block">more...</span>
+        )}
+      </div>
       {memory.tags && memory.tags.length > 0 && (
         <div className="flex flex-wrap gap-1">
           {memory.tags.map((tag, idx) => (
@@ -501,17 +528,25 @@ function MemoryItem({ memory }: { memory: MioMemory }) {
           ))}
         </div>
       )}
+      {expanded && (
+        <div className="mt-2 pt-2 border-t border-nord4/30 dark:border-nord3/30 text-[10px] text-nord3 dark:text-nord4">
+          Created: {new Date(memory.created_at).toLocaleString()}
+          {memory.updated_at !== memory.created_at && (
+            <span className="ml-2">• Updated: {new Date(memory.updated_at).toLocaleString()}</span>
+          )}
+        </div>
+      )}
     </div>
   )
 }
 
-export default function MioDetail() {
+export default function SelfManagedDetail() {
   const { id } = useParams()
   const { mode } = useMode()
   const { subscribe } = useWebSocket()
   const queryClient = useQueryClient()
   const { data: task, isLoading, error } = useTask(id)
-  const { data: conv } = useMioConversation(id)
+  const { data: conv } = useSelfManagedConversation(id)
   
   // Panel state
   const [leftPanelOpen, setLeftPanelOpen] = useState(true)
@@ -531,7 +566,7 @@ export default function MioDetail() {
   
   // Fetch memories
   const { data: memoriesData } = useQuery({
-    queryKey: ['mio-memories', id, includeCommon],
+    queryKey: ['self-managed-memories', id, includeCommon],
     queryFn: () => id ? tasksApi.workflows.selfManaged.getMemories(id, includeCommon) : Promise.resolve({ memories: [], total: 0 }),
     enabled: !!id && rightPanelOpen,
     refetchInterval: 30000, // Refresh every 30s when panel is open
@@ -583,20 +618,20 @@ export default function MioDetail() {
       
       // Handle memory events
       if (['mio_memory_created', 'mio_memory_updated', 'mio_memory_deleted'].includes(evt.event_type) && evt.task_id === id) {
-        queryClient.invalidateQueries({ queryKey: ['mio-memories', id] })
+        queryClient.invalidateQueries({ queryKey: ['self-managed-memories', id] })
         return
       }
       
-      // Handle messages_archived event - refresh conversation when Mio archives old messages
+      // Handle messages_archived event - refresh conversation when assistant archives old messages
       if (evt.event_type === 'messages_archived' && evt.task_id === id) {
-        queryClient.invalidateQueries({ queryKey: ['task', id, 'mio-conversation'] })
+        queryClient.invalidateQueries({ queryKey: ['task', id, 'self-managed-conversation'] })
         return
       }
       
       if (evt.task_id === id) {
         queryClient.invalidateQueries({ queryKey: taskKeys.byId(id) })
         if (evt.event_type !== 'message_streaming') {
-          queryClient.invalidateQueries({ queryKey: ['task', id, 'mio-conversation'] })
+          queryClient.invalidateQueries({ queryKey: ['task', id, 'self-managed-conversation'] })
         }
       }
     }, { eventTypes: ['task_status_changed', 'message_added', 'message_streaming', 'message_summary_generated', 'approval_requested', 'task_workflow_data_changed', 'mio_memory_created', 'mio_memory_updated', 'mio_memory_deleted', 'messages_archived'] })
@@ -636,10 +671,10 @@ export default function MioDetail() {
     setBusy(true)
     try {
       await tasksApi.workflows.selfManaged.wake(id)
-      toast.success('Mio is waking up')
+      toast.success('Waking up...')
       invalidate()
     } catch (e: any) {
-      toast.error(e?.response?.data?.error || 'Failed to wake Mio')
+      toast.error(e?.response?.data?.error || 'Failed to wake assistant')
     } finally {
       setBusy(false)
     }
@@ -664,7 +699,7 @@ export default function MioDetail() {
     setBusy(true)
     try {
       await tasksApi.workflows.selfManaged.archive(id)
-      toast.success('Mio archived')
+      toast.success('Session archived')
       invalidate()
     } catch (e: any) {
       toast.error(e?.response?.data?.error || 'Failed to archive')
@@ -678,7 +713,7 @@ export default function MioDetail() {
     setBusy(true)
     try {
       await tasksApi.workflows.selfManaged.markComplete(id)
-      toast.success('Mio marked complete')
+      toast.success('Marked complete')
       invalidate()
     } catch (e: any) {
       toast.error(e?.response?.data?.error || 'Failed to mark complete')
@@ -692,7 +727,7 @@ export default function MioDetail() {
     setBusy(true)
     try {
       await tasksApi.workflows.selfManaged.markFailed(id)
-      toast.success('Mio marked failed')
+      toast.success('Marked failed')
       invalidate()
     } catch (e: any) {
       toast.error(e?.response?.data?.error || 'Failed to mark failed')
@@ -727,7 +762,7 @@ export default function MioDetail() {
       <div className="flex items-center justify-center h-[calc(100vh-4rem)]">
         <div className="text-center">
           <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-nord8 border-t-transparent"></div>
-          <p className="mt-4 text-nord3 dark:text-nord4">Loading Mio...</p>
+          <p className="mt-4 text-nord3 dark:text-nord4">Loading...</p>
         </div>
       </div>
     )
@@ -738,13 +773,13 @@ export default function MioDetail() {
       <div className="flex items-center justify-center h-[calc(100vh-4rem)]">
         <div className="card p-8 text-center max-w-md">
           <AlertCircle className="w-12 h-12 text-nord11 mx-auto mb-4" />
-          <div className="text-nord11 font-semibold mb-2">Failed to load Mio</div>
+          <div className="text-nord11 font-semibold mb-2">Failed to load session</div>
           <p className="text-sm text-nord3 dark:text-nord4 mb-4">
             The task could not be found or there was an error loading it.
           </p>
-          <Link to="/workflows/mio" className="btn-primary">
+          <Link to="/workflows/self-managed" className="btn-primary">
             <ArrowLeft className="w-4 h-4 mr-2" />
-            Back to Mio List
+            Back to list
           </Link>
         </div>
       </div>
@@ -758,11 +793,11 @@ export default function MioDetail() {
         <div className="h-full w-64 border-r border-nord4 dark:border-nord3 bg-nord6/90 dark:bg-nord1/90 backdrop-blur-sm flex flex-col shadow-lg relative">
           {/* Header */}
           <div className="p-4 border-b border-nord4 dark:border-nord3">
-            <Link to="/workflows/mio" className="flex items-center gap-2 text-sm text-nord3 dark:text-nord4 hover:text-nord10 dark:hover:text-nord8 mb-3">
+            <Link to="/workflows/self-managed" className="flex items-center gap-2 text-sm text-nord3 dark:text-nord4 hover:text-nord10 dark:hover:text-nord8 mb-3">
               <ArrowLeft className="w-4 h-4" />
               Back to list
             </Link>
-            <h2 className="text-lg font-bold text-nord0 dark:text-nord6">Mio</h2>
+            <h2 className="text-lg font-bold text-nord0 dark:text-nord6">Self-Managed</h2>
             <div className="text-xs text-nord3 dark:text-nord4 font-mono">{id?.slice(0, 8)}</div>
           </div>
           
@@ -835,7 +870,7 @@ export default function MioDetail() {
                 className="w-full btn-primary flex items-center justify-center gap-2"
               >
                 <Sun className="w-4 h-4" />
-                {isSleeping ? 'Wake Mio' : 'Return to Chat'}
+                {isSleeping ? 'Wake' : 'Return to Chat'}
               </button>
             )}
             
@@ -970,7 +1005,7 @@ export default function MioDetail() {
                   <div className="flex items-center gap-3 px-4 py-2 bg-nord8/10 rounded-full border border-nord8/30 dark:bg-nord8/5">
                     <div className="animate-spin rounded-full h-5 w-5 border-2 border-nord8 border-t-transparent"></div>
                     <span className="text-sm text-nord10 dark:text-nord8 font-medium">
-                      {task?.status === 'background_turn' ? 'Mio is thinking in background...' : 'Mio is thinking...'}
+                      {task?.status === 'background_turn' ? 'Assistant is thinking in background...' : 'Assistant is thinking...'}
                     </span>
                   </div>
                 </div>
@@ -1015,7 +1050,7 @@ export default function MioDetail() {
                 rows={2}
                 disabled={isSleeping}
                 className="textarea flex-1 disabled:opacity-50"
-                placeholder={isSleeping ? "Mio is sleeping. Wake to chat." : isBackgroundActive ? "Send a message to return to interactive mode..." : "Type a message... (Enter to send)"}
+                placeholder={isSleeping ? "Assistant is sleeping. Wake to chat." : isBackgroundActive ? "Send a message to return to interactive mode..." : "Type a message... (Enter to send)"}
               />
               <button 
                 onClick={onSendMessage} 
