@@ -24,12 +24,12 @@ export function useTaskConversation(id: string | undefined) {
 }
 
 /**
- * Hook for Mio conversation that excludes archived messages.
- * This shows the conversation as Mio sees it.
+ * Hook for Self-Managed conversation that excludes archived messages.
+ * This shows the conversation as the assistant sees it.
  */
-export function useMioConversation(id: string | undefined) {
+export function useSelfManagedConversation(id: string | undefined) {
   return useQuery<ConversationResponse>({
-    queryKey: ['task', id || '', 'mio-conversation'] as const,
+    queryKey: ['task', id || '', 'self-managed-conversation'] as const,
     queryFn: () => tasksApi.getConversation(id!, true), // exclude_archived = true
     enabled: !!id
   })

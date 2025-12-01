@@ -10,7 +10,7 @@ import { TaskIdBadge } from '../components/TaskIdBadge'
 /** Get the correct detail page URL for a task based on its workflow */
 function getTaskDetailUrl(task: Task): string {
   if (task.workflow_id === 'self_managed') {
-    return `/mio/${task.id}`
+    return `/self-managed/${task.id}`
   }
   return `/task/${task.id}`
 }

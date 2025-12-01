@@ -16,7 +16,7 @@ type WorkflowFilter = 'all' | 'ticket' | 'matrix' | 'proactive' | 'interactive' 
 /** Get the correct detail page URL for a task based on its workflow */
 function getTaskDetailUrl(task: Task): string {
   if (task.workflow_id === 'self_managed') {
-    return `/mio/${task.id}`
+    return `/self-managed/${task.id}`
   }
   return `/task/${task.id}`
 }
@@ -294,7 +294,7 @@ export default function Tasks() {
         <div className="flex flex-wrap items-center gap-3">
           <select value={workflow} onChange={e => { setWorkflow(e.target.value as WorkflowFilter); setPage(1) }} className="select">
             <option value="all">All workflows</option>
-            <option value="self_managed">Mio</option>
+            <option value="self_managed">Self-Managed</option>
             <option value="ticket">Ticket</option>
             <option value="matrix">Matrix</option>
             <option value="proactive">Proactive</option>

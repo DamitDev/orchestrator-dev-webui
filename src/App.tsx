@@ -10,9 +10,9 @@ import WorkflowTickets from './pages/workflows/Tickets'
 import WorkflowMatrix from './pages/workflows/Matrix'
 import WorkflowProactive from './pages/workflows/Proactive'
 import WorkflowInteractive from './pages/workflows/Interactive'
-import WorkflowMio from './pages/workflows/Mio'
+import WorkflowSelfManaged from './pages/workflows/SelfManaged'
 import TaskDetail from './pages/task/TaskDetail'
-import MioDetail from './pages/mio/MioDetail'
+import SelfManagedDetail from './pages/selfmanaged/SelfManagedDetail'
 import ConfigModels from './pages/config/Models'
 import ConfigLLM from './pages/config/LLMBackends'
 import ConfigMCP from './pages/config/MCPServers'
@@ -125,7 +125,7 @@ function Header() {
                 {wfOpen && (
                   <div className={`dropdown-menu w-44`} onMouseEnter={() => cancelClose()} onMouseLeave={() => scheduleClose()}>
                     <div className="py-1">
-                      <NavLink to="/workflows/mio" className={({isActive}) => `${'dropdown-item'} ${isActive ? 'dropdown-item-active' : ''}`} onClick={() => setWfOpen(false)}>Mio</NavLink>
+                      <NavLink to="/workflows/self-managed" className={({isActive}) => `${'dropdown-item'} ${isActive ? 'dropdown-item-active' : ''}`} onClick={() => setWfOpen(false)}>Self-Managed</NavLink>
                       <NavLink to="/workflows/tickets" className={({isActive}) => `${'dropdown-item'} ${isActive ? 'dropdown-item-active' : ''}`} onClick={() => setWfOpen(false)}>Tickets</NavLink>
                       <NavLink to="/workflows/matrix" className={({isActive}) => `${'dropdown-item'} ${isActive ? 'dropdown-item-active' : ''}`} onClick={() => setWfOpen(false)}>Matrix</NavLink>
                       <NavLink to="/workflows/proactive" className={({isActive}) => `${'dropdown-item'} ${isActive ? 'dropdown-item-active' : ''}`} onClick={() => setWfOpen(false)}>Proactive</NavLink>
@@ -254,8 +254,8 @@ export default function App() {
       <Header />
       <main className="flex-1">
         <Routes>
-          {/* MioDetail uses full-width layout without container */}
-          <Route path="/mio/:id" element={<MioDetail />} />
+          {/* SelfManagedDetail uses full-width layout without container */}
+          <Route path="/self-managed/:id" element={<SelfManagedDetail />} />
           
           {/* All other routes use the standard container layout */}
           <Route path="/" element={<PageContainer><Dashboard /></PageContainer>} />
@@ -266,7 +266,7 @@ export default function App() {
           <Route path="/workflows/matrix" element={<PageContainer><WorkflowMatrix /></PageContainer>} />
           <Route path="/workflows/proactive" element={<PageContainer><WorkflowProactive /></PageContainer>} />
           <Route path="/workflows/interactive" element={<PageContainer><WorkflowInteractive /></PageContainer>} />
-          <Route path="/workflows/mio" element={<PageContainer><WorkflowMio /></PageContainer>} />
+          <Route path="/workflows/self-managed" element={<PageContainer><WorkflowSelfManaged /></PageContainer>} />
 
           <Route path="/task/:id" element={<PageContainer><TaskDetail /></PageContainer>} />
 

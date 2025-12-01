@@ -94,8 +94,8 @@ export interface ConversationResponse {
   conversation: ConversationMessage[]
 }
 
-// Mio Memory types
-export interface MioMemory {
+// Self-Managed Memory types
+export interface SelfManagedMemory {
   id: string
   task_id: string | null
   title: string
@@ -106,8 +106,8 @@ export interface MioMemory {
   updated_at: string
 }
 
-export interface MioMemoriesResponse {
-  memories: MioMemory[]
+export interface SelfManagedMemoriesResponse {
+  memories: SelfManagedMemory[]
   total: number
 }
 

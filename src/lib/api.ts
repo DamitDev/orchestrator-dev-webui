@@ -1,6 +1,6 @@
 import axios, { AxiosInstance, InternalAxiosRequestConfig } from 'axios'
 import { getRuntimeConfig } from './runtimeConfig'
-import type { TasksQueryParams, TasksResponse, TaskCreateRequest, TaskCreateResponse, Task, ConversationResponse, SummaryWorkerStatus, MioMemoriesResponse, SlotStatusResponse, MCPServersResponse, TaskHandlerStatus } from '../types/api'
+import type { TasksQueryParams, TasksResponse, TaskCreateRequest, TaskCreateResponse, Task, ConversationResponse, SummaryWorkerStatus, SelfManagedMemoriesResponse, SlotStatusResponse, MCPServersResponse, TaskHandlerStatus } from '../types/api'
 
 let apiClient: AxiosInstance | null = null
 let tokenGetter: (() => string | undefined) | null = null
@@ -186,7 +186,7 @@ export const tasksApi = {
         const { data } = await getApi().post('/task/self_managed/action', { task_id: taskId, approved })
         return data
       },
-      async getMemories(taskId: string, includeCommon: boolean = true): Promise<MioMemoriesResponse> {
+      async getMemories(taskId: string, includeCommon: boolean = true): Promise<SelfManagedMemoriesResponse> {
         const { data } = await getApi().get('/task/self_managed/memories', { 
           params: { task_id: taskId, include_common: includeCommon } 
         })
