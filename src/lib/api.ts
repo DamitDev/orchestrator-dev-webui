@@ -1,6 +1,6 @@
 import axios, { AxiosInstance, InternalAxiosRequestConfig } from 'axios'
 import { getRuntimeConfig } from './runtimeConfig'
-import type { TasksQueryParams, TasksResponse, TaskCreateRequest, TaskCreateResponse, Task, ConversationResponse, SummaryWorkerStatus, SelfManagedMemoriesResponse, SlotStatusResponse, MCPServersResponse, TaskHandlerStatus } from '../types/api'
+import type { TasksQueryParams, TasksResponse, TaskCreateRequest, TaskCreateResponse, Task, ConversationResponse, SummaryWorkerStatus, SelfManagedMemoriesResponse, SlotStatusResponse, MCPServersResponse, TaskHandlerStatus, ReloadServicesResponse, ReloadStatusResponse } from '../types/api'
 
 let apiClient: AxiosInstance | null = null
 let tokenGetter: (() => string | undefined) | null = null
@@ -256,6 +256,14 @@ export const configApi = {
   },
   async getWebSocketStatus(): Promise<any> {
     const { data } = await getApi().get('/websocket/status')
+    return data
+  },
+  async reloadServices(): Promise<ReloadServicesResponse> {
+    const { data } = await getApi().post('/configuration/reload')
+    return data
+  },
+  async getReloadStatus(): Promise<ReloadStatusResponse> {
+    const { data } = await getApi().get('/configuration/reload/status')
     return data
   }
 }
