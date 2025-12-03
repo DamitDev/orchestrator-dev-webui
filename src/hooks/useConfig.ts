@@ -12,6 +12,7 @@ export const configKeys = {
   auth: ['config','auth'] as const,
   health: ['config','health'] as const,
   ws: ['config','ws'] as const,
+  reload: ['config','reload'] as const,
 }
 
 export function useConfigStatus() {
@@ -129,5 +130,28 @@ export function useSetMaxConcurrent() {
   return useMutation({
     mutationFn: (max: number) => configApi.setMaxConcurrentTasks(max),
     onSuccess: () => qc.invalidateQueries({ queryKey: configKeys.taskHandler })
+  })
+}
+
+export function useReloadStatus() {
+  return useQuery({
+    queryKey: configKeys.reload,
+    queryFn: () => configApi.getReloadStatus(),
+    refetchInterval: 30000 // Refetch every 30 seconds
+  })
+}
+
+export function useReloadServices() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: () => configApi.reloadServices(),
+    onSuccess: () => {
+      // Invalidate all config queries after reload
+      qc.invalidateQueries({ queryKey: configKeys.llm })
+      qc.invalidateQueries({ queryKey: configKeys.mcp })
+      qc.invalidateQueries({ queryKey: configKeys.slots })
+      qc.invalidateQueries({ queryKey: configKeys.tools })
+      qc.invalidateQueries({ queryKey: configKeys.reload })
+    }
   })
 }

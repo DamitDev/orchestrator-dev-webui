@@ -238,4 +238,31 @@ export type WebSocketEvent =
   | SummaryWorkerStatusEvent
   | BaseWebSocketEvent
 
+// Service Reload Types
+export interface ReloadResultCounts {
+  total: number
+  refreshed: number
+  failed: number
+}
+
+export interface SlotManagerReloadResult {
+  enabled: boolean
+  refreshed: boolean
+  tools_count: number
+}
+
+export interface ReloadServicesResponse {
+  timestamp: string
+  llm_backends: ReloadResultCounts
+  mcp_servers: ReloadResultCounts
+  slot_manager: SlotManagerReloadResult
+  next_scheduled_reload?: string | null
+}
+
+export interface ReloadStatusResponse {
+  enabled: boolean
+  interval_hours: number
+  last_reload: string | null
+  next_scheduled_reload: string | null
+}
 
