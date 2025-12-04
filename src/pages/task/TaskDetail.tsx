@@ -425,10 +425,8 @@ function AssistantTurn({
                   {toolResponse && mode === 'expert' && (
                     <div className="mt-2 content-expanding">
                       <div className="text-xs text-nord3 dark:text-nord4 mb-1">Response:</div>
-                      <div className="tool-response-box p-3 bg-nord5/30 rounded-lg border border-nord4/50 dark:bg-nord2/30 dark:border-nord3/50 text-xs max-h-[7.5rem] overflow-y-auto">
-                        <div className="text-sm text-gray-900 dark:text-gray-100 whitespace-pre-wrap break-words font-mono">
-                          {toolResponse.content}
-                        </div>
+                      <div className="tool-response-box p-3 bg-nord5/30 rounded-lg border border-nord4/50 dark:bg-nord2/30 dark:border-nord3/50 text-xs max-h-[7.5rem] overflow-auto">
+                        <pre className="text-sm text-gray-900 dark:text-gray-100 whitespace-pre font-mono m-0">{toolResponse.content}</pre>
                       </div>
                     </div>
                   )}

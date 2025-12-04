@@ -33,9 +33,7 @@ function CollapsibleToolOutput({ content, initialExpanded }: { content: string; 
         <button onClick={() => setExpanded(false)} className="px-2 py-0.5 border rounded bg-white hover:bg-gray-50 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200">Collapse</button>
       </div>
       <div ref={scrollRef} className="max-h-40 overflow-auto border rounded bg-gray-50 dark:bg-gray-900 dark:border-gray-700">
-        <pre className="text-xs text-gray-900 dark:text-gray-100 whitespace-pre-wrap break-words font-mono p-3">
-          {content}
-        </pre>
+        <pre className="text-xs text-gray-900 dark:text-gray-100 whitespace-pre font-mono p-3 m-0">{content}</pre>
       </div>
     </div>
   )
