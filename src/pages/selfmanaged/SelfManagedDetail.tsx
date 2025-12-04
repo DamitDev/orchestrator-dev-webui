@@ -4,6 +4,7 @@ import { useQueryClient, useQuery } from '@tanstack/react-query'
 import { useTask, useSelfManagedConversation, taskKeys } from '../../hooks/useTask'
 import { MessageContent } from '../../lib/markdown'
 import { formatTimestamp, formatMessageTimestamp } from '../../lib/time'
+import { groupMessages } from '../../lib/messageGrouping'
 import { useMode } from '../../state/ModeContext'
 import { useWebSocket } from '../../ws/WebSocketProvider'
 import { tasksApi } from '../../lib/api'
@@ -86,86 +87,7 @@ function parseSummary(summary: string | null | undefined): { title: string; sect
   return mainTitle ? { title: mainTitle, sections } : null
 }
 
-// Message grouping (simplified from TaskDetail)
-function groupMessages(messages: any[]) {
-  const groups: any[] = []
-  let i = 0
-  
-  while (i < messages.length) {
-    const msg = messages[i]
-    
-    if (msg.role === 'assistant') {
-      const group: any = {
-        type: 'assistant',
-        assistantMessages: [],
-        toolInteractions: [],
-        orphanToolMessages: [], // Tool messages without matching tool calls
-        finalContent: null,
-        finalReasoning: null
-      }
-      
-      let j = i
-      let keepGoing = true
-      
-      while (j < messages.length && keepGoing) {
-        const current = messages[j]
-        
-        if (current.role === 'assistant') {
-          group.assistantMessages.push(current)
-          
-          if (current.content && current.content.trim()) {
-            group.finalContent = current.content
-            group.finalReasoning = current.reasoning
-            group.finalReasoningSummary = current.reasoning_summary
-            j++
-            keepGoing = false
-          } else if (current.tool_calls && Array.isArray(current.tool_calls) && current.tool_calls.length > 0) {
-            const toolCallIds = new Set(current.tool_calls.map((tc: any) => tc.id))
-            
-            for (const tc of current.tool_calls) {
-              group.toolInteractions.push({
-                reasoning: current.reasoning,
-                reasoning_summary: current.reasoning_summary,
-                tool_call_summary: current.tool_call_summary,
-                toolCall: tc,
-                toolResponse: null
-              })
-            }
-            
-            j++
-            
-            while (j < messages.length && messages[j].role === 'tool') {
-              const toolMsg = messages[j]
-              if (toolCallIds.has(toolMsg.tool_call_id)) {
-                const interaction = group.toolInteractions.find((ti: any) => ti.toolCall.id === toolMsg.tool_call_id)
-                if (interaction) {
-                  interaction.toolResponse = toolMsg
-                  interaction.tool_output_summary = toolMsg.tool_output_summary
-                }
-              } else {
-                // Orphan tool message - no matching tool call
-                group.orphanToolMessages.push(toolMsg)
-              }
-              j++
-            }
-          } else {
-            j++
-          }
-        } else {
-          keepGoing = false
-        }
-      }
-      
-      i = j
-      groups.push(group)
-    } else {
-      groups.push({ type: msg.role, message: msg })
-      i++
-    }
-  }
-  
-  return groups
-}
+// groupMessages is imported from ../../lib/messageGrouping
 
 // Assistant turn component (simplified from TaskDetail)
 function AssistantTurn({ 
@@ -259,6 +181,15 @@ function AssistantTurn({
                 )
               })()}
               
+              {/* Content that came with tool calls (intermediate response) */}
+              {interaction.contentWithToolCalls && (
+                <div className="mb-2 p-3 bg-nord6/50 dark:bg-nord1/50 rounded-lg border border-nord5 dark:border-nord2">
+                  <div className="text-sm leading-relaxed">
+                    <MessageContent role="assistant" content={interaction.contentWithToolCalls} isLatestTool={false} />
+                  </div>
+                </div>
+              )}
+              
               <AnimatedDetails 
                 className="text-xs mb-2"
                 summaryClassName="text-nord3 dark:text-nord4 hover:text-nord10 dark:hover:text-nord8"
@@ -294,7 +225,7 @@ function AssistantTurn({
                     <div className="mt-2 content-expanding">
                       <div className="text-xs text-nord3 dark:text-nord4 mb-1">Response:</div>
                       <div className="tool-response-box p-3 bg-nord5/30 rounded-lg border border-nord4/50 dark:bg-nord2/30 dark:border-nord3/50 text-xs max-h-[7.5rem] overflow-y-auto">
-                        <div className="text-sm text-gray-900 dark:text-gray-100 whitespace-pre-wrap break-words">
+                        <div className="text-sm text-gray-900 dark:text-gray-100 whitespace-pre-wrap break-words font-mono">
                           {toolResponse.content}
                         </div>
                       </div>
@@ -355,7 +286,7 @@ function AssistantTurn({
                     </div>
                   ) : (
                     <div className="tool-response-box p-3 bg-nord5/30 rounded-lg border border-nord4/50 dark:bg-nord2/30 dark:border-nord3/50 text-xs max-h-[7.5rem] overflow-y-auto">
-                      <div className="text-sm text-gray-900 dark:text-gray-100 whitespace-pre-wrap break-words">
+                      <div className="text-sm text-gray-900 dark:text-gray-100 whitespace-pre-wrap break-words font-mono">
                         {toolMsg.content}
                       </div>
                     </div>
