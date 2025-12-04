@@ -84,7 +84,15 @@ export function AnimatedDetails({
         onClick={toggle}
         className={`cursor-pointer select-none transition-all duration-200 hover:translate-x-0.5 ${summaryClassName}`}
       >
-        {summary}
+        <span className="flex items-center gap-1.5">
+          <span 
+            className="inline-block transition-transform duration-200" 
+            style={{ transform: isOpen ? 'rotate(90deg)' : 'rotate(0deg)' }}
+          >
+            ▸
+          </span>
+          {summary}
+        </span>
       </div>
       
       {shouldRender && (
