@@ -5,6 +5,7 @@ import { useTask, useTaskConversation, useMatrixConversation, taskKeys } from '.
 import { useCancelTask } from '../../hooks/useTasks'
 import { MessageContent } from '../../lib/markdown'
 import { formatTimestamp, formatMessageTimestamp } from '../../lib/time'
+import { groupMessages } from '../../lib/messageGrouping'
 import { useMode } from '../../state/ModeContext'
 import { useWebSocket } from '../../ws/WebSocketProvider'
 import { tasksApi } from '../../lib/api'
@@ -235,96 +236,7 @@ function CancelButton({ taskId }: { taskId: string }) {
   )
 }
 
-// Group messages: assistant messages with their tool calls/responses
-// Continue grouping through multiple assistant turns until we hit content
-function groupMessages(messages: any[]) {
-  const groups: any[] = []
-  let i = 0
-  
-  while (i < messages.length) {
-    const msg = messages[i]
-    
-    // For assistant messages, group everything until we get content
-    if (msg.role === 'assistant') {
-      const group: any = {
-        type: 'assistant',
-        assistantMessages: [], // Track all assistant messages in this turn
-        toolInteractions: [],
-        finalContent: null,
-        finalReasoning: null
-      }
-      
-      let j = i
-      let keepGoing = true
-      
-      // Keep going through assistant + tool sequences until we hit content or a different role
-      while (j < messages.length && keepGoing) {
-        const current = messages[j]
-        
-        if (current.role === 'assistant') {
-          group.assistantMessages.push(current)
-          
-          // If this assistant has content, this is the end of the turn
-          if (current.content && current.content.trim()) {
-            group.finalContent = current.content
-            group.finalReasoning = current.reasoning
-            group.finalReasoningSummary = current.reasoning_summary
-            j++
-            keepGoing = false
-          } else if (current.tool_calls && Array.isArray(current.tool_calls) && current.tool_calls.length > 0) {
-            // This assistant has tool calls, collect them and their responses
-            const toolCallIds = new Set(current.tool_calls.map((tc: any) => tc.id))
-            
-            // Add tool calls with their reasoning and summaries
-            for (const tc of current.tool_calls) {
-              group.toolInteractions.push({
-                reasoning: current.reasoning, // Reasoning before this tool call
-                reasoning_summary: current.reasoning_summary,
-                tool_call_summary: current.tool_call_summary,
-                toolCall: tc,
-                toolResponse: null
-              })
-            }
-            
-            j++
-            
-            // Now collect matching tool responses
-            while (j < messages.length && messages[j].role === 'tool') {
-              const toolMsg = messages[j]
-              if (toolCallIds.has(toolMsg.tool_call_id)) {
-                // Find the interaction to attach this response to
-                const interaction = group.toolInteractions.find((ti: any) => ti.toolCall.id === toolMsg.tool_call_id)
-                if (interaction) {
-                  interaction.toolResponse = toolMsg
-                  interaction.tool_output_summary = toolMsg.tool_output_summary
-                }
-              }
-              j++
-            }
-          } else {
-            // Assistant with no content and no tool calls - shouldn't happen but move on
-            j++
-          }
-        } else {
-          // Hit a non-assistant message, stop grouping
-          keepGoing = false
-        }
-      }
-      
-      i = j
-      groups.push(group)
-    } else {
-      // Non-assistant messages stay as single messages
-      groups.push({
-        type: msg.role,
-        message: msg
-      })
-      i++
-    }
-  }
-  
-  return groups
-}
+// groupMessages is imported from ../../lib/messageGrouping
 
 // Render a grouped assistant turn
 function AssistantTurn({ 
@@ -465,6 +377,15 @@ function AssistantTurn({
                 )
               })()}
               
+              {/* Content that came with tool calls (intermediate response) */}
+              {interaction.contentWithToolCalls && (
+                <div className="mb-2 p-3 bg-nord6/50 dark:bg-nord1/50 rounded-lg border border-nord5 dark:border-nord2">
+                  <div className="text-sm leading-relaxed">
+                    <MessageContent role="assistant" content={interaction.contentWithToolCalls} isLatestTool={false} />
+                  </div>
+                </div>
+              )}
+              
               {/* Tool call + response in one collapsible */}
               {/* Only keep last tool open if there's no final content yet and not streaming */}
               <AnimatedDetails 
@@ -505,7 +426,7 @@ function AssistantTurn({
                     <div className="mt-2 content-expanding">
                       <div className="text-xs text-nord3 dark:text-nord4 mb-1">Response:</div>
                       <div className="tool-response-box p-3 bg-nord5/30 rounded-lg border border-nord4/50 dark:bg-nord2/30 dark:border-nord3/50 text-xs max-h-[7.5rem] overflow-y-auto">
-                        <div className="text-sm text-gray-900 dark:text-gray-100 whitespace-pre-wrap break-words">
+                        <div className="text-sm text-gray-900 dark:text-gray-100 whitespace-pre-wrap break-words font-mono">
                           {toolResponse.content}
                         </div>
                       </div>
